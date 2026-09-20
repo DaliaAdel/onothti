@@ -1,0 +1,486 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Char(36)
+  accountType     String         @db.VarChar(20)
+  mobile          String         @db.VarChar(10)
+  email           String?        @db.VarChar(255)
+  passwordHash    String         @db.VarChar(255)
+  status          String         @default("INACTIVE") @db.VarChar(30)
+  displayName     String         @db.VarChar(120)
+  accountCode     String         @unique @db.VarChar(20)
+  avatarFileId    String?        @db.Char(36)
+  mobileVerifiedAt DateTime?     @db.DateTime(0)
+  lastActiveAt    DateTime?      @db.DateTime(0)
+  createdAt       DateTime       @default(now()) @db.DateTime(0)
+  updatedAt       DateTime       @updatedAt @db.DateTime(0)
+
+  customerProfile CustomerProfile?
+  providerProfile ProviderProfile?
+  staff           StaffUser?
+  sessions        Session[]
+  statusHistory   AccountStatusHistory[]
+  actedStatus     AccountStatusHistory[] @relation("StatusActor")
+  bannedCreated   BannedPhone[]
+  uploadedFiles   MediaFile[]    @relation("FileUploader")
+  tickets         Ticket[]       @relation("TicketOwner")
+  assignedTickets Ticket[]       @relation("TicketAssignee")
+  ticketComments  TicketComment[]
+  ratingsGiven    Rating[]       @relation("RatingCustomer")
+  ratingsReceived Rating[]       @relation("RatingProvider")
+  favorites       Favorite[]
+  recentViews     RecentView[]
+  notifications   Notification[]
+  complaintsFiled Complaint[]    @relation("ComplaintReporter")
+  complaintsAbout Complaint[]    @relation("ComplaintTarget")
+  auditLogs       AuditLog[]
+  whatsappClicksFrom WhatsAppClick[] @relation("WhatsAppCustomer")
+  whatsappClicksTo   WhatsAppClick[] @relation("WhatsAppProvider")
+  searchLogs      SearchLog[]
+  subscriptions   Subscription[]
+
+  @@unique([mobile, accountType], name: "UQ_Users_Mobile_AccountType")
+  @@index([status, accountType])
+  @@index([accountCode])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Char(36)
+  code        String           @unique @db.VarChar(50)
+  nameAr      String           @db.VarChar(120)
+  nameEn      String           @db.VarChar(120)
+  permissions RolePermission[]
+  staff       StaffUser[]
+}
+
+model Permission {
+  id     String           @id @default(uuid()) @db.Char(36)
+  code   String           @unique @db.VarChar(80)
+  nameAr String           @db.VarChar(160)
+  nameEn String           @default("") @db.VarChar(160)
+  roles  RolePermission[]
+}
+
+model RolePermission {
+  roleId       String @db.Char(36)
+  permissionId String @db.Char(36)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model StaffUser {
+  userId String @id @db.Char(36)
+  roleId String @db.Char(36)
+  team   String @db.VarChar(40)
+  level  Int    @default(1)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model CustomerProfile {
+  userId     String  @id @db.Char(36)
+  cityId     String? @db.Char(36)
+  interests  String? @db.LongText
+  user       User    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city       City?   @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model ProviderProfile {
+  userId     String      @id @db.Char(36)
+  bio        String?     @db.LongText
+  whatsapp   String?     @db.VarChar(20)
+  cityId     String?     @db.Char(36)
+  visibility String      @default("HIDDEN") @db.VarChar(20)
+  badge      String?     @db.VarChar(40)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city       City?       @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  services   ProviderService[]
+  portfolio  PortfolioItem[]
+  viewDaily  ProfileViewDaily[]
+
+  @@index([cityId, visibility])
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Char(36)
+  userId           String   @db.Char(36)
+  device           String?  @db.VarChar(180)
+  refreshTokenHash String   @db.VarChar(255)
+  expiresAt        DateTime @db.DateTime(0)
+  createdAt        DateTime @default(now()) @db.DateTime(0)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model OtpRequest {
+  id          String     @id @default(uuid()) @db.Char(36)
+  mobile      String     @db.VarChar(10)
+  purpose     String     @db.VarChar(30)
+  codeHash    String     @db.VarChar(255)
+  attempts    Int        @default(0)
+  expiresAt   DateTime   @db.DateTime(0)
+  lockedUntil DateTime?  @db.DateTime(0)
+  verifiedAt  DateTime?  @db.DateTime(0)
+  createdAt   DateTime   @default(now()) @db.DateTime(0)
+
+  @@index([mobile, purpose, createdAt])
+}
+
+model BannedPhone {
+  mobile     String   @id @db.VarChar(10)
+  reason     String   @db.VarChar(400)
+  createdById String? @db.Char(36)
+  createdAt  DateTime @default(now()) @db.DateTime(0)
+  createdBy  User?    @relation(fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model AccountStatusHistory {
+  id         String         @id @default(uuid()) @db.Char(36)
+  userId     String         @db.Char(36)
+  fromStatus String         @db.VarChar(30)
+  toStatus   String         @db.VarChar(30)
+  reason     String?        @db.VarChar(400)
+  actorId    String?        @db.Char(36)
+  createdAt  DateTime       @default(now()) @db.DateTime(0)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor      User?          @relation("StatusActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+model Region {
+  id     String @id @default(uuid()) @db.Char(36)
+  code   String @unique @db.VarChar(20)
+  nameAr String @db.VarChar(80)
+  nameEn String @db.VarChar(80)
+  cities City[]
+}
+
+model City {
+  id         String  @id @default(uuid()) @db.Char(36)
+  regionId   String  @db.Char(36)
+  code       String  @unique @db.VarChar(20)
+  nameAr     String  @db.VarChar(80)
+  nameEn     String  @db.VarChar(80)
+  isVisible  Boolean @default(false)
+  region     Region  @relation(fields: [regionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  customers  CustomerProfile[]
+  providers  ProviderProfile[]
+  viewDaily  ProfileViewDaily[]
+  searchLogs SearchLog[]
+
+  @@index([isVisible])
+}
+
+model Service {
+  id          String        @id @default(uuid()) @db.Char(36)
+  code        String        @unique @db.VarChar(20)
+  nameAr      String        @db.VarChar(120)
+  nameEn      String        @db.VarChar(120)
+  iconFileId  String?       @db.Char(36)
+  imageFileId String?       @db.Char(36)
+  isVisible   Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  subServices SubService[]
+  providers   ProviderService[]
+  viewDaily   ProfileViewDaily[]
+  searchLogs  SearchLog[]
+}
+
+model SubService {
+  id        String  @id @default(uuid()) @db.Char(36)
+  serviceId String  @db.Char(36)
+  code      String  @unique @db.VarChar(30)
+  nameAr    String  @db.VarChar(120)
+  nameEn    String  @db.VarChar(120)
+  isVisible Boolean @default(true)
+  sortOrder Int     @default(0)
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  providers ProviderService[]
+}
+
+model ProviderService {
+  id            String      @id @default(uuid()) @db.Char(36)
+  providerUserId String     @db.Char(36)
+  serviceId     String      @db.Char(36)
+  subServiceId  String?     @db.Char(36)
+  sortOrder     Int         @default(0)
+  provider      ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  service       Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subService    SubService? @relation(fields: [subServiceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([providerUserId, serviceId, subServiceId], name: "UQ_ProviderService")
+}
+
+model Package {
+  id            String         @id @default(uuid()) @db.Char(36)
+  code          String         @unique @db.VarChar(20)
+  nameAr        String         @db.VarChar(80)
+  nameEn        String         @db.VarChar(80)
+  durationMonths Int
+  price         Decimal        @db.Decimal(10, 2)
+  vatPercent    Decimal        @db.Decimal(5, 2)
+  rank          Int
+  maxServices   Int?
+  maxPhotos     Int?
+  maxVideos     Int?
+  allowWhatsApp Boolean        @default(true)
+  allowRating   Boolean        @default(true)
+  hasBadge      Boolean        @default(false)
+  isActive      Boolean        @default(true)
+  subscriptions Subscription[]
+}
+
+model Campaign {
+  id          String         @id @default(uuid()) @db.Char(36)
+  nameAr      String         @db.VarChar(120)
+  nameEn      String         @default("") @db.VarChar(120)
+  startDate   DateTime       @db.DateTime(0)
+  endDate     DateTime       @db.DateTime(0)
+  benefitDays Int
+  isActive    Boolean        @default(false)
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String             @id @default(uuid()) @db.Char(36)
+  providerUserId String             @db.Char(36)
+  packageId      String             @db.Char(36)
+  campaignId     String?            @db.Char(36)
+  startAt        DateTime           @db.DateTime(0)
+  endAt          DateTime           @db.DateTime(0)
+  status         String             @default("ACTIVE") @db.VarChar(20)
+  provider       User               @relation(fields: [providerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  package        Package            @relation(fields: [packageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  campaign       Campaign?          @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  proofs         PaymentProof[]
+
+  @@index([providerUserId, status, endAt])
+}
+
+model PaymentProof {
+  id             String       @id @default(uuid()) @db.Char(36)
+  subscriptionId String       @db.Char(36)
+  fileId         String       @db.Char(36)
+  amount         Decimal      @db.Decimal(10, 2)
+  opsStatus      String       @default("PENDING") @db.VarChar(20)
+  financeStatus  String       @default("PENDING") @db.VarChar(20)
+  activatedAt    DateTime?    @db.DateTime(0)
+  createdAt      DateTime     @default(now()) @db.DateTime(0)
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  file           MediaFile    @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invoice        Invoice?
+}
+
+model Invoice {
+  id         String       @id @default(uuid()) @db.Char(36)
+  proofId    String       @unique @db.Char(36)
+  invoiceNo  String       @unique @db.VarChar(40)
+  taxNo      String?      @db.VarChar(40)
+  issuedAt   DateTime     @db.DateTime(0)
+  total      Decimal      @db.Decimal(10, 2)
+  vatAmount  Decimal      @db.Decimal(10, 2)
+  proof      PaymentProof @relation(fields: [proofId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model BankAccount {
+  id          String  @id @default(uuid()) @db.Char(36)
+  bankName    String  @db.VarChar(120)
+  iban        String  @db.VarChar(34)
+  accountName String  @db.VarChar(160)
+  isActive    Boolean @default(true)
+}
+
+model MediaFile {
+  id           String        @id @default(uuid()) @db.Char(36)
+  storageKey   String        @db.VarChar(400)
+  mime         String        @db.VarChar(80)
+  sizeBytes    Int
+  kind         String         @db.VarChar(20)
+  status       String         @default("PENDING") @db.VarChar(20)
+  uploadedById String        @db.Char(36)
+  createdAt    DateTime      @default(now()) @db.DateTime(0)
+  uploadedBy   User          @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  portfolio    PortfolioItem[]
+  proofs       PaymentProof[]
+}
+
+model PortfolioItem {
+  id             String         @id @default(uuid()) @db.Char(36)
+  providerUserId String         @db.Char(36)
+  fileId         String         @db.Char(36)
+  sortOrder      Int            @default(0)
+  approvalStatus String         @default("PENDING") @db.VarChar(20)
+  provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  file           MediaFile      @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model Favorite {
+  id             String @id @default(uuid()) @db.Char(36)
+  customerUserId String @db.Char(36)
+  targetType     String @db.VarChar(20)
+  targetId       String @db.VarChar(50)
+  customer       User   @relation(fields: [customerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([customerUserId, targetType, targetId], name: "UQ_Favorite")
+}
+
+model RecentView {
+  id             String   @id @default(uuid()) @db.Char(36)
+  customerUserId String   @db.Char(36)
+  providerUserId String   @db.Char(36)
+  viewedAt       DateTime @default(now()) @db.DateTime(0)
+  customer       User     @relation(fields: [customerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([customerUserId, providerUserId], name: "UQ_RecentView")
+  @@index([customerUserId, viewedAt])
+}
+
+model ProfileViewDaily {
+  id             String   @id @default(uuid()) @db.Char(36)
+  providerUserId String   @db.Char(36)
+  serviceId      String?  @db.Char(36)
+  cityId         String?  @db.Char(36)
+  viewDate       DateTime @db.Date
+  viewCount      Int      @default(0)
+  provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  service        Service? @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city           City?    @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([providerUserId, serviceId, cityId, viewDate], name: "UQ_ProfileViewDaily")
+}
+
+model WhatsAppClick {
+  id             String   @id @default(uuid()) @db.Char(36)
+  customerUserId String?  @db.Char(36)
+  providerUserId String   @db.Char(36)
+  createdAt      DateTime @default(now()) @db.DateTime(0)
+  customer       User?    @relation("WhatsAppCustomer", fields: [customerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  provider       User     @relation("WhatsAppProvider", fields: [providerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model SearchLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String?  @db.Char(36)
+  query       String?  @db.VarChar(200)
+  cityId      String?  @db.Char(36)
+  serviceId   String?  @db.Char(36)
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now()) @db.DateTime(0)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city        City?    @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  service     Service? @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model Rating {
+  id             String       @id @default(uuid()) @db.Char(36)
+  customerUserId String       @db.Char(36)
+  providerUserId String       @db.Char(36)
+  stars          Int
+  note           String?      @db.VarChar(100)
+  status         String       @default("PENDING") @db.VarChar(20)
+  createdAt      DateTime     @default(now()) @db.DateTime(0)
+  customer       User         @relation("RatingCustomer", fields: [customerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  provider       User         @relation("RatingProvider", fields: [providerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([providerUserId, status])
+}
+
+model TicketType {
+  id       String   @id @default(uuid()) @db.Char(36)
+  code     String   @unique @db.VarChar(20)
+  nameAr   String   @db.VarChar(160)
+  nameEn   String   @default("") @db.VarChar(160)
+  audience String   @db.VarChar(20)
+  tickets  Ticket[]
+}
+
+model Ticket {
+  id         String       @id @default(uuid()) @db.Char(36)
+  refNo      String       @unique @db.VarChar(30)
+  typeId     String       @db.Char(36)
+  ownerId    String       @db.Char(36)
+  assigneeId String?      @db.Char(36)
+  status     String       @default("SENT") @db.VarChar(20)
+  priority   Int          @default(3)
+  body       String       @db.LongText
+  createdAt  DateTime     @default(now()) @db.DateTime(0)
+  type       TicketType   @relation(fields: [typeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  owner      User         @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  assignee   User?        @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  comments   TicketComment[]
+}
+
+model TicketComment {
+  id        String   @id @default(uuid()) @db.Char(36)
+  ticketId  String   @db.Char(36)
+  authorId  String   @db.Char(36)
+  body      String   @db.LongText
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String?  @db.Char(36)
+  audience  String?  @db.VarChar(20)
+  titleAr   String   @default("") @db.VarChar(160)
+  titleEn   String   @default("") @db.VarChar(160)
+  bodyAr    String   @default("") @db.VarChar(800)
+  bodyEn    String   @default("") @db.VarChar(800)
+  status    String   @default("SENT") @db.VarChar(20)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Complaint {
+  id           String   @id @default(uuid()) @db.Char(36)
+  reporterId   String   @db.Char(36)
+  targetUserId String?  @db.Char(36)
+  targetRef    String?  @db.VarChar(80)
+  reason       String   @db.VarChar(400)
+  status       String   @default("OPEN") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @db.DateTime(0)
+  reporter     User     @relation("ComplaintReporter", fields: [reporterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  target       User?    @relation("ComplaintTarget", fields: [targetUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Char(36)
+  actorId   String?  @db.Char(36)
+  action    String   @db.VarChar(80)
+  entity    String   @db.VarChar(80)
+  entityId  String?  @db.VarChar(50)
+  payload   String?  @db.LongText
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Setting {
+  key   String @id @db.VarChar(80)
+  value String @db.LongText
+}
+
+model LegalPage {
+  id       String @id @default(uuid()) @db.Char(36)
+  code     String @unique @db.VarChar(40)
+  titleAr  String @db.VarChar(160)
+  titleEn  String @default("") @db.VarChar(160)
+  bodyAr   String @db.LongText
+  bodyEn   String @default("") @db.LongText
+  version  Int    @default(1)
+}
