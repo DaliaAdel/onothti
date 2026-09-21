@@ -1,0 +1,1238 @@
+{
+  "info": {
+    "_postman_id": "d3512ca0-f964-4231-831c-08409bd5ea04",
+    "name": "أنوثتي API",
+    "description": "كل APIs الحالية لمنصة أنوثتي (عربي + إنجليزي).\n\nالسيرفر: http://localhost:3000\nSwagger: http://localhost:3000/docs\nOTP التطوير: 123456\n\nحسابات تجريبية (كلمة المرور Secret123):\n- باحثة: سارة / 0504444444\n- صانعة: نورة 0501111111 | هند 0502222222 | منى 0503333333\n\nالترتيب المقترح:\n1) Catalog → List cities / services (يحفظ المعرّفات)\n2) Auth → Login customer (demo سارة)\n3) Discovery / Customer / Content\n\nالردود الثابتة فيها nameAr و nameEn (أو titleAr/titleEn و bodyAr/bodyEn).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "15765812",
+    "_collection_link": "https://go.postman.co/collection/15765812-d3512ca0-f964-4231-831c-08409bd5ea04?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "فحص السيرفر وMySQL. المتوقع: { ok: true, service: \"onothiti-api\", db: \"up\" }"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/register — باحثة",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"mobile\": \"0505555555\",\n  \"password\": \"Secret123\",\n  \"email\": \"lina@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "accountType: CUSTOMER | PROVIDER. الجوال سعودي 10 أرقام يبدأ بـ 05. بعد التسجيل لازم OTP."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/register — صانعة جمال",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"mobile\": \"0509876543\",\n  \"password\": \"Secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "حساب صانعة الجمال يبدأ INACTIVE لحد الاعتماد."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/otp/send",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/otp/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "otp",
+                "send"
+              ]
+            },
+            "description": "purpose: REGISTER | LOGIN_NEW_DEVICE | RESET_PASSWORD | FIRST_BROWSER"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/otp/verify",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/otp/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "otp",
+                "verify"
+              ]
+            },
+            "description": "في التطوير الرمز 123456. بعد 3 محاولات غلط يتقفل 30 دقيقة."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/login — سارة (باحثة)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (!json.accessToken) return;",
+                  "pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "pm.collectionVariables.set('customerToken', json.accessToken);",
+                  "if (pm.environment) {",
+                  "  pm.environment.set('accessToken', json.accessToken);",
+                  "  pm.environment.set('customerToken', json.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\",\n  \"password\": \"Secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "يحفظ customerToken. شغّليه قبل طلبات الباحثة والتقييم."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/login — نورة (صانعة)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (!json.accessToken) return;",
+                  "pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "pm.collectionVariables.set('providerToken', json.accessToken);",
+                  "if (json.user && json.user.id) pm.collectionVariables.set('providerId', json.user.id);",
+                  "if (pm.environment) {",
+                  "  pm.environment.set('accessToken', json.accessToken);",
+                  "  pm.environment.set('providerToken', json.accessToken);",
+                  "  if (json.user && json.user.id) pm.environment.set('providerId', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0501111111\",\n  \"accountType\": \"PROVIDER\",\n  \"password\": \"Secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "0501111111 نورة | 0502222222 هند | 0503333333 منى"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "يستخدم آخر توكن اتعمل login. محتاج Bearer."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/forgot-password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "يرسل OTP لغرض RESET_PASSWORD."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/reset-password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\",\n  \"code\": \"123456\",\n  \"newPassword\": \"Secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "GET /api/catalog/cities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rows = pm.response.json();",
+                  "const riyadh = (rows || []).find(c => c.code === 'RIYADH');",
+                  "if (!riyadh) return;",
+                  "pm.collectionVariables.set('cityId', riyadh.id);",
+                  "if (pm.environment) pm.environment.set('cityId', riyadh.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "cities"
+              ]
+            },
+            "description": "المدن الظاهرة. كل مدينة فيها nameAr و nameEn. يحفظ cityId للرياض."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/catalog/services",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rows = pm.response.json();",
+                  "const hair = (rows || []).find(s => s.code === 'MS-01');",
+                  "if (!hair) return;",
+                  "pm.collectionVariables.set('serviceId', hair.id);",
+                  "if (pm.environment) pm.environment.set('serviceId', hair.id);",
+                  "if (hair.subServices && hair.subServices[0]) {",
+                  "  pm.collectionVariables.set('subServiceId', hair.subServices[0].id);",
+                  "  if (pm.environment) pm.environment.set('subServiceId', hair.subServices[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "الخدمات الرئيسية والفرعية (nameAr / nameEn). يحفظ serviceId و subServiceId للشعر."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/catalog/packages",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "packages"
+              ]
+            },
+            "description": "FREE / GREEN / BRONZE / SILVER / GOLD مع nameAr و nameEn."
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "GET /api/search — مدينة",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const rows = json.items || [];",
+                  "if (!rows[0]) return;",
+                  "pm.collectionVariables.set('providerId', rows[0].id);",
+                  "if (pm.environment) pm.environment.set('providerId', rows[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}",
+                  "description": "مطلوب"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "الحد 50"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{serviceId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "subServiceId",
+                  "value": "{{subServiceId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "نورة",
+                  "disabled": true
+                },
+                {
+                  "key": "minRating",
+                  "value": "4",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "cityId إجباري. الرد: { items, total, page, pageSize }. الترتيب ذهبية ثم فضية ثم برونزية. الخدمات فيها nameAr و nameEn."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/search — خدمة",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&serviceId={{serviceId}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{serviceId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/search — خدمة فرعية",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&subServiceId={{subServiceId}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "subServiceId",
+                  "value": "{{subServiceId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/search — اسم",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=نورة&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "q",
+                  "value": "نورة"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "البحث باسم العرض فقط."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/search — جوال (يفشل)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=0501111111",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "q",
+                  "value": "0501111111"
+                }
+              ]
+            },
+            "description": "المتوقع 400: البحث برقم الجوال غير مسموح."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/providers/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/providers/{{providerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "providers",
+                "{{providerId}}"
+              ]
+            },
+            "description": "ملف ظاهر. لو فيه customerToken يتسجل في شاهدتهن سابقًا. رقم الواتساب لا يظهر هنا."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/providers/:id/whatsapp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/providers/{{providerId}}/whatsapp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "providers",
+                "{{providerId}}",
+                "whatsapp"
+              ]
+            },
+            "description": "يرجع phone و url و disclaimerAr و disclaimerEn."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/providers/:id/ratings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stars\": 5,\n  \"note\": \"تعامل راقي\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/providers/{{providerId}}/ratings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "providers",
+                "{{providerId}}",
+                "ratings"
+              ]
+            },
+            "description": "محتاج customerToken. stars من 1 إلى 5. الحالة PENDING لحد اعتماد التشغيل."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer",
+      "item": [
+        {
+          "name": "GET /api/customer/profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/customer/profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"سارة\",\n  \"cityId\": \"{{cityId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/customer/favorites — صانعة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/customer/favorites — خدمة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"SERVICE\",\n  \"targetId\": \"{{serviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/customer/favorites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/customer/favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/customer/recent-views",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customer/recent-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customer",
+                "recent-views"
+              ]
+            },
+            "description": "آخر 30 مشاهدة. افتحي ملف صانعة بتوكن الباحثة أولًا."
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{customerToken}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Content",
+      "item": [
+        {
+          "name": "GET /api/legal/terms — باحثة",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/terms?audience=CUSTOMER",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "terms"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "CUSTOMER"
+                }
+              ]
+            },
+            "description": "audience إجباري: CUSTOMER | PROVIDER. الرد فيه titleAr/titleEn و bodyAr/bodyEn."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/legal/terms — صانعة الجمال",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/terms?audience=PROVIDER",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "terms"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "PROVIDER"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/legal/terms بدون audience (يفشل)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "terms"
+              ]
+            },
+            "description": "المتوقع 400."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/legal/policies — باحثة",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/policies?audience=CUSTOMER",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "policies"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "CUSTOMER"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/legal/policies — صانعة الجمال",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/policies?audience=PROVIDER",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "policies"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "PROVIDER"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/settings/about",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings/about",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "settings",
+                "about"
+              ]
+            },
+            "description": "nameAr / nameEn و descriptionAr / descriptionEn."
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{customerToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "cityId",
+      "value": "91ad45bb-74f2-4991-b749-a46052772287"
+    },
+    {
+      "key": "serviceId",
+      "value": "b926f4ad-c9cd-483b-8a13-f9b916a3e212"
+    },
+    {
+      "key": "subServiceId",
+      "value": "aa95fb91-f903-4c2f-b657-b29ebb83b363"
+    },
+    {
+      "key": "providerId",
+      "value": "0d17425d-326a-4f36-9c98-c5f9836be2a8"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "providerToken",
+      "value": ""
+    }
+  ]
+}
