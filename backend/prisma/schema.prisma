@@ -50,6 +50,7 @@ model User {
   @@unique([mobile, accountType], name: "UQ_Users_Mobile_AccountType")
   @@index([status, accountType])
   @@index([accountCode])
+  @@map("user")
 }
 
 model Role {
@@ -59,6 +60,7 @@ model Role {
   nameEn      String           @db.VarChar(120)
   permissions RolePermission[]
   staff       StaffUser[]
+  @@map("role")
 }
 
 model Permission {
@@ -67,6 +69,7 @@ model Permission {
   nameAr String           @db.VarChar(160)
   nameEn String           @default("") @db.VarChar(160)
   roles  RolePermission[]
+  @@map("permission")
 }
 
 model RolePermission {
@@ -76,6 +79,7 @@ model RolePermission {
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+  @@map("rolepermission")
 }
 
 model StaffUser {
@@ -85,6 +89,7 @@ model StaffUser {
   level  Int    @default(1)
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("staffuser")
 }
 
 model CustomerProfile {
@@ -93,6 +98,7 @@ model CustomerProfile {
   interests  String? @db.LongText
   user       User    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   city       City?   @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("customerprofile")
 }
 
 model ProviderProfile {
@@ -109,6 +115,7 @@ model ProviderProfile {
   viewDaily  ProfileViewDaily[]
 
   @@index([cityId, visibility])
+  @@map("providerprofile")
 }
 
 model Session {
@@ -121,6 +128,7 @@ model Session {
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@map("session")
 }
 
 model OtpRequest {
@@ -135,6 +143,7 @@ model OtpRequest {
   createdAt   DateTime   @default(now()) @db.DateTime(0)
 
   @@index([mobile, purpose, createdAt])
+  @@map("otprequest")
 }
 
 model BannedPhone {
@@ -143,6 +152,7 @@ model BannedPhone {
   createdById String? @db.Char(36)
   createdAt  DateTime @default(now()) @db.DateTime(0)
   createdBy  User?    @relation(fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("bannedphone")
 }
 
 model AccountStatusHistory {
@@ -157,6 +167,7 @@ model AccountStatusHistory {
   actor      User?          @relation("StatusActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([userId, createdAt])
+  @@map("accountstatushistory")
 }
 
 model Region {
@@ -165,6 +176,7 @@ model Region {
   nameAr String @db.VarChar(80)
   nameEn String @db.VarChar(80)
   cities City[]
+  @@map("region")
 }
 
 model City {
@@ -181,6 +193,7 @@ model City {
   searchLogs SearchLog[]
 
   @@index([isVisible])
+  @@map("city")
 }
 
 model Service {
@@ -196,6 +209,7 @@ model Service {
   providers   ProviderService[]
   viewDaily   ProfileViewDaily[]
   searchLogs  SearchLog[]
+  @@map("service")
 }
 
 model SubService {
@@ -208,6 +222,7 @@ model SubService {
   sortOrder Int     @default(0)
   service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   providers ProviderService[]
+  @@map("subservice")
 }
 
 model ProviderService {
@@ -221,6 +236,7 @@ model ProviderService {
   subService    SubService? @relation(fields: [subServiceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([providerUserId, serviceId, subServiceId], name: "UQ_ProviderService")
+  @@map("providerservice")
 }
 
 model Package {
@@ -240,6 +256,7 @@ model Package {
   hasBadge      Boolean        @default(false)
   isActive      Boolean        @default(true)
   subscriptions Subscription[]
+  @@map("package")
 }
 
 model Campaign {
@@ -251,6 +268,7 @@ model Campaign {
   benefitDays Int
   isActive    Boolean        @default(false)
   subscriptions Subscription[]
+  @@map("campaign")
 }
 
 model Subscription {
@@ -267,6 +285,7 @@ model Subscription {
   proofs         PaymentProof[]
 
   @@index([providerUserId, status, endAt])
+  @@map("subscription")
 }
 
 model PaymentProof {
@@ -281,6 +300,7 @@ model PaymentProof {
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   file           MediaFile    @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   invoice        Invoice?
+  @@map("paymentproof")
 }
 
 model Invoice {
@@ -292,6 +312,7 @@ model Invoice {
   total      Decimal      @db.Decimal(10, 2)
   vatAmount  Decimal      @db.Decimal(10, 2)
   proof      PaymentProof @relation(fields: [proofId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("invoice")
 }
 
 model BankAccount {
@@ -300,6 +321,7 @@ model BankAccount {
   iban        String  @db.VarChar(34)
   accountName String  @db.VarChar(160)
   isActive    Boolean @default(true)
+  @@map("bankaccount")
 }
 
 model MediaFile {
@@ -314,6 +336,7 @@ model MediaFile {
   uploadedBy   User          @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
   portfolio    PortfolioItem[]
   proofs       PaymentProof[]
+  @@map("mediafile")
 }
 
 model PortfolioItem {
@@ -324,6 +347,7 @@ model PortfolioItem {
   approvalStatus String         @default("PENDING") @db.VarChar(20)
   provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
   file           MediaFile      @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("portfolioitem")
 }
 
 model Favorite {
@@ -334,6 +358,7 @@ model Favorite {
   customer       User   @relation(fields: [customerUserId], references: [id], onDelete: Cascade)
 
   @@unique([customerUserId, targetType, targetId], name: "UQ_Favorite")
+  @@map("favorite")
 }
 
 model RecentView {
@@ -345,6 +370,7 @@ model RecentView {
 
   @@unique([customerUserId, providerUserId], name: "UQ_RecentView")
   @@index([customerUserId, viewedAt])
+  @@map("recentview")
 }
 
 model ProfileViewDaily {
@@ -359,6 +385,7 @@ model ProfileViewDaily {
   city           City?    @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([providerUserId, serviceId, cityId, viewDate], name: "UQ_ProfileViewDaily")
+  @@map("profileviewdaily")
 }
 
 model WhatsAppClick {
@@ -368,6 +395,7 @@ model WhatsAppClick {
   createdAt      DateTime @default(now()) @db.DateTime(0)
   customer       User?    @relation("WhatsAppCustomer", fields: [customerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   provider       User     @relation("WhatsAppProvider", fields: [providerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("whatsappclick")
 }
 
 model SearchLog {
@@ -381,6 +409,7 @@ model SearchLog {
   user        User?    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   city        City?    @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   service     Service? @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("searchlog")
 }
 
 model Rating {
@@ -395,6 +424,7 @@ model Rating {
   provider       User         @relation("RatingProvider", fields: [providerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([providerUserId, status])
+  @@map("rating")
 }
 
 model TicketType {
@@ -404,6 +434,7 @@ model TicketType {
   nameEn   String   @default("") @db.VarChar(160)
   audience String   @db.VarChar(20)
   tickets  Ticket[]
+  @@map("tickettype")
 }
 
 model Ticket {
@@ -420,6 +451,7 @@ model Ticket {
   owner      User         @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   assignee   User?        @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   comments   TicketComment[]
+  @@map("ticket")
 }
 
 model TicketComment {
@@ -430,6 +462,7 @@ model TicketComment {
   createdAt DateTime @default(now()) @db.DateTime(0)
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("ticketcomment")
 }
 
 model Notification {
@@ -443,6 +476,7 @@ model Notification {
   status    String   @default("SENT") @db.VarChar(20)
   createdAt DateTime @default(now()) @db.DateTime(0)
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notification")
 }
 
 model Complaint {
@@ -455,6 +489,7 @@ model Complaint {
   createdAt    DateTime @default(now()) @db.DateTime(0)
   reporter     User     @relation("ComplaintReporter", fields: [reporterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   target       User?    @relation("ComplaintTarget", fields: [targetUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("complaint")
 }
 
 model AuditLog {
@@ -469,11 +504,13 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+  @@map("auditlog")
 }
 
 model Setting {
   key   String @id @db.VarChar(80)
   value String @db.LongText
+  @@map("setting")
 }
 
 model LegalPage {
@@ -484,4 +521,5 @@ model LegalPage {
   bodyAr   String @db.LongText
   bodyEn   String @default("") @db.LongText
   version  Int    @default(1)
+  @@map("legalpage")
 }
