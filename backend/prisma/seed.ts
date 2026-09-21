@@ -1,7 +1,10 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { applyDatabaseUrl, createMariaAdapter } from "../src/database-url";
 
-const prisma = new PrismaClient();
+applyDatabaseUrl();
+const prisma = new PrismaClient({ adapter: createMariaAdapter() });
 
 async function main() {
   const roles = [

@@ -1,15 +1,20 @@
 import "reflect-metadata";
+import "dotenv/config";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { applyDatabaseUrl } from "./database-url";
 
 async function bootstrap() {
+  applyDatabaseUrl();
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix("api");
-  app.enableCors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:4200",
-  });
+  const origins = (process.env.FRONTEND_URL ?? "http://localhost:4200")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: origins });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,9 +31,8 @@ async function bootstrap() {
   SwaggerModule.setup("docs", app, SwaggerModule.createDocument(app, swagger));
 
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port);
-  console.log(`Onothiti API http://localhost:${port}/api`);
-  console.log(`Swagger http://localhost:${port}/docs`);
+  await app.listen(port, "0.0.0.0");
+  console.log(`Onothiti API port ${port}`);
 }
 
 bootstrap();

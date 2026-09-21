@@ -1,18 +1,12 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { AccountStatus, AccountType, type AccountTypeValue } from "../common/enums";
+import { createMariaAdapter } from "../database-url";
 
 @Injectable()
-export class PrismaService
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
-  async onModuleInit() {
-    try {
-      await this.$connect();
-    } catch (error) {
-      console.error("SQL Server is not ready yet", error);
-    }
+export class PrismaService extends PrismaClient implements OnModuleDestroy {
+  constructor() {
+    super({ adapter: createMariaAdapter() });
   }
 
   async onModuleDestroy() {
