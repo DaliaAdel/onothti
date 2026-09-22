@@ -94,25 +94,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        UQ_Users_Mobile_AccountType: {
-          mobile: dto.mobile,
-          accountType: dto.accountType,
-        },
-      },
+    const users = await this.prisma.user.findMany({
+      where: { mobile: dto.mobile },
       include: { providerProfile: true },
     });
-    if (!user) {
+    const matches = [];
+    for (const candidate of users) {
+      if (await bcrypt.compare(dto.password, candidate.passwordHash)) {
+        matches.push(candidate);
+      }
+    }
+    if (matches.length !== 1) {
       throw new UnauthorizedException("بيانات الدخول غير صحيحة");
     }
+    const user = matches[0];
     if (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED) {
       throw new ForbiddenException("الحساب غير مسموح له بالدخول");
-    }
-
-    const ok = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!ok) {
-      throw new UnauthorizedException("بيانات الدخول غير صحيحة");
     }
 
     if (!user.mobileVerifiedAt) {
@@ -232,13 +229,8 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        UQ_Users_Mobile_AccountType: {
-          mobile: dto.mobile,
-          accountType: dto.accountType,
-        },
-      },
+    const user = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile },
     });
     if (!user) {
       throw new BadRequestException("الحساب غير موجود");
@@ -255,7 +247,7 @@ export class AuthService {
     });
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
     const result = await this.prisma.user.updateMany({
-      where: { mobile: dto.mobile, accountType: dto.accountType },
+      where: { mobile: dto.mobile },
       data: { passwordHash },
     });
     if (result.count === 0) {

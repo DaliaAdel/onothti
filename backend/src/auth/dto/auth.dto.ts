@@ -31,10 +31,6 @@ export class LoginDto {
   @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 
-  @ApiProperty({ enum: ["CUSTOMER", "PROVIDER", "STAFF"] })
-  @IsIn(["CUSTOMER", "PROVIDER", "STAFF"])
-  accountType!: "CUSTOMER" | "PROVIDER" | "STAFF";
-
   @ApiProperty()
   @IsString()
   @MinLength(8)
@@ -63,10 +59,6 @@ export class ResetPasswordDto {
   @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 
-  @ApiProperty({ enum: ["CUSTOMER", "PROVIDER", "STAFF"] })
-  @IsIn(["CUSTOMER", "PROVIDER", "STAFF"])
-  accountType!: "CUSTOMER" | "PROVIDER" | "STAFF";
-
   @ApiProperty({ example: "123456" })
   @IsString()
   @MinLength(4)
@@ -82,8 +74,4 @@ export class ForgotPasswordDto {
   @ApiProperty({ example: "0501234567" })
   @Matches(/^05[0-9]{8}$/)
   mobile!: string;
-
-  @ApiProperty({ enum: ["CUSTOMER", "PROVIDER", "STAFF"] })
-  @IsIn(["CUSTOMER", "PROVIDER", "STAFF"])
-  accountType!: "CUSTOMER" | "PROVIDER" | "STAFF";
 }

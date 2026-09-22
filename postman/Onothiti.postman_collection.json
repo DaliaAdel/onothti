@@ -120,7 +120,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\",\n  \"password\": \"Secret123\"\n}"
+              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"password\": \"Secret123\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/login",
             "description": "يحفظ customerToken. شغّليه قبل طلبات الباحثة والتقييم."
@@ -154,7 +154,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0501111111\",\n  \"accountType\": \"PROVIDER\",\n  \"password\": \"Secret123\"\n}"
+              "raw": "{\n  \"mobile\": \"0501111111\",\n  \"password\": \"Secret123\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/login",
             "description": "0501111111 نورة | 0502222222 هند | 0503333333 منى"
@@ -181,7 +181,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\"\n}"
+              "raw": "{\n  \"mobile\": \"0504444444\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/forgot-password",
             "description": "يرسل OTP لغرض RESET_PASSWORD."
@@ -195,7 +195,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"accountType\": \"CUSTOMER\",\n  \"code\": \"123456\",\n  \"newPassword\": \"Secret123\"\n}"
+              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"code\": \"123456\",\n  \"newPassword\": \"Secret123\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/reset-password"
           }
