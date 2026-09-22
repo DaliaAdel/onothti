@@ -71,10 +71,17 @@ export class CustomerService {
     ]);
     const providerById = Object.fromEntries(providers.map((item) => [item.id, item]));
     const serviceById = Object.fromEntries(services.map((item) => [item.id, item]));
-    return rows.map((row) => ({
+    const toObject = (row: (typeof rows)[number]) => ({
       ...row,
-      item: row.targetType === "PROVIDER" ? providerById[row.targetId] ?? null : serviceById[row.targetId] ?? null,
-    }));
+      item:
+        row.targetType === "PROVIDER"
+          ? providerById[row.targetId] ?? null
+          : serviceById[row.targetId] ?? null,
+    });
+    return {
+      provider: rows.filter((row) => row.targetType === "PROVIDER").map(toObject),
+      service: rows.filter((row) => row.targetType === "SERVICE").map(toObject),
+    };
   }
 
   async addFavorite(userId: string, dto: FavoriteDto) {
