@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { SAUDI_MOBILE_MESSAGE, isSaudiMobile, toMobile } from '../core/phone';
+import { isSaudiMobile, toLocalPhone, toMobile } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
@@ -24,17 +24,20 @@ import { IconComponent } from '../shared/icon.component';
           </div>
           <div class="field full">
             <label>رقم الجوال</label>
-            <input
-              class="input"
-              name="phone"
-              [(ngModel)]="phone"
-              required
-              inputmode="numeric"
-              maxlength="14"
-              autocomplete="tel"
-              placeholder="0501234567"
-              dir="ltr"
-            />
+            <div class="phone-field">
+              <span>+966</span>
+              <input
+                name="phone"
+                [ngModel]="phone"
+                (ngModelChange)="phone = toLocalPhone($event)"
+                (paste)="onPhonePaste($event)"
+                required
+                inputmode="numeric"
+                maxlength="9"
+                autocomplete="tel"
+                placeholder="5X XXX XXXX"
+              />
+            </div>
           </div>
           <div class="field full">
             <label>البريد الإلكتروني <span style="font-weight:400;color:var(--muted)">(اختياري)</span></label>
@@ -84,6 +87,12 @@ export class SignupComponent {
   confirm = '';
   terms = false;
   error = '';
+  readonly toLocalPhone = toLocalPhone;
+
+  onPhonePaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.phone = toLocalPhone(event.clipboardData?.getData('text') ?? '');
+  }
 
   submit(): void {
     const mobile = toMobile(this.phone);
@@ -92,7 +101,7 @@ export class SignupComponent {
       return;
     }
     if (!isSaudiMobile(mobile)) {
-      this.error = SAUDI_MOBILE_MESSAGE;
+      this.error = 'أدخلي رقم جوال صحيحًا من 9 أرقام';
       return;
     }
     if (this.password.length < 8) {

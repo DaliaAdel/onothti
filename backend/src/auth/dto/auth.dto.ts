@@ -1,6 +1,5 @@
-import { IsIn, IsOptional, IsString, MinLength } from "class-validator";
+import { IsIn, IsOptional, IsString, Matches, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsSaudiMobile } from "../../common/mobile";
 
 export class RegisterDto {
   @ApiProperty({ enum: ["CUSTOMER", "PROVIDER"] })
@@ -12,7 +11,8 @@ export class RegisterDto {
   @MinLength(2)
   displayName!: string;
 
-  @IsSaudiMobile()
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/, { message: "رقم الجوال لازم يكون سعودي 10 أرقام ويبدأ بـ 05" })
   mobile!: string;
 
   @ApiProperty({ example: "Secret123" })
@@ -27,7 +27,8 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @IsSaudiMobile()
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 
   @ApiProperty()
@@ -37,7 +38,8 @@ export class LoginDto {
 }
 
 export class SendOtpDto {
-  @IsSaudiMobile()
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 
   @ApiProperty({ enum: ["REGISTER", "LOGIN_NEW_DEVICE", "RESET_PASSWORD", "FIRST_BROWSER"] })
@@ -53,7 +55,8 @@ export class VerifyOtpDto extends SendOtpDto {
 }
 
 export class ResetPasswordDto {
-  @IsSaudiMobile()
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 
   @ApiProperty({ example: "123456" })
@@ -68,6 +71,7 @@ export class ResetPasswordDto {
 }
 
 export class ForgotPasswordDto {
-  @IsSaudiMobile()
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/)
   mobile!: string;
 }
