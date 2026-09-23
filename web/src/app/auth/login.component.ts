@@ -20,19 +20,19 @@ import { IconComponent } from '../shared/icon.component';
         <p class="sub">{{ locale.t('auth.login.sub') }}</p>
         <div class="field">
           <label>{{ locale.t('auth.phone') }}</label>
-          <div class="phone-field">
-            <span>+966</span>
-            <input
-              name="phone"
-              [ngModel]="phone"
-              (ngModelChange)="phone = toLocalPhone($event)"
-              (paste)="onPhonePaste($event)"
-              inputmode="numeric"
-              maxlength="9"
-              placeholder="5X XXX XXXX"
-              [attr.aria-label]="locale.t('auth.phone')"
-            />
-          </div>
+          <input
+            class="input"
+            dir="ltr"
+            name="phone"
+            [ngModel]="phone"
+            (ngModelChange)="phone = toLocalPhone($event)"
+            (paste)="onPhonePaste($event)"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="05xxxxxxxx"
+            autocomplete="tel"
+            [attr.aria-label]="locale.t('auth.phone')"
+          />
         </div>
         <div class="field" style="margin-top:12px">
           <label>{{ locale.t('auth.password') }}</label>

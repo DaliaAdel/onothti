@@ -14,7 +14,14 @@ async function bootstrap() {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  app.enableCors({ origin: origins });
+  app.enableCors({
+    origin: (origin, callback) => {
+      const localDev = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      callback(null, localDev || origins.includes(origin));
+    },
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

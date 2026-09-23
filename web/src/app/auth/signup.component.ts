@@ -25,20 +25,19 @@ import { IconComponent } from '../shared/icon.component';
           </div>
           <div class="field full">
             <label>{{ locale.t('auth.mobile') }}</label>
-            <div class="phone-field">
-              <span>+966</span>
-              <input
-                name="phone"
-                [ngModel]="phone"
-                (ngModelChange)="phone = toLocalPhone($event)"
-                (paste)="onPhonePaste($event)"
-                required
-                inputmode="numeric"
-                maxlength="9"
-                autocomplete="tel"
-                placeholder="5X XXX XXXX"
-              />
-            </div>
+            <input
+              class="input"
+              dir="ltr"
+              name="phone"
+              [ngModel]="phone"
+              (ngModelChange)="phone = toLocalPhone($event)"
+              (paste)="onPhonePaste($event)"
+              required
+              inputmode="numeric"
+              maxlength="10"
+              autocomplete="tel"
+              placeholder="05xxxxxxxx"
+            />
           </div>
           <div class="field full">
             <label>{{ locale.t('auth.email') }} <span style="font-weight:400;color:var(--muted)">{{ locale.t('auth.optional') }}</span></label>

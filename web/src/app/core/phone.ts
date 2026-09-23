@@ -1,30 +1,18 @@
 export function toLocalPhone(raw: string): string {
   let digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('966')) {
+  if (digits.startsWith('00966')) {
+    digits = digits.slice(5);
+  } else if (digits.startsWith('966')) {
     digits = digits.slice(3);
   }
-  if (digits.startsWith('05')) {
-    digits = digits.slice(1);
+  if (digits.length === 9 && digits.startsWith('5')) {
+    digits = `0${digits}`;
   }
-  return digits.slice(0, 9);
+  return digits.slice(0, 10);
 }
 
 export function toMobile(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length === 10 && digits.startsWith('05')) {
-    return digits;
-  }
-  const local = toLocalPhone(raw);
-  if (local.length === 9 && local.startsWith('5')) {
-    return `0${local}`;
-  }
-  if (digits.length === 9 && digits.startsWith('5')) {
-    return `0${digits}`;
-  }
-  if (digits.startsWith('966') && digits.length >= 12) {
-    return toMobile(digits.slice(3));
-  }
-  return digits;
+  return toLocalPhone(raw);
 }
 
 export function isSaudiMobile(raw: string): boolean {
