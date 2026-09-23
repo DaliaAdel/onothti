@@ -4,10 +4,11 @@ import { ApiService } from '../core/api.service';
 import type { CatalogCity, ProviderCard } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
+import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 
 @Component({
   selector: 'app-provider-list',
-  imports: [RouterLink],
+  imports: [RouterLink, FavoriteBtnComponent],
   template: `
     @if (!cityId) {
       <article class="card coming-card">
@@ -29,7 +30,10 @@ import { ShellService } from '../core/shell.service';
               <p>{{ serviceLine(provider) }} · {{ provider.city?.nameAr || cityName }}</p>
               <div class="rating">★ {{ provider.ratingAvg ?? '—' }} · {{ provider.badge || 'حساب نشط ومعتمد' }}</div>
             </div>
-            <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">عرض الملف</a>
+            <div class="provider-actions">
+              <app-favorite-btn targetType="PROVIDER" [targetId]="provider.id" />
+              <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">عرض الملف</a>
+            </div>
           </article>
         }
       </div>

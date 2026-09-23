@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { FavoritesService } from '../core/favorites.service';
 import { AppShellComponent, NavItem } from '../shared/app-shell.component';
 
 @Component({
@@ -11,7 +12,13 @@ import { AppShellComponent, NavItem } from '../shared/app-shell.component';
     </app-shell>
   `,
 })
-export class CustomerLayoutComponent {
+export class CustomerLayoutComponent implements OnInit {
+  private readonly favorites = inject(FavoritesService);
+
+  ngOnInit(): void {
+    this.favorites.ensureLoaded();
+  }
+
   readonly items: (NavItem & { exact?: boolean })[] = [
     { icon: 'home', label: 'nav.home', route: '/c', exact: true },
     { icon: 'search', label: 'nav.services', route: '/c/services' },

@@ -58,7 +58,7 @@ export interface ProviderCard {
 export interface ProviderProfile extends ProviderCard {
   bio?: string | null;
   ratings?: { stars: number; note?: string | null; createdAt: string }[];
-  portfolio?: { id: string; storageKey: string; kind: string }[];
+  portfolio?: { id: string; storageKey: string; kind: string; url?: string | null }[];
 }
 
 export interface SearchResponse {
@@ -68,13 +68,141 @@ export interface SearchResponse {
   pageSize: number;
 }
 
+export interface FavoriteRow {
+  id?: string;
+  targetType: 'PROVIDER' | 'SERVICE';
+  targetId: string;
+  item?: { id: string; displayName?: string; nameAr?: string; nameEn?: string } | null;
+}
+
+export interface FavoriteList {
+  provider: FavoriteRow[];
+  service: FavoriteRow[];
+}
+
 export interface CatalogPackage {
   id: string;
   code: string;
   nameAr: string;
   nameEn: string;
   rank: number;
+  price?: number | string;
+  durationMonths?: number;
+  maxServices?: number | null;
+  maxPhotos?: number | null;
+  maxVideos?: number | null;
   monthlyPrice?: number | string;
+}
+
+export interface NamedCity {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+}
+
+export interface ProviderMe {
+  id: string;
+  displayName: string;
+  mobile?: string;
+  email?: string | null;
+  accountCode: string;
+  status: string;
+  visibility: string;
+  bio?: string | null;
+  whatsapp?: string | null;
+  badge?: string | null;
+  city?: NamedCity | null;
+  avatarUrl?: string | null;
+}
+
+export interface ProviderDashboard {
+  profile: ProviderMe;
+  stats: {
+    views30d: number;
+    ratingAvg: number | null;
+    ratingCount: number;
+    photosApproved: number;
+    photosPending: number;
+    servicesCount: number;
+    completionPercent: number;
+  };
+  subscription: ProviderSubscription | null;
+}
+
+export interface ProviderSubscription {
+  id: string;
+  status: string;
+  startAt: string;
+  endAt: string;
+  package: CatalogPackage;
+}
+
+export interface ProviderServiceRow {
+  id: string;
+  serviceId: string;
+  subServiceId?: string | null;
+  service: CatalogService;
+  subService?: { id: string; nameAr: string; nameEn: string } | null;
+}
+
+export interface ProviderPortfolioItem {
+  id: string;
+  approvalStatus: string;
+  storageKey: string;
+  kind: string;
+  status?: string;
+  url?: string | null;
+}
+
+export interface ProviderReviews {
+  ratingAvg: number | null;
+  ratingCount: number;
+  items: { id: string; stars: number; note?: string | null; status: string; createdAt: string }[];
+}
+
+export interface ProviderViews {
+  total: number;
+  items: { date: string; viewCount: number; city?: NamedCity | null }[];
+}
+
+export interface BankAccount {
+  id: string;
+  bankName: string;
+  iban: string;
+  accountName: string;
+}
+
+export interface PaymentProof {
+  id: string;
+  amount: number;
+  opsStatus: string;
+  financeStatus: string;
+  createdAt: string;
+  file: { kind: string; storageKey: string; mime: string };
+  subscription: { id: string; status: string; package: CatalogPackage };
+}
+
+export interface ProviderSubscriptionResponse {
+  current: ProviderSubscription | null;
+  packages: CatalogPackage[];
+  bankAccounts: BankAccount[];
+  proofs: PaymentProof[];
+}
+
+export interface TicketType {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+}
+
+export interface ProviderTicket {
+  id: string;
+  refNo: string;
+  status: string;
+  body: string;
+  createdAt: string;
+  type: TicketType;
 }
 
 export const FALLBACK_SERVICES = [

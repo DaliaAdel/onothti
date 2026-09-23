@@ -2,13 +2,16 @@ import "reflect-metadata";
 import "dotenv/config";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { join } from "path";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { applyDatabaseUrl } from "./database-url";
 
 async function bootstrap() {
   applyDatabaseUrl();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(join(process.cwd(), "uploads"), { prefix: "/uploads/" });
   app.setGlobalPrefix("api");
   const origins = (process.env.FRONTEND_URL ?? "http://localhost:4200")
     .split(",")

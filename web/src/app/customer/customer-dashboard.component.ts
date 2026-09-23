@@ -5,11 +5,12 @@ import { LocaleService } from '../core/locale.service';
 import { FALLBACK_SERVICES, type CatalogService, type ProviderCard } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
+import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-customer-dashboard',
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, FavoriteBtnComponent, IconComponent],
   template: `
     <section class="hero">
       <div class="hero-copy">
@@ -65,7 +66,10 @@ import { IconComponent } from '../shared/icon.component';
               <p>{{ serviceLine(provider) }} · {{ locale.localizedName(provider.city, locale.t('c.country')) }}</p>
               <div class="rating">★ {{ provider.ratingAvg ?? '—' }} · {{ locale.t('c.active') }}</div>
             </div>
-            <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">{{ locale.t('c.view') }}</a>
+            <div class="provider-actions">
+              <app-favorite-btn targetType="PROVIDER" [targetId]="provider.id" />
+              <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">{{ locale.t('c.view') }}</a>
+            </div>
           </article>
         }
       </div>

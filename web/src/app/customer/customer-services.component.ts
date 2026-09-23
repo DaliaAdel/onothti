@@ -5,11 +5,12 @@ import { ApiService } from '../core/api.service';
 import { FALLBACK_SERVICES, type CatalogCity, type CatalogService } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
+import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-customer-services',
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, FavoriteBtnComponent, IconComponent],
   template: `
     <div class="search-row">
       <label class="searchbox">
@@ -34,16 +35,19 @@ import { IconComponent } from '../shared/icon.component';
     } @else {
       <div class="grid four">
         @for (service of filtered; track service.id) {
-          <button class="card hover service-card" type="button" (click)="open(service)">
-            <div class="service-art">
-              <img src="/hero.png" alt="" />
-            </div>
-            <div class="service-body">
-              <h3>{{ service.nameAr }}</h3>
-              <p>{{ serviceDesc(service) }}</p>
-              <span class="arrow"><app-icon name="chev" /></span>
-            </div>
-          </button>
+          <article class="card hover service-card">
+            <app-favorite-btn class="service-fav" targetType="SERVICE" [targetId]="service.id" />
+            <button class="service-open" type="button" (click)="open(service)">
+              <div class="service-art">
+                <img src="/hero.png" alt="" />
+              </div>
+              <div class="service-body">
+                <h3>{{ service.nameAr }}</h3>
+                <p>{{ serviceDesc(service) }}</p>
+                <span class="arrow"><app-icon name="chev" /></span>
+              </div>
+            </button>
+          </article>
         }
       </div>
     }

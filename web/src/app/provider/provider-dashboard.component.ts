@@ -1,6 +1,8 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
+import type { ProviderDashboard } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { IconComponent } from '../shared/icon.component';
@@ -11,7 +13,7 @@ import { IconComponent } from '../shared/icon.component';
   template: `
     <section class="hero">
       <div class="hero-copy">
-        <span class="eyebrow">{{ locale.t('p.hero.eyebrow') }}</span>
+        <span class="eyebrow">{{ locale.t('p.hero.eyebrow') }}{{ packageLabel }}</span>
         <h2>{{ locale.t('p.hero.hello') }}{{ name }}</h2>
         <p>{{ locale.t('p.hero.text') }}</p>
         <div class="hero-actions">
@@ -49,7 +51,8 @@ import { IconComponent } from '../shared/icon.component';
       <article class="card hover">
         <div class="metric-icon"><app-icon name="user" /></div>
         <h3>{{ locale.t('p.card.profile') }}</h3>
-        <p style="color:var(--muted);font-size:10px">{{ locale.t('p.card.profileText') }}</p>
+        <p style="color:var(--muted);font-size:10px">{{ completion }}٪</p>
+        <div class="progress"><span [style.width.%]="completion"></span></div>
         <a class="btn ghost" routerLink="/p/account">{{ locale.t('p.hero.profile') }}</a>
       </article>
       <article class="card hover">
@@ -67,28 +70,67 @@ import { IconComponent } from '../shared/icon.component';
     </div>
   `,
 })
-export class ProviderDashboardComponent {
+export class ProviderDashboardComponent implements OnInit {
+  private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   readonly locale = inject(LocaleService);
+  data: ProviderDashboard | null = null;
 
-  constructor() {
-    effect(() => {
-      this.locale.lang();
-      this.shell.set(this.locale.t('p.dash.title'), this.locale.t('p.dash.subtitle'));
+  ngOnInit(): void {
+    this.shell.set(this.locale.t('p.dash.title'), this.locale.t('p.dash.subtitle'));
+    this.api.providerDashboard().subscribe({
+      next: (data) => {
+        this.data = data;
+        this.session.patchUser({
+          displayName: data.profile.displayName,
+          status: data.profile.status,
+          city: data.profile.city,
+        });
+      },
     });
   }
 
-  get metrics() {
-    return [
-      { icon: 'eye', label: this.locale.t('p.metric.views'), value: '—', trend: this.locale.t('p.metric.viewsTrend') },
-      { icon: 'star', label: this.locale.t('p.metric.rating'), value: '—', trend: this.locale.t('p.metric.ratingTrend') },
-      { icon: 'image', label: this.locale.t('p.metric.photos'), value: '—', trend: this.locale.t('p.metric.photosTrend') },
-      { icon: 'spark', label: this.locale.t('p.metric.services'), value: '—', trend: this.locale.t('p.metric.servicesTrend') },
-    ];
+  get completion(): number {
+    return this.data?.stats?.completionPercent ?? 0;
   }
 
   get name(): string {
-    return this.session.user()?.displayName || this.locale.t('p.nameFallback');
+    return this.data?.profile.displayName || this.session.user()?.displayName || this.locale.t('p.nameFallback');
+  }
+
+  get packageLabel(): string {
+    const name = this.data?.subscription?.package;
+    return name ? ` · ${this.locale.localizedName(name)}` : '';
+  }
+
+  get metrics() {
+    const stats = this.data?.stats;
+    return [
+      {
+        icon: 'eye',
+        label: this.locale.t('p.metric.views'),
+        value: stats ? String(stats.views30d) : '—',
+        trend: this.locale.t('p.overview.sub'),
+      },
+      {
+        icon: 'star',
+        label: this.locale.t('p.metric.rating'),
+        value: stats?.ratingAvg != null ? String(stats.ratingAvg) : '—',
+        trend: String(stats?.ratingCount ?? 0),
+      },
+      {
+        icon: 'image',
+        label: this.locale.t('p.metric.photos'),
+        value: stats ? String(stats.photosApproved) : '—',
+        trend: String(stats?.photosPending ?? 0),
+      },
+      {
+        icon: 'spark',
+        label: this.locale.t('p.metric.services'),
+        value: stats ? String(stats.servicesCount) : '—',
+        trend: this.locale.t('p.card.servicesBtn'),
+      },
+    ];
   }
 }

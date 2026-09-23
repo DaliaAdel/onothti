@@ -5,11 +5,12 @@ import { apiMessage } from '../core/phone';
 import type { ProviderProfile } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-profile',
-  imports: [IconComponent],
+  imports: [FavoriteBtnComponent, IconComponent],
   template: `
     @if (loading) {
       <p class="loading">جاري تحميل الملف...</p>
@@ -26,9 +27,12 @@ import { IconComponent } from '../shared/icon.component';
             {{ serviceLine }} · {{ profile.city?.nameAr || 'المملكة' }}
           </p>
         </div>
-        <button class="btn primary" style="margin-right:auto" type="button" (click)="openWhatsApp()" [disabled]="!profile.canContact">
-          تواصل عبر واتساب
-        </button>
+        <div class="profile-actions">
+          <app-favorite-btn targetType="PROVIDER" [targetId]="profile.id" />
+          <button class="btn primary" type="button" (click)="openWhatsApp()" [disabled]="!profile.canContact">
+            تواصل عبر واتساب
+          </button>
+        </div>
       </div>
       <nav class="tabs">
         @for (tab of tabs; track tab.id) {
@@ -87,7 +91,13 @@ import { IconComponent } from '../shared/icon.component';
         } @else {
           <div class="portfolio-grid">
             @for (item of profile.portfolio; track item.id) {
-              <div class="portfolio-item">عمل</div>
+              <div class="portfolio-item">
+                @if (item.url && item.kind !== 'VIDEO') {
+                  <img [src]="item.url" alt="" />
+                } @else {
+                  {{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}
+                }
+              </div>
             }
           </div>
         }

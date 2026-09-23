@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import type { CatalogPackage } from '../core/models';
+import { LocaleService } from '../core/locale.service';
+import type { CatalogPackage, ProviderSubscriptionResponse } from '../core/models';
 import { ShellService } from '../core/shell.service';
-import { ToastService } from '../core/toast.service';
 
 @Component({
   selector: 'app-provider-package',
@@ -12,42 +12,87 @@ import { ToastService } from '../core/toast.service';
     <div class="grid two">
       <article class="card package">
         <span class="badge">الباقة الحالية</span>
-        <h2 style="font:700 25px 'Noto Naskh Arabic';color:var(--plum)">{{ current?.nameAr || 'بدون باقة نشطة' }}</h2>
+        <h2 style="font:700 25px 'Noto Naskh Arabic';color:var(--plum)">
+          {{ currentName }}
+        </h2>
         <div class="price">
-          {{ current ? current.monthlyPrice ?? '—' : '0' }}
-          <small style="font-size:12px">ر.س / شهر</small>
+          {{ currentPrice }}
+          <small style="font-size:12px">ر.س</small>
         </div>
-        <p style="color:var(--muted);font-size:10px">اختاري باقة لتفعيل الظهور للباحثات.</p>
-        <div class="progress"><span style="width:20%"></span></div>
+        <p style="color:var(--muted);font-size:10px">{{ currentHint }}</p>
+        <div class="progress"><span [style.width.%]="progress"></span></div>
         <div style="display:flex;gap:9px;margin-top:20px">
-          <a class="btn primary" routerLink="/p/payment">إرسال إثبات السداد</a>
-          <button class="btn ghost" type="button" (click)="toast.show('خيارات الترقية ستظهر بعد ربط الاشتراكات')">ترقية الباقة</button>
+          <a class="btn primary" [routerLink]="['/p/payment']" [queryParams]="{ packageId: selectedId }">إرسال إثبات السداد</a>
         </div>
       </article>
       <article class="card">
         <h3 style="color:var(--plum)">الباقات المتاحة</h3>
-        @for (item of packages; track item.id) {
-          <div class="feature"><i>✓</i>{{ item.nameAr }} · {{ item.code }}</div>
+        @for (item of data?.packages ?? []; track item.id) {
+          <button class="feature" type="button" (click)="selectedId = item.id" [style.fontWeight]="selectedId === item.id ? '700' : '400'">
+            <i>✓</i>{{ locale.localizedName(item) }} · {{ item.price ?? 0 }} ر.س
+          </button>
         }
-        @if (packages.length === 0) {
+        @if (!data?.packages?.length) {
           <p style="color:var(--muted);font-size:11px">ستظهر الباقات عند اتصال الـ API.</p>
         }
       </article>
     </div>
+    @if (data?.proofs?.length) {
+      <div class="section-head">
+        <div>
+          <h2>سجل الاشتراك</h2>
+          <p>تفاصيل عملياتك السابقة</p>
+        </div>
+      </div>
+      @for (proof of data!.proofs; track proof.id) {
+        <article class="card provider">
+          <div class="provider-photo">✓</div>
+          <div>
+            <h3>{{ locale.localizedName(proof.subscription.package) }}</h3>
+            <p>{{ proof.opsStatus }} / {{ proof.financeStatus }} · {{ proof.amount }} ر.س</p>
+          </div>
+        </article>
+      }
+    }
   `,
 })
 export class ProviderPackageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
-  readonly toast = inject(ToastService);
-  packages: CatalogPackage[] = [];
+  readonly locale = inject(LocaleService);
+  data: ProviderSubscriptionResponse | null = null;
+  selectedId = '';
 
   get current(): CatalogPackage | undefined {
-    return this.packages[0];
+    return this.data?.current?.package ?? this.data?.packages?.[0];
+  }
+
+  get currentName(): string {
+    return this.current ? this.locale.localizedName(this.current) : 'بدون باقة نشطة';
+  }
+
+  get currentPrice(): string | number {
+    return this.current?.price ?? 0;
+  }
+
+  get currentHint(): string {
+    if (!this.data?.current) {
+      return 'اختاري باقة لتفعيل الظهور للباحثات.';
+    }
+    return `${this.data.current.status} · ${String(this.data.current.endAt).slice(0, 10)}`;
+  }
+
+  get progress(): number {
+    return this.data?.current?.status === 'ACTIVE' ? 72 : 20;
   }
 
   ngOnInit(): void {
     this.shell.set('باقتي واشتراكي', 'تابعي الباقة أو اطلبي التمديد والترقية');
-    this.api.packages().subscribe({ next: (packages) => (this.packages = packages) });
+    this.api.providerSubscription().subscribe({
+      next: (data) => {
+        this.data = data;
+        this.selectedId = data.current?.package.id || data.packages[0]?.id || '';
+      },
+    });
   }
 }

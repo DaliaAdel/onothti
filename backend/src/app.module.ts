@@ -7,6 +7,7 @@ import { CustomerModule } from "./customer/customer.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
 import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { ProviderModule } from "./provider/provider.module";
 import { SetupModule } from "./setup/setup.module";
 
 @Module({
@@ -18,6 +19,7 @@ import { SetupModule } from "./setup/setup.module";
     CatalogModule,
     DiscoveryModule,
     CustomerModule,
+    ProviderModule,
     ContentModule,
     SetupModule,
   ],

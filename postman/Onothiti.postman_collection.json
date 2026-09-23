@@ -6,27 +6,73 @@
   },
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{customerToken}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{customerToken}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "cityId", "value": "91ad45bb-74f2-4991-b749-a46052772287" },
-    { "key": "serviceId", "value": "b926f4ad-c9cd-483b-8a13-f9b916a3e212" },
-    { "key": "subServiceId", "value": "aa95fb91-f903-4c2f-b657-b29ebb83b363" },
-    { "key": "providerId", "value": "0d17425d-326a-4f36-9c98-c5f9836be2a8" },
-    { "key": "accessToken", "value": "" },
-    { "key": "customerToken", "value": "" },
-    { "key": "providerToken", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "cityId",
+      "value": "91ad45bb-74f2-4991-b749-a46052772287"
+    },
+    {
+      "key": "serviceId",
+      "value": "b926f4ad-c9cd-483b-8a13-f9b916a3e212"
+    },
+    {
+      "key": "subServiceId",
+      "value": "aa95fb91-f903-4c2f-b657-b29ebb83b363"
+    },
+    {
+      "key": "providerId",
+      "value": "0d17425d-326a-4f36-9c98-c5f9836be2a8"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "providerToken",
+      "value": ""
+    },
+    {
+      "key": "packageId",
+      "value": ""
+    },
+    {
+      "key": "providerServiceId",
+      "value": ""
+    },
+    {
+      "key": "portfolioId",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "Health",
-      "auth": { "type": "noauth" },
+      "auth": {
+        "type": "noauth"
+      },
       "item": [
         {
           "name": "GET /api/health",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/health",
@@ -41,9 +87,16 @@
         {
           "name": "POST /api/auth/register — باحثة",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"mobile\": \"0505555555\",\n  \"password\": \"Secret123\",\n  \"email\": \"lina@example.com\"\n}"
@@ -55,9 +108,16 @@
         {
           "name": "POST /api/auth/register — صانعة جمال",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"mobile\": \"0509876543\",\n  \"password\": \"Secret123\"\n}"
@@ -69,9 +129,16 @@
         {
           "name": "POST /api/auth/otp/send",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\"\n}"
@@ -83,9 +150,16 @@
         {
           "name": "POST /api/auth/otp/verify",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\",\n  \"code\": \"123456\"\n}"
@@ -115,9 +189,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0504444444\",\n  \"password\": \"Secret123\"\n}"
@@ -149,9 +230,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0501111111\",\n  \"password\": \"Secret123\"\n}"
@@ -165,7 +253,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
             "header": [],
@@ -176,9 +270,16 @@
         {
           "name": "POST /api/auth/forgot-password",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0504444444\"\n}"
@@ -190,9 +291,16 @@
         {
           "name": "POST /api/auth/reset-password",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mobile\": \"0504444444\",\n  \"code\": \"123456\",\n  \"newPassword\": \"Secret123\"\n}"
@@ -205,7 +313,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [],
@@ -216,7 +330,9 @@
     },
     {
       "name": "Catalog",
-      "auth": { "type": "noauth" },
+      "auth": {
+        "type": "noauth"
+      },
       "item": [
         {
           "name": "GET /api/catalog/cities",
@@ -236,7 +352,9 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/catalog/cities",
@@ -265,7 +383,9 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/catalog/services",
@@ -275,7 +395,9 @@
         {
           "name": "GET /api/catalog/packages",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/catalog/packages",
@@ -309,16 +431,48 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
               "query": [
-                { "key": "cityId", "value": "{{cityId}}", "description": "مطلوب" },
-                { "key": "page", "value": "1" },
-                { "key": "pageSize", "value": "20", "description": "الحد 50" },
-                { "key": "serviceId", "value": "{{serviceId}}", "disabled": true },
-                { "key": "subServiceId", "value": "{{subServiceId}}", "disabled": true },
-                { "key": "q", "value": "نورة", "disabled": true },
-                { "key": "minRating", "value": "4", "disabled": true }
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}",
+                  "description": "مطلوب"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "الحد 50"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{serviceId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "subServiceId",
+                  "value": "{{subServiceId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "نورة",
+                  "disabled": true
+                },
+                {
+                  "key": "minRating",
+                  "value": "4",
+                  "disabled": true
+                }
               ]
             },
             "description": "cityId إجباري. الرد: { items, total, page, pageSize }. الترتيب ذهبية ثم فضية ثم برونزية. الخدمات فيها nameAr و nameEn."
@@ -331,13 +485,30 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&serviceId={{serviceId}}&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
               "query": [
-                { "key": "cityId", "value": "{{cityId}}" },
-                { "key": "serviceId", "value": "{{serviceId}}" },
-                { "key": "page", "value": "1" },
-                { "key": "pageSize", "value": "20" }
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{serviceId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -349,13 +520,30 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&subServiceId={{subServiceId}}&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
               "query": [
-                { "key": "cityId", "value": "{{cityId}}" },
-                { "key": "subServiceId", "value": "{{subServiceId}}" },
-                { "key": "page", "value": "1" },
-                { "key": "pageSize", "value": "20" }
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "subServiceId",
+                  "value": "{{subServiceId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -367,13 +555,30 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=نورة&page=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
               "query": [
-                { "key": "cityId", "value": "{{cityId}}" },
-                { "key": "q", "value": "نورة" },
-                { "key": "page", "value": "1" },
-                { "key": "pageSize", "value": "20" }
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "q",
+                  "value": "نورة"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
               ]
             },
             "description": "البحث باسم العرض فقط."
@@ -382,16 +587,29 @@
         {
           "name": "GET /api/search — جوال (يفشل)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=0501111111",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ],
               "query": [
-                { "key": "cityId", "value": "{{cityId}}" },
-                { "key": "q", "value": "0501111111" }
+                {
+                  "key": "cityId",
+                  "value": "{{cityId}}"
+                },
+                {
+                  "key": "q",
+                  "value": "0501111111"
+                }
               ]
             },
             "description": "المتوقع 400: البحث برقم الجوال غير مسموح."
@@ -410,8 +628,16 @@
           "name": "POST /api/providers/:id/whatsapp",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/providers/{{providerId}}/whatsapp",
             "description": "يرجع phone و url و disclaimerAr و disclaimerEn."
           }
@@ -421,10 +647,21 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{customerToken}}", "type": "string" }]
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"stars\": 5,\n  \"note\": \"تعامل راقي\"\n}"
@@ -439,7 +676,13 @@
       "name": "Customer",
       "auth": {
         "type": "bearer",
-        "bearer": [{ "key": "token", "value": "{{customerToken}}", "type": "string" }]
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{customerToken}}",
+            "type": "string"
+          }
+        ]
       },
       "item": [
         {
@@ -454,7 +697,12 @@
           "name": "PATCH /api/customer/profile",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"displayName\": \"سارة\",\n  \"cityId\": \"{{cityId}}\"\n}"
@@ -466,7 +714,12 @@
           "name": "POST /api/customer/favorites — صانعة",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
@@ -478,7 +731,12 @@
           "name": "POST /api/customer/favorites — خدمة",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"targetType\": \"SERVICE\",\n  \"targetId\": \"{{serviceId}}\"\n}"
@@ -498,7 +756,12 @@
           "name": "DELETE /api/customer/favorites",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
@@ -518,20 +781,453 @@
       ]
     },
     {
+      "name": "Provider",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{providerToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "GET /api/provider/profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/profile",
+            "description": "ملف صانعة الجمال. نفس الـ API للويب والموبايل."
+          }
+        },
+        {
+          "name": "PATCH /api/provider/profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/profile",
+            "description": "تحديث الاسم والمدينة وواتساب والنبذة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"نورة بيوتي\",\n  \"whatsapp\": \"0501111111\",\n  \"bio\": \"خبيرة مكياج للمناسبات\",\n  \"cityId\": \"{{cityId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /api/provider/avatar",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/avatar",
+            "description": "رفع صورة الحساب. form-data field name: file. JPG أو PNG حتى 5MB. نفس الـ API للويب والموبايل.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/provider/dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/dashboard",
+            "description": "إحصاءات 30 يوم + الباقة + اكتمال الملف."
+          }
+        },
+        {
+          "name": "GET /api/provider/services",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/services",
+            "description": "خدمات الصانعة."
+          }
+        },
+        {
+          "name": "POST /api/provider/services",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/services",
+            "description": "إضافة خدمة. يلتزم بحد الباقة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"subServiceId\": \"{{subServiceId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/provider/services/:id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/services/{{providerServiceId}}",
+            "description": "احفظي المعرّف من GET services."
+          }
+        },
+        {
+          "name": "GET /api/provider/portfolio",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/portfolio",
+            "description": "ألبوم الأعمال."
+          }
+        },
+        {
+          "name": "POST /api/provider/portfolio",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/portfolio",
+            "description": "رفع صورة أو فيديو للعمل. form-data: file + kind (IMAGE أو VIDEO). يُرسل للمراجعة PENDING. نفس الـ API للويب والموبايل.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "kind",
+                  "value": "IMAGE",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/provider/portfolio/:id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/portfolio/{{portfolioId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/provider/reviews",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/reviews",
+            "description": "التقييمات على الملف."
+          }
+        },
+        {
+          "name": "GET /api/provider/views",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/views",
+            "description": "مشاهدات آخر 30 يوم."
+          }
+        },
+        {
+          "name": "GET /api/provider/subscription",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/subscription",
+            "description": "الباقة الحالية + الباقات + الحساب البنكي + الإثباتات."
+          }
+        },
+        {
+          "name": "POST /api/provider/payment-proofs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/payment-proofs",
+            "description": "إثبات سداد بنص التحويل أو storageKey للصورة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"{{packageId}}\",\n  \"transferText\": \"تم التحويل 299 ريال من 0501111111\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /api/provider/payment-proofs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/payment-proofs",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/provider/ticket-types",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/ticket-types",
+            "description": "أنواع تذاكر BM."
+          }
+        },
+        {
+          "name": "GET /api/provider/tickets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/tickets",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /api/provider/tickets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/tickets",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeCode\": \"BM-01\",\n  \"body\": \"أحتاج مساعدة في تحديث الملف\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Content",
-      "auth": { "type": "noauth" },
+      "auth": {
+        "type": "noauth"
+      },
       "item": [
         {
           "name": "GET /api/legal/terms — باحثة",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/legal/terms?audience=CUSTOMER",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "legal", "terms"],
-              "query": [{ "key": "audience", "value": "CUSTOMER" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "terms"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "CUSTOMER"
+                }
+              ]
             },
             "description": "audience إجباري: CUSTOMER | PROVIDER. الرد فيه titleAr/titleEn و bodyAr/bodyEn."
           }
@@ -539,21 +1235,36 @@
         {
           "name": "GET /api/legal/terms — صانعة الجمال",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/legal/terms?audience=PROVIDER",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "legal", "terms"],
-              "query": [{ "key": "audience", "value": "PROVIDER" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "terms"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "PROVIDER"
+                }
+              ]
             }
           }
         },
         {
           "name": "GET /api/legal/terms بدون audience (يفشل)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/legal/terms",
@@ -563,35 +1274,63 @@
         {
           "name": "GET /api/legal/policies — باحثة",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/legal/policies?audience=CUSTOMER",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "legal", "policies"],
-              "query": [{ "key": "audience", "value": "CUSTOMER" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "policies"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "CUSTOMER"
+                }
+              ]
             }
           }
         },
         {
           "name": "GET /api/legal/policies — صانعة الجمال",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/legal/policies?audience=PROVIDER",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "legal", "policies"],
-              "query": [{ "key": "audience", "value": "PROVIDER" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "policies"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "PROVIDER"
+                }
+              ]
             }
           }
         },
         {
           "name": "GET /api/settings/about",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/settings/about",

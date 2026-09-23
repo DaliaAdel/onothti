@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AccountStatus, AccountType, Visibility } from "../common/enums";
+import { publicUploadUrl } from "../common/upload-url";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchProvidersDto } from "./dto/search-providers.dto";
 
@@ -232,6 +233,7 @@ export class DiscoveryService {
         id: item.id,
         storageKey: item.file.storageKey,
         kind: item.file.kind,
+        url: publicUploadUrl(item.file.storageKey),
       })),
       canContact: Boolean(pkg?.allowWhatsApp),
     };

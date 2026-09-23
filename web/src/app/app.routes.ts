@@ -19,6 +19,11 @@ import { ProviderDashboardComponent } from './provider/provider-dashboard.compon
 import { ProviderAccountComponent } from './provider/provider-account.component';
 import { ProviderPackageComponent } from './provider/provider-package.component';
 import { ProviderPaymentComponent } from './provider/provider-payment.component';
+import { ProviderServicesPageComponent } from './provider/provider-services.component';
+import { ProviderPortfolioPageComponent } from './provider/provider-portfolio.component';
+import { ProviderReviewsPageComponent } from './provider/provider-reviews.component';
+import { ProviderViewsPageComponent } from './provider/provider-views.component';
+import { ProviderSupportComponent } from './provider/provider-support.component';
 import { ComingSoonComponent } from './shared/coming-soon.component';
 
 export const routes: Routes = [
@@ -70,58 +75,13 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard('PROVIDER')],
     children: [
       { path: '', component: ProviderDashboardComponent },
-      {
-        path: 'services',
-        component: ComingSoonComponent,
-        data: {
-          title: 'خدماتي',
-          subtitle: 'إدارة الخدمات الظاهرة للباحثات',
-          heading: 'إدارة الخدمات قادمة',
-          message: 'واجهة الخدمات جاهزة بصريًا، وربطها بواجهات المزودة في الخطوة التالية.',
-        },
-      },
-      {
-        path: 'portfolio',
-        component: ComingSoonComponent,
-        data: {
-          title: 'ألبومات أعمالي',
-          subtitle: 'أعمالك المعتمدة والمعلقة',
-          heading: 'الألبومات قادمة',
-          message: 'رفع الأعمال سيُربط بعد تفعيل الوسائط.',
-        },
-      },
-      {
-        path: 'reviews',
-        component: ComingSoonComponent,
-        data: {
-          title: 'تقييماتي',
-          subtitle: 'التقييمات المعتمدة على ملفك',
-          heading: 'التقييمات قادمة',
-          message: 'ستظهر هنا التقييمات المعتمدة بعد تفعيل الملف.',
-        },
-      },
-      {
-        path: 'views',
-        component: ComingSoonComponent,
-        data: {
-          title: 'المشاهدات',
-          subtitle: 'أداء ظهور ملفك',
-          heading: 'إحصاءات المشاهدات قادمة',
-          message: 'سنعرض هنا عدد المشاهدات بعد تفعيل الملف للعامة.',
-        },
-      },
+      { path: 'services', component: ProviderServicesPageComponent },
+      { path: 'portfolio', component: ProviderPortfolioPageComponent },
+      { path: 'reviews', component: ProviderReviewsPageComponent },
+      { path: 'views', component: ProviderViewsPageComponent },
       { path: 'package', component: ProviderPackageComponent },
       { path: 'payment', component: ProviderPaymentComponent },
-      {
-        path: 'support',
-        component: ComingSoonComponent,
-        data: {
-          title: 'الدعم والصيانة',
-          subtitle: 'التذاكر والمساعدة',
-          heading: 'الدعم قادم',
-          message: 'تذاكر الدعم ستكون متاحة في التحديث التالي.',
-        },
-      },
+      { path: 'support', component: ProviderSupportComponent },
       { path: 'account', component: ProviderAccountComponent },
     ],
   },
