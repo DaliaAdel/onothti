@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
+import { mediaUrl } from '../core/media';
 import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
 import type { CatalogCity } from '../core/models';
 import { SessionService } from '../core/session.service';
@@ -78,7 +79,7 @@ export class ProviderAccountComponent implements OnInit {
         this.cityId = profile.city?.id ?? '';
         this.whatsapp = profile.whatsapp ?? '';
         this.bio = profile.bio ?? '';
-        this.previewUrl = profile.avatarUrl || '';
+        this.previewUrl = mediaUrl(profile.avatarUrl) || '';
         this.session.patchUser({ displayName: profile.displayName, city: profile.city });
       },
     });
@@ -97,7 +98,7 @@ export class ProviderAccountComponent implements OnInit {
     this.uploading = true;
     this.api.uploadProviderAvatar(file).subscribe({
       next: (profile) => {
-        this.previewUrl = profile.avatarUrl || this.previewUrl;
+        this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
         this.uploading = false;
         this.toast.show('تم رفع صورة الحساب');
       },
@@ -124,7 +125,7 @@ export class ProviderAccountComponent implements OnInit {
       .subscribe({
         next: (profile) => {
           this.session.patchUser({ displayName: profile.displayName, city: profile.city });
-          this.previewUrl = profile.avatarUrl || this.previewUrl;
+          this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
           this.loading = false;
           this.toast.show('تم حفظ التغييرات وإرسالها للمراجعة');
         },

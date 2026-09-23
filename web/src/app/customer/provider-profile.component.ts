@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { mediaUrl } from '../core/media';
 import { apiMessage } from '../core/phone';
 import type { ProviderProfile } from '../core/models';
 import { ShellService } from '../core/shell.service';
@@ -93,7 +94,7 @@ import { IconComponent } from '../shared/icon.component';
             @for (item of profile.portfolio; track item.id) {
               <div class="portfolio-item">
                 @if (item.url && item.kind !== 'VIDEO') {
-                  <img [src]="item.url" alt="" />
+                  <img [src]="mediaUrl(item.url)" alt="" />
                 } @else {
                   {{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}
                 }
@@ -135,6 +136,7 @@ export class ProviderProfileComponent implements OnInit {
     { id: 'portfolio' as const, label: 'ألبومات الأعمال' },
     { id: 'ratings' as const, label: 'التقييمات' },
   ];
+  readonly mediaUrl = mediaUrl;
 
   get serviceLine(): string {
     return this.profile?.services?.[0]?.nameAr || 'خدمات تجميل';

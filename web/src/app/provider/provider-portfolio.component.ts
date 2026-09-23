@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
+import { mediaUrl } from '../core/media';
 import { apiMessage } from '../core/phone';
 import type { ProviderPortfolioItem } from '../core/models';
 import { ShellService } from '../core/shell.service';
@@ -51,7 +52,7 @@ import { IconComponent } from '../shared/icon.component';
         @for (item of items; track item.id) {
           <article class="portfolio-item">
             @if (item.url && item.kind !== 'VIDEO') {
-              <img [src]="item.url" alt="" />
+              <img [src]="mediaUrl(item.url)" alt="" />
             } @else {
               <div>{{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}</div>
             }
@@ -75,6 +76,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   fileName = '';
   previewUrl = '';
   loading = false;
+  readonly mediaUrl = mediaUrl;
 
   ngOnInit(): void {
     this.shell.set('ألبومات أعمالي', 'أعمالك المعتمدة والمعلقة');

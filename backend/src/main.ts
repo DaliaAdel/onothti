@@ -13,17 +13,24 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(process.cwd(), "uploads"), { prefix: "/uploads/" });
   app.setGlobalPrefix("api");
-  const origins = (process.env.FRONTEND_URL ?? "http://localhost:4200")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const origins = new Set(
+    [
+      "http://localhost:4200",
+      "https://webonothti.dalia-adel.com",
+      "https://onotht.dalia-adel.com",
+      ...(process.env.FRONTEND_URL ?? "").split(","),
+    ]
+      .map((item) => item.trim().replace(/\/$/, ""))
+      .filter(Boolean),
+  );
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
+      const incoming = origin?.replace(/\/$/, "") ?? "";
       const localDev = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-      callback(null, localDev || origins.includes(origin));
+      callback(null, localDev || origins.has(incoming));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
