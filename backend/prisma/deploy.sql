@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE INDEX `user_accountCode_key`(`accountCode`),
     INDEX `user_status_accountType_idx`(`status`, `accountType`),
     INDEX `user_accountCode_idx`(`accountCode`),
-    UNIQUE INDEX `user_mobile_accountType_key`(`mobile`, `accountType`),
+    UNIQUE INDEX `user_mobile_key`(`mobile`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { LocaleService } from '../core/locale.service';
 import { isSaudiMobile, toLocalPhone, toMobile } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
@@ -13,17 +14,17 @@ import { IconComponent } from '../shared/icon.component';
   template: `
     <app-auth-layout>
       <form class="auth-box signup-details" (ngSubmit)="submit()">
-        <a routerLink="/login" class="back-link">→ لديّ حساب بالفعل</a>
-        <span class="eyebrow">إنشاء حساب جديد</span>
-        <h1>ابدئي رحلتكِ مع أنوثتي</h1>
-        <p class="sub">أنشئي بيانات الدخول أولًا، ثم اختاري نوع الحساب وأكّدي رقم الجوال.</p>
+        <a routerLink="/login" class="back-link">{{ locale.t('auth.signup.back') }}</a>
+        <span class="eyebrow">{{ locale.t('auth.signup.eyebrow') }}</span>
+        <h1>{{ locale.t('auth.signup.title') }}</h1>
+        <p class="sub">{{ locale.t('auth.signup.sub') }}</p>
         <div class="form-grid">
           <div class="field full">
-            <label>الاسم</label>
-            <input class="input" name="name" [(ngModel)]="displayName" required autocomplete="name" placeholder="اكتبي الاسم الكامل" />
+            <label>{{ locale.t('auth.name') }}</label>
+            <input class="input" name="name" [(ngModel)]="displayName" required autocomplete="name" [placeholder]="locale.t('auth.namePlaceholder')" />
           </div>
           <div class="field full">
-            <label>رقم الجوال</label>
+            <label>{{ locale.t('auth.mobile') }}</label>
             <div class="phone-field">
               <span>+966</span>
               <input
@@ -40,45 +41,46 @@ import { IconComponent } from '../shared/icon.component';
             </div>
           </div>
           <div class="field full">
-            <label>البريد الإلكتروني <span style="font-weight:400;color:var(--muted)">(اختياري)</span></label>
+            <label>{{ locale.t('auth.email') }} <span style="font-weight:400;color:var(--muted)">{{ locale.t('auth.optional') }}</span></label>
             <input class="input" name="email" type="email" [(ngModel)]="email" autocomplete="email" placeholder="name@example.com" dir="ltr" />
           </div>
           <div class="field">
-            <label>كلمة المرور</label>
-            <input class="input" name="password" type="password" [(ngModel)]="password" required minlength="8" autocomplete="new-password" placeholder="8 أحرف على الأقل" />
+            <label>{{ locale.t('auth.password') }}</label>
+            <input class="input" name="password" type="password" [(ngModel)]="password" required minlength="8" autocomplete="new-password" [placeholder]="locale.t('auth.passwordHint')" />
           </div>
           <div class="field">
-            <label>تأكيد كلمة المرور</label>
-            <input class="input" name="confirm" type="password" [(ngModel)]="confirm" required minlength="8" autocomplete="new-password" placeholder="أعيدي كتابة كلمة المرور" />
+            <label>{{ locale.t('auth.confirm') }}</label>
+            <input class="input" name="confirm" type="password" [(ngModel)]="confirm" required minlength="8" autocomplete="new-password" [placeholder]="locale.t('auth.confirmPlaceholder')" />
           </div>
         </div>
         <label class="terms-row">
           <input type="checkbox" name="terms" [(ngModel)]="terms" />
-          أوافق على
-          <a routerLink="/legal/terms" [queryParams]="{ audience: 'CUSTOMER' }">شروط الاستخدام</a>
-          و
-          <a routerLink="/legal/policies" [queryParams]="{ audience: 'CUSTOMER' }">سياسة الخصوصية</a>.
+          {{ locale.t('auth.terms') }}
+          <a routerLink="/legal/terms" [queryParams]="{ audience: 'CUSTOMER' }">{{ locale.t('auth.termsLink') }}</a>
+          {{ locale.t('auth.and') }}
+          <a routerLink="/legal/policies" [queryParams]="{ audience: 'CUSTOMER' }">{{ locale.t('auth.privacyLink') }}</a>.
         </label>
-        @if (error) {
-          <p class="auth-error">{{ error }}</p>
+        @if (errorKey) {
+          <p class="auth-error">{{ locale.t(errorKey) }}</p>
         }
         <button class="btn primary full" style="margin-top:16px" type="submit">
-          إنشاء الحساب والمتابعة
+          {{ locale.t('auth.signup.submit') }}
           <app-icon name="arrow" />
         </button>
         <div class="auth-note step-row">
-          <b>1</b><span>بيانات الحساب</span>
-          <b>2</b><span>اختيار نوع الحساب</span>
-          <b>3</b><span>تأكيد رقم الجوال</span>
+          <b>1</b><span>{{ locale.t('auth.step.details') }}</span>
+          <b>2</b><span>{{ locale.t('auth.step.type') }}</span>
+          <b>3</b><span>{{ locale.t('auth.step.otp') }}</span>
         </div>
       </form>
     </app-auth-layout>
   `,
 })
-export class SignupComponent {
+export class SignupComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
 
   displayName = '';
   phone = '';
@@ -86,8 +88,21 @@ export class SignupComponent {
   password = '';
   confirm = '';
   terms = false;
-  error = '';
+  errorKey = '';
   readonly toLocalPhone = toLocalPhone;
+
+  ngOnInit(): void {
+    const draft = this.session.getDraft();
+    if (!draft) {
+      return;
+    }
+    this.displayName = draft.displayName;
+    this.phone = toLocalPhone(draft.mobile);
+    this.email = draft.email ?? '';
+    this.password = draft.password;
+    this.confirm = draft.password;
+    this.terms = true;
+  }
 
   onPhonePaste(event: ClipboardEvent): void {
     event.preventDefault();
@@ -97,23 +112,23 @@ export class SignupComponent {
   submit(): void {
     const mobile = toMobile(this.phone);
     if (this.displayName.trim().length < 2) {
-      this.error = 'أدخلي الاسم الكامل';
+      this.errorKey = 'auth.signup.nameShort';
       return;
     }
     if (!isSaudiMobile(mobile)) {
-      this.error = 'أدخلي رقم جوال صحيحًا من 9 أرقام';
+      this.errorKey = 'auth.signup.phoneInvalid';
       return;
     }
     if (this.password.length < 8) {
-      this.error = 'كلمة المرور لا تقل عن 8 أحرف';
+      this.errorKey = 'auth.login.passwordShort';
       return;
     }
     if (this.password !== this.confirm) {
-      this.error = 'كلمة المرور وتأكيدها غير متطابقين';
+      this.errorKey = 'auth.signup.mismatch';
       return;
     }
     if (!this.terms) {
-      this.error = 'وافقي على الشروط للمتابعة';
+      this.errorKey = 'auth.signup.termsRequired';
       return;
     }
     this.session.saveDraft({
@@ -122,7 +137,7 @@ export class SignupComponent {
       email: this.email.trim() || undefined,
       password: this.password,
     });
-    this.toast.show('اختاري نوع الحساب للمتابعة');
+    this.toast.show(this.locale.t('auth.signup.chooseType'));
     void this.router.navigateByUrl('/signup/type');
   }
 }

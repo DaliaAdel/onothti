@@ -469,12 +469,7 @@ async function seedDemoProviders() {
 
   for (const demo of demos) {
     const user = await prisma.user.upsert({
-      where: {
-        UQ_Users_Mobile_AccountType: {
-          mobile: demo.mobile,
-          accountType: "PROVIDER",
-        },
-      },
+      where: { mobile: demo.mobile },
       update: {
         displayName: demo.displayName,
         status: "ACTIVE",
@@ -558,12 +553,7 @@ async function seedDemoCustomer() {
   const passwordHash = await bcrypt.hash("Secret123", 10);
   const riyadh = await prisma.city.findUnique({ where: { code: "RIYADH" } });
   const existing = await prisma.user.findUnique({
-    where: {
-      UQ_Users_Mobile_AccountType: {
-        mobile: "0504444444",
-        accountType: "CUSTOMER",
-      },
-    },
+    where: { mobile: "0504444444" },
   });
   if (existing) {
     await prisma.user.update({

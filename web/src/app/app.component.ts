@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { LocaleService } from './core/locale.service';
 import { ToastComponent } from './shared/toast.component';
 
 @Component({
@@ -10,4 +11,8 @@ import { ToastComponent } from './shared/toast.component';
     <app-toast />
   `,
 })
-export class AppComponent {}
+export class AppComponent {
+  constructor() {
+    inject(LocaleService);
+  }
+}

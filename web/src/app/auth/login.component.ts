@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LocaleService } from '../core/locale.service';
 import { apiMessage, isSaudiMobile, toLocalPhone, toMobile } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
@@ -14,11 +15,11 @@ import { IconComponent } from '../shared/icon.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <span class="eyebrow">تسجيل الدخول الآمن</span>
-        <h1>أهلًا بكِ من جديد</h1>
-        <p class="sub">أدخلي رقم الجوال وكلمة المرور المرتبطة بحسابك، وسيتعرّف النظام على نوع الحساب تلقائيًا.</p>
+        <span class="eyebrow">{{ locale.t('auth.login.eyebrow') }}</span>
+        <h1>{{ locale.t('auth.login.title') }}</h1>
+        <p class="sub">{{ locale.t('auth.login.sub') }}</p>
         <div class="field">
-          <label>رقم الهاتف</label>
+          <label>{{ locale.t('auth.phone') }}</label>
           <div class="phone-field">
             <span>+966</span>
             <input
@@ -29,26 +30,26 @@ import { IconComponent } from '../shared/icon.component';
               inputmode="numeric"
               maxlength="9"
               placeholder="5X XXX XXXX"
-              aria-label="رقم الهاتف"
+              [attr.aria-label]="locale.t('auth.phone')"
             />
           </div>
         </div>
         <div class="field" style="margin-top:12px">
-          <label>كلمة المرور</label>
-          <input class="input" name="password" type="password" [(ngModel)]="password" placeholder="8 أحرف على الأقل" />
+          <label>{{ locale.t('auth.password') }}</label>
+          <input class="input" name="password" type="password" [(ngModel)]="password" [placeholder]="locale.t('auth.passwordHint')" />
         </div>
-        @if (error) {
-          <p class="auth-error">{{ error }}</p>
+        @if (errorText) {
+          <p class="auth-error">{{ errorText }}</p>
         }
         <button class="btn primary full" style="margin-top:16px" type="submit" [disabled]="loading">
-          متابعة
+          {{ locale.t('auth.continue') }}
           <app-icon name="arrow" />
         </button>
-        <div class="divider">أول مرة على أنوثتي؟</div>
-        <a class="btn ghost full" routerLink="/signup">إنشاء حساب جديد</a>
+        <div class="divider">{{ locale.t('auth.login.divider') }}</div>
+        <a class="btn ghost full" routerLink="/signup">{{ locale.t('auth.login.create') }}</a>
         <div class="auth-note">
           <b>✓</b>
-          <span>نوع الحساب محفوظ ضمن بياناتك، لذلك سيتم توجيهكِ تلقائيًا بعد التحقق.</span>
+          <span>{{ locale.t('auth.login.note') }}</span>
         </div>
       </form>
     </app-auth-layout>
@@ -59,12 +60,23 @@ export class LoginComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
 
   phone = '';
   password = '';
   loading = false;
-  error = '';
+  errorKey = '';
+  errorRaw = '';
   readonly toLocalPhone = toLocalPhone;
+
+  get errorText(): string {
+    return this.errorKey ? this.locale.t(this.errorKey) : this.errorRaw;
+  }
+
+  private setError(key: string | null, raw = ''): void {
+    this.errorKey = key ?? '';
+    this.errorRaw = key ? '' : raw;
+  }
 
   onPhonePaste(event: ClipboardEvent): void {
     event.preventDefault();
@@ -74,36 +86,36 @@ export class LoginComponent {
   submit(): void {
     const mobile = toMobile(this.phone);
     if (!isSaudiMobile(mobile)) {
-      this.error = 'أدخلي رقم هاتف صحيحًا من 9 أرقام';
+      this.setError('auth.login.phoneInvalid');
       return;
     }
     if (this.password.length < 8) {
-      this.error = 'كلمة المرور لا تقل عن 8 أحرف';
+      this.setError('auth.login.passwordShort');
       return;
     }
     this.loading = true;
-    this.error = '';
+    this.setError('');
     this.session.setLoginMobile(mobile);
     this.api.login(mobile, this.password).subscribe({
       next: (res) => {
         this.session.setSession(res.accessToken, res.user);
-        this.toast.show('أهلًا بكِ من جديد');
+        this.toast.show(this.locale.t('auth.login.welcome'));
         void this.router.navigateByUrl(this.session.homeFor(res.user.accountType));
       },
       error: (err) => {
         this.loading = false;
-        const message = apiMessage(err, 'تعذر تسجيل الدخول');
+        const message = apiMessage(err, '');
         if (message.includes('رمز التحقق')) {
           this.session.saveDraft({
             displayName: '',
             mobile,
             password: this.password,
           });
-          this.toast.show('أكّدي رقم الجوال أولًا');
+          this.toast.show(this.locale.t('auth.verifyFirst'));
           void this.router.navigate(['/otp'], { queryParams: { purpose: 'REGISTER' } });
           return;
         }
-        this.error = message;
+        this.setError(this.locale.messageKey(message), message || this.locale.t('auth.login.failed'));
       },
       complete: () => {
         this.loading = false;

@@ -13,13 +13,13 @@ import { AppShellComponent, NavItem } from '../shared/app-shell.component';
 })
 export class ProviderLayoutComponent {
   readonly items: (NavItem & { exact?: boolean })[] = [
-    { icon: 'home', label: 'الرئيسية', route: '/p', exact: true },
-    { icon: 'spark', label: 'خدماتي', route: '/p/services' },
-    { icon: 'image', label: 'ألبومات أعمالي', route: '/p/portfolio' },
-    { icon: 'star', label: 'تقييماتي', route: '/p/reviews' },
-    { icon: 'eye', label: 'المشاهدات', route: '/p/views' },
-    { icon: 'diamond', label: 'باقتي', route: '/p/package' },
-    { icon: 'help', label: 'الدعم والصيانة', route: '/p/support' },
-    { icon: 'user', label: 'حسابي', route: '/p/account' },
+    { icon: 'home', label: 'nav.home', route: '/p', exact: true },
+    { icon: 'spark', label: 'nav.myServices', route: '/p/services' },
+    { icon: 'image', label: 'nav.portfolio', route: '/p/portfolio' },
+    { icon: 'star', label: 'nav.reviews', route: '/p/reviews' },
+    { icon: 'eye', label: 'nav.views', route: '/p/views' },
+    { icon: 'diamond', label: 'nav.package', route: '/p/package' },
+    { icon: 'help', label: 'nav.support', route: '/p/support' },
+    { icon: 'user', label: 'nav.account', route: '/p/account' },
   ];
 }

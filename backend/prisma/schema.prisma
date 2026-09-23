@@ -11,7 +11,7 @@ datasource db {
 model User {
   id              String         @id @default(uuid()) @db.Char(36)
   accountType     String         @db.VarChar(20)
-  mobile          String         @db.VarChar(10)
+  mobile          String         @unique @db.VarChar(10)
   email           String?        @db.VarChar(255)
   passwordHash    String         @db.VarChar(255)
   status          String         @default("INACTIVE") @db.VarChar(30)
@@ -47,7 +47,6 @@ model User {
   searchLogs      SearchLog[]
   subscriptions   Subscription[]
 
-  @@unique([mobile, accountType], name: "UQ_Users_Mobile_AccountType")
   @@index([status, accountType])
   @@index([accountCode])
   @@map("user")

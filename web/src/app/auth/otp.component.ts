@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LocaleService } from '../core/locale.service';
 import { apiMessage, displayPhone } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
@@ -13,11 +14,11 @@ import { IconComponent } from '../shared/icon.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (submit)="submit($event)">
-        <a routerLink="/login" class="back-link">→ العودة لتعديل الرقم</a>
-        <span class="eyebrow">خطوة تحقق واحدة</span>
-        <h1>أدخلي رمز التحقق</h1>
+        <a routerLink="/login" class="back-link">{{ locale.t('auth.otp.back') }}</a>
+        <span class="eyebrow">{{ locale.t('auth.otp.eyebrow') }}</span>
+        <h1>{{ locale.t('auth.otp.title') }}</h1>
         <p class="sub">
-          أرسلنا رمزًا إلى
+          {{ locale.t('auth.otp.sent') }}
           <b dir="ltr">{{ phoneLabel }}</b>
         </p>
         <div class="otp">
@@ -25,30 +26,30 @@ import { IconComponent } from '../shared/icon.component';
             <input
               maxlength="1"
               inputmode="numeric"
-              [attr.aria-label]="'الرقم ' + ($index + 1)"
+              [attr.aria-label]="locale.t('auth.otp.digit') + ' ' + ($index + 1)"
               [value]="digit"
               (input)="onInput($event, $index)"
               (keydown)="onKey($event, $index)"
             />
           }
         </div>
-        @if (error) {
-          <p class="auth-error">{{ error }}</p>
+        @if (errorText) {
+          <p class="auth-error">{{ errorText }}</p>
         }
         <button class="btn primary full" style="margin-top:20px" type="submit" [disabled]="loading">
-          تحقق ومتابعة
+          {{ locale.t('auth.otp.submit') }}
           <app-icon name="arrow" />
         </button>
         <button class="btn soft full" style="margin-top:9px" type="button" (click)="resend()" [disabled]="seconds > 0 || loading">
           @if (seconds > 0) {
-            إعادة الإرسال بعد {{ timerLabel }}
+            {{ locale.t('auth.otp.resendIn') }} {{ timerLabel }}
           } @else {
-            إعادة إرسال الرمز
+            {{ locale.t('auth.otp.resend') }}
           }
         </button>
         <div class="auth-note">
           <b>✓</b>
-          <span>الرمز مؤقت لحماية بياناتك. في بيئة التطوير الرمز هو 123456.</span>
+          <span>{{ locale.t('auth.otp.note') }}</span>
         </div>
       </form>
     </app-auth-layout>
@@ -60,13 +61,19 @@ export class OtpComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
   private interval: ReturnType<typeof setInterval> | null = null;
 
   digits = ['', '', '', '', '', ''];
   seconds = 120;
   loading = false;
-  error = '';
+  errorKey = '';
+  errorRaw = '';
   purpose: 'REGISTER' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER' = 'REGISTER';
+
+  get errorText(): string {
+    return this.errorKey ? this.locale.t(this.errorKey) : this.errorRaw;
+  }
 
   get phoneLabel(): string {
     return displayPhone(this.mobile);
@@ -104,7 +111,8 @@ export class OtpComponent implements OnInit, OnDestroy {
     if (this.purpose !== 'REGISTER') {
       this.api.sendOtp(this.mobile, this.purpose).subscribe({
         error: (err) => {
-          this.error = apiMessage(err, 'تعذر إرسال الرمز');
+          const message = apiMessage(err, '');
+          this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.sendFailed'));
         },
       });
     }
@@ -114,6 +122,11 @@ export class OtpComponent implements OnInit, OnDestroy {
     if (this.interval) {
       clearInterval(this.interval);
     }
+  }
+
+  private setError(key: string | null, raw = ''): void {
+    this.errorKey = key ?? '';
+    this.errorRaw = key ? '' : raw;
   }
 
   onInput(event: Event, index: number): void {
@@ -138,11 +151,11 @@ export class OtpComponent implements OnInit, OnDestroy {
   submit(event: Event): void {
     event.preventDefault();
     if (this.code.length < 6) {
-      this.error = 'أكملي رمز التحقق أولًا';
+      this.setError('auth.otp.incomplete');
       return;
     }
     this.loading = true;
-    this.error = '';
+    this.setError('');
     this.api.verifyOtp(this.mobile, this.purpose, this.code).subscribe({
       next: () => {
         const draft = this.session.getDraft();
@@ -151,22 +164,24 @@ export class OtpComponent implements OnInit, OnDestroy {
             next: (res) => {
               this.session.clearDraft();
               this.session.setSession(res.accessToken, res.user);
-              this.toast.show('تم التحقق بنجاح');
+              this.toast.show(this.locale.t('auth.otp.success'));
               void this.router.navigateByUrl(this.session.homeFor(res.user.accountType));
             },
             error: (err) => {
               this.loading = false;
-              this.error = apiMessage(err, 'تم التحقق، لكن تعذر الدخول');
+              const message = apiMessage(err, '');
+              this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.loginFailed'));
             },
           });
           return;
         }
-        this.toast.show('تم التحقق بنجاح، سجّلي دخولكِ');
+        this.toast.show(this.locale.t('auth.otp.loginNext'));
         void this.router.navigateByUrl('/login');
       },
       error: (err) => {
         this.loading = false;
-        this.error = apiMessage(err, 'رمز التحقق غير صحيح');
+        const message = apiMessage(err, '');
+        this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.wrong'));
       },
     });
   }
@@ -176,9 +191,9 @@ export class OtpComponent implements OnInit, OnDestroy {
       next: () => {
         this.seconds = 120;
         this.startTimer();
-        this.toast.show('أُعيد إرسال الرمز');
+        this.toast.show(this.locale.t('auth.otp.resent'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إعادة الإرسال')),
+      error: (err) => this.toast.show(this.locale.t(this.locale.messageKey(apiMessage(err, '')) ?? 'auth.otp.resendFailed')),
     });
   }
 

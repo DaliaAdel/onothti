@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomInt } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
@@ -38,16 +39,11 @@ export class AuthService {
       throw new ForbiddenException("هذا الرقم محظور");
     }
 
-    const existing = await this.prisma.user.findUnique({
-      where: {
-        UQ_Users_Mobile_AccountType: {
-          mobile: dto.mobile,
-          accountType: dto.accountType,
-        },
-      },
+    const existing = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile },
     });
     if (existing) {
-      throw new ConflictException("الحساب موجود بالفعل");
+      throw new ConflictException("رقم الجوال مسجل بالفعل");
     }
 
     const count = await this.prisma.user.count({
@@ -59,30 +55,37 @@ export class AuthService {
         ? AccountStatus.ACTIVE
         : AccountStatus.INACTIVE;
 
-    const user = await this.prisma.user.create({
-      data: {
-        accountType: dto.accountType,
-        mobile: dto.mobile,
-        email: dto.email,
-        passwordHash,
-        status,
-        displayName: dto.displayName,
-        accountCode: this.prisma.nextAccountCode(dto.accountType, count),
-        customerProfile:
-          dto.accountType === AccountType.CUSTOMER ? { create: {} } : undefined,
-        providerProfile:
-          dto.accountType === AccountType.PROVIDER
-            ? { create: { visibility: "HIDDEN" } }
-            : undefined,
-        statusHistory: {
-          create: {
-            fromStatus: AccountStatus.INACTIVE,
-            toStatus: status,
-            reason: "register",
+    const user = await this.prisma.user
+      .create({
+        data: {
+          accountType: dto.accountType,
+          mobile: dto.mobile,
+          email: dto.email,
+          passwordHash,
+          status,
+          displayName: dto.displayName,
+          accountCode: this.prisma.nextAccountCode(dto.accountType, count),
+          customerProfile:
+            dto.accountType === AccountType.CUSTOMER ? { create: {} } : undefined,
+          providerProfile:
+            dto.accountType === AccountType.PROVIDER
+              ? { create: { visibility: "HIDDEN" } }
+              : undefined,
+          statusHistory: {
+            create: {
+              fromStatus: AccountStatus.INACTIVE,
+              toStatus: status,
+              reason: "register",
+            },
           },
         },
-      },
-    });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          throw new ConflictException("رقم الجوال مسجل بالفعل");
+        }
+        throw error;
+      });
 
     const otp = await this.issueOtp(dto.mobile, OtpPurpose.REGISTER);
     return {

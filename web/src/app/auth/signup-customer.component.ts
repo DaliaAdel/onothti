@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LocaleService } from '../core/locale.service';
 import { apiMessage } from '../core/phone';
 import type { CatalogCity } from '../core/models';
 import { SessionService } from '../core/session.service';
@@ -16,44 +17,49 @@ import { IconComponent } from '../shared/icon.component';
     <app-auth-layout
       variant="customer"
       visualIcon="search"
-      visualTitle="كل خدمات الجمال أقرب إليكِ"
-      visualSub="تصفحي الخدمات، قارني ملفات صانعات الجمال وتواصلي مع الأنسب لكِ."
-      [visualFeatures]="['استكشاف الخدمات', 'حفظ المفضلة', 'التقييمات الموثوقة']"
+      [visualTitle]="locale.t('auth.customer.visualTitle')"
+      [visualSub]="locale.t('auth.customer.visualSub')"
+      [visualFeatures]="customerFeatures"
     >
       <form class="auth-box signup-details" (ngSubmit)="submit()">
-        <a routerLink="/signup/type" class="back-link">→ تغيير نوع الحساب</a>
-        <span class="eyebrow">باحثة عن الأنوثة · 3 من 3</span>
-        <h1>عرّفينا بكِ</h1>
-        <p class="sub">بيانات بسيطة تساعدنا في تخصيص الخدمات والنتائج المناسبة لكِ.</p>
+        <a routerLink="/signup/type" class="back-link">{{ locale.t('auth.customer.back') }}</a>
+        <span class="eyebrow">{{ locale.t('auth.customer.eyebrow') }}</span>
+        <h1>{{ locale.t('auth.customer.title') }}</h1>
+        <p class="sub">{{ locale.t('auth.customer.sub') }}</p>
         <div class="form-grid">
           <div class="field">
-            <label>الاسم</label>
-            <input class="input" name="name" [(ngModel)]="displayName" required placeholder="الاسم الكامل" />
+            <label>{{ locale.t('auth.name') }}</label>
+            <input class="input" name="name" [(ngModel)]="displayName" required [placeholder]="locale.t('auth.namePlaceholder')" />
           </div>
           <div class="field">
-            <label>اسم العرض</label>
-            <input class="input" name="display" [(ngModel)]="displayName" required placeholder="الاسم الظاهر داخل المنصة" />
+            <label>{{ locale.t('auth.displayName') }}</label>
+            <input class="input" name="display" [(ngModel)]="displayName" required [placeholder]="locale.t('auth.displayPlaceholder')" />
           </div>
           <div class="field full">
-            <label>المدينة</label>
+            <label>{{ locale.t('auth.city') }}</label>
             <select class="input" name="city" [(ngModel)]="cityId">
-              <option value="">اختاري المدينة</option>
+              <option value="">{{ locale.t('auth.cityPlaceholder') }}</option>
               @for (city of cities; track city.id) {
-                <option [value]="city.id">{{ city.nameAr }}</option>
+                <option [value]="city.id">{{ locale.localizedName(city) }}</option>
               }
             </select>
           </div>
         </div>
-        @if (error) {
-          <p class="auth-error">{{ error }}</p>
+        @if (errorText) {
+          <p class="auth-error">
+            {{ errorText }}
+            @if (phoneTaken) {
+              <a routerLink="/signup">{{ locale.t('auth.reviewPhone') }}</a>
+            }
+          </p>
         }
         <button class="btn primary full" style="margin-top:20px" type="submit" [disabled]="loading">
-          إنشاء حساب الباحثة
+          {{ locale.t('auth.customer.submit') }}
           <app-icon name="arrow" />
         </button>
         <div class="auth-note">
           <b>✓</b>
-          <span>يمكنكِ استخدام الحساب مباشرة بعد تأكيد رقم الجوال، بينما يخضع اسم العرض والصورة للمراجعة.</span>
+          <span>{{ locale.t('auth.customer.note') }}</span>
         </div>
       </form>
     </app-auth-layout>
@@ -64,12 +70,28 @@ export class SignupCustomerComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
 
   displayName = '';
   cityId = '';
   cities: CatalogCity[] = [];
   loading = false;
-  error = '';
+  errorKey = '';
+  errorRaw = '';
+  phoneTaken = false;
+
+  get customerFeatures(): string[] {
+    return [this.locale.t('auth.customer.f1'), this.locale.t('auth.customer.f2'), this.locale.t('auth.customer.f3')];
+  }
+
+  get errorText(): string {
+    return this.errorKey ? this.locale.t(this.errorKey) : this.errorRaw;
+  }
+
+  private setError(key: string | null, raw = ''): void {
+    this.errorKey = key ?? '';
+    this.errorRaw = key ? '' : raw;
+  }
 
   ngOnInit(): void {
     const draft = this.session.getDraft();
@@ -93,7 +115,8 @@ export class SignupCustomerComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.error = '';
+    this.setError('');
+    this.phoneTaken = false;
     this.session.saveDraft({ ...draft, displayName: this.displayName.trim(), cityId: this.cityId || undefined });
     this.api
       .register({
@@ -105,12 +128,14 @@ export class SignupCustomerComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تم إنشاء الحساب، أكّدي رقم الجوال');
+          this.toast.show(this.locale.t('auth.registered'));
           void this.router.navigate(['/otp'], { queryParams: { purpose: 'REGISTER' } });
         },
         error: (err) => {
           this.loading = false;
-          this.error = apiMessage(err, 'تعذر إنشاء الحساب');
+          const message = apiMessage(err, '');
+          this.phoneTaken = message.includes('رقم الجوال مسجل بالفعل');
+          this.setError(this.locale.messageKey(message), message || this.locale.t('auth.registerFailed'));
         },
       });
   }

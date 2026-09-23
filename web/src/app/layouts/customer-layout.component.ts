@@ -13,11 +13,11 @@ import { AppShellComponent, NavItem } from '../shared/app-shell.component';
 })
 export class CustomerLayoutComponent {
   readonly items: (NavItem & { exact?: boolean })[] = [
-    { icon: 'home', label: 'الرئيسية', route: '/c', exact: true },
-    { icon: 'search', label: 'تصفح الخدمات', route: '/c/services' },
-    { icon: 'heart', label: 'المفضلة', route: '/c/favorites' },
-    { icon: 'bag', label: 'طلباتي', route: '/c/requests' },
-    { icon: 'bell', label: 'الإشعارات', route: '/c/notifications' },
-    { icon: 'user', label: 'حسابي', route: '/c/account' },
+    { icon: 'home', label: 'nav.home', route: '/c', exact: true },
+    { icon: 'search', label: 'nav.services', route: '/c/services' },
+    { icon: 'heart', label: 'nav.favorites', route: '/c/favorites' },
+    { icon: 'bag', label: 'nav.requests', route: '/c/requests' },
+    { icon: 'bell', label: 'nav.notifications', route: '/c/notifications' },
+    { icon: 'user', label: 'nav.account', route: '/c/account' },
   ];
 }

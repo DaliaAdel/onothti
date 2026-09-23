@@ -1,4 +1,5 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
+import { LocaleService } from '../core/locale.service';
 import { BrandComponent } from './brand.component';
 import { IconComponent } from './icon.component';
 
@@ -11,7 +12,13 @@ import { IconComponent } from './icon.component';
       [class.researcher-signup]="variant === 'customer'"
       [class.provider-signup]="variant === 'provider'"
     >
-      <div class="auth-brand"><app-brand /></div>
+      <div class="auth-brand">
+        <app-brand />
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" [class.active]="locale.lang() === 'ar'" (click)="locale.set('ar')">عربي</button>
+          <button type="button" [class.active]="locale.lang() === 'en'" (click)="locale.set('en')">EN</button>
+        </div>
+      </div>
       <section class="auth-panel">
         <ng-content />
       </section>
@@ -19,12 +26,12 @@ import { IconComponent } from './icon.component';
         <section class="auth-visual">
           <div class="visual-inner">
             <img class="visual-logo" src="/hero.png" alt="" />
-            <h2>مساحتكِ للجمال بثقة</h2>
-            <p>منصة أنثوية تجمع الباحثات عن خدمات الجمال بصانعات جمال محترفات في تجربة واضحة وآمنة.</p>
+            <h2>{{ locale.t('auth.visual.title') }}</h2>
+            <p>{{ locale.t('auth.visual.text') }}</p>
             <div class="trust-row">
-              <span><i>✓</i> حسابات مراجعة</span>
-              <span><i>✓</i> خصوصية آمنة</span>
-              <span><i>✓</i> تجربة سهلة</span>
+              <span><i>✓</i> {{ locale.t('auth.visual.reviewed') }}</span>
+              <span><i>✓</i> {{ locale.t('auth.visual.private') }}</span>
+              <span><i>✓</i> {{ locale.t('auth.visual.easy') }}</span>
             </div>
           </div>
         </section>
@@ -46,6 +53,7 @@ import { IconComponent } from './icon.component';
   `,
 })
 export class AuthLayoutComponent {
+  readonly locale = inject(LocaleService);
   @Input() variant: 'default' | 'customer' | 'provider' = 'default';
   @Input() visualIcon = 'spark';
   @Input() visualTitle = '';
