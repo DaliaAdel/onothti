@@ -17,14 +17,25 @@ export interface AuthResponse {
   user: SessionUser;
 }
 
+export interface PhoneAuthResponse {
+  verified?: boolean;
+  needsProfile?: boolean;
+  accessToken?: string;
+  user?: SessionUser;
+  otpExpiresIn?: number;
+  isNew?: boolean;
+}
+
 export interface SignupDraft {
   displayName: string;
   mobile: string;
   email?: string;
-  password: string;
+  password?: string;
   accountType?: AccountType;
   cityId?: string;
   bio?: string;
+  otpCode?: string;
+  needsProfile?: boolean;
 }
 
 export interface CatalogCity {

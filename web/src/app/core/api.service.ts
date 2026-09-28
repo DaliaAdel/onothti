@@ -8,6 +8,7 @@ import type {
   CatalogService,
   FavoriteList,
   PaymentProof,
+  PhoneAuthResponse,
   ProviderDashboard,
   ProviderMe,
   ProviderPortfolioItem,
@@ -31,11 +32,30 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`, { mobile, password });
   }
 
+  startPhone(mobile: string) {
+    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/start`, { mobile });
+  }
+
+  verifyPhone(mobile: string, code: string) {
+    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/verify`, { mobile, code });
+  }
+
+  completePhone(body: {
+    mobile: string;
+    code: string;
+    accountType: 'CUSTOMER' | 'PROVIDER';
+    displayName: string;
+    cityId: string;
+    email?: string;
+  }) {
+    return this.http.post<AuthResponse>(`${this.base}/auth/phone/complete`, body);
+  }
+
   register(body: {
     accountType: 'CUSTOMER' | 'PROVIDER';
     displayName: string;
     mobile: string;
-    password: string;
+    password?: string;
     email?: string;
   }) {
     return this.http.post<{ userId: string; accountCode: string; status: string }>(
@@ -44,13 +64,13 @@ export class ApiService {
     );
   }
 
-  sendOtp(mobile: string, purpose: 'REGISTER' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER') {
+  sendOtp(mobile: string, purpose: 'REGISTER' | 'LOGIN' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER') {
     return this.http.post<{ otpExpiresIn: number }>(`${this.base}/auth/otp/send`, { mobile, purpose });
   }
 
   verifyOtp(
     mobile: string,
-    purpose: 'REGISTER' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER',
+    purpose: 'REGISTER' | 'LOGIN' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER',
     code: string,
   ) {
     return this.http.post<{ verified: boolean }>(`${this.base}/auth/otp/verify`, {

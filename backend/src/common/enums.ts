@@ -16,6 +16,7 @@ export const AccountStatus = {
 
 export const OtpPurpose = {
   REGISTER: "REGISTER",
+  LOGIN: "LOGIN",
   LOGIN_NEW_DEVICE: "LOGIN_NEW_DEVICE",
   RESET_PASSWORD: "RESET_PASSWORD",
   FIRST_BROWSER: "FIRST_BROWSER",

@@ -9,7 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { createHash, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { SmsProvider } from "./sms/sms.provider";
 import {
@@ -19,6 +19,9 @@ import {
   VerifyOtpDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  PhoneStartDto,
+  PhoneVerifyDto,
+  PhoneCompleteDto,
 } from "./dto/auth.dto";
 import { AccountStatus, AccountType, OtpPurpose, type OtpPurposeValue } from "../common/enums";
 
@@ -49,7 +52,7 @@ export class AuthService {
     const count = await this.prisma.user.count({
       where: { accountType: dto.accountType },
     });
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(dto.password ?? randomBytes(24).toString("hex"), 12);
     const status =
       dto.accountType === AccountType.CUSTOMER
         ? AccountStatus.ACTIVE
@@ -119,31 +122,107 @@ export class AuthService {
       throw new ForbiddenException("أكدِ رمز التحقق أولًا");
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastActiveAt: new Date() },
-    });
+    return this.issueSession(user);
+  }
 
-    const token = await this.jwt.signAsync({
-      sub: user.id,
-      accountType: user.accountType,
-      status: user.status,
+  async startPhone(dto: PhoneStartDto) {
+    const banned = await this.prisma.bannedPhone.findUnique({
+      where: { mobile: dto.mobile },
     });
+    if (banned) {
+      throw new ForbiddenException("هذا الرقم محظور");
+    }
+    const user = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile },
+    });
+    if (user && (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED)) {
+      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+    }
+    const otp = await this.issueOtp(dto.mobile, OtpPurpose.LOGIN);
+    return { otpExpiresIn: otp.ttlSeconds, isNew: !user };
+  }
 
-    return {
-      accessToken: token,
-      user: {
-        id: user.id,
-        accountType: user.accountType,
-        status: user.status,
-        displayName: user.displayName,
-        accountCode: user.accountCode,
-        visible: this.prisma.isPubliclyVisible({
-          status: user.status,
-          visibility: user.providerProfile?.visibility,
-        }),
-      },
-    };
+  async verifyPhone(dto: PhoneVerifyDto) {
+    await this.verifyOtp({
+      mobile: dto.mobile,
+      purpose: OtpPurpose.LOGIN,
+      code: dto.code,
+    });
+    const user = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile },
+      include: { providerProfile: true },
+    });
+    if (!user) {
+      return { verified: true, needsProfile: true };
+    }
+    if (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED) {
+      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+    }
+    return this.issueSession(user);
+  }
+
+  async completePhone(dto: PhoneCompleteDto) {
+    await this.requireVerifiedLogin(dto.mobile, dto.code);
+    const existing = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile },
+      include: { providerProfile: true },
+    });
+    if (existing) {
+      if (existing.status === AccountStatus.SUSPENDED || existing.status === AccountStatus.DELETED) {
+        throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+      }
+      return this.issueSession(existing);
+    }
+
+    const city = await this.prisma.city.findFirst({
+      where: { id: dto.cityId, isVisible: true },
+    });
+    if (!city) {
+      throw new BadRequestException("المدينة غير متاحة");
+    }
+
+    const count = await this.prisma.user.count({
+      where: { accountType: dto.accountType },
+    });
+    const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
+    const status =
+      dto.accountType === AccountType.CUSTOMER ? AccountStatus.ACTIVE : AccountStatus.INACTIVE;
+
+    const user = await this.prisma.user
+      .create({
+        data: {
+          accountType: dto.accountType,
+          mobile: dto.mobile,
+          email: dto.email,
+          passwordHash,
+          status,
+          displayName: dto.displayName.trim(),
+          accountCode: this.prisma.nextAccountCode(dto.accountType, count),
+          mobileVerifiedAt: new Date(),
+          customerProfile:
+            dto.accountType === AccountType.CUSTOMER ? { create: { cityId: dto.cityId } } : undefined,
+          providerProfile:
+            dto.accountType === AccountType.PROVIDER
+              ? { create: { visibility: "HIDDEN", cityId: dto.cityId } }
+              : undefined,
+          statusHistory: {
+            create: {
+              fromStatus: AccountStatus.INACTIVE,
+              toStatus: status,
+              reason: "phone-otp",
+            },
+          },
+        },
+        include: { providerProfile: true },
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          throw new ConflictException("رقم الجوال مسجل بالفعل");
+        }
+        throw error;
+      });
+
+    return this.issueSession(user);
   }
 
   async sendOtp(dto: SendOtpDto) {
@@ -283,6 +362,56 @@ export class AuthService {
 
     await this.sms.send(mobile, `رمز أنوثتي: ${code}`);
     return { id: otp.id, ttlSeconds };
+  }
+
+  private async requireVerifiedLogin(mobile: string, code: string) {
+    const latest = await this.prisma.otpRequest.findFirst({
+      where: { mobile, purpose: OtpPurpose.LOGIN },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!latest?.verifiedAt) {
+      throw new BadRequestException("أكدِ رمز التحقق أولًا");
+    }
+    if (this.hashOtp(code) !== latest.codeHash) {
+      throw new BadRequestException("رمز التحقق غير صحيح");
+    }
+    const windowMs = 30 * 60 * 1000;
+    if (Date.now() - latest.verifiedAt.getTime() > windowMs) {
+      throw new BadRequestException("انتهت صلاحية الرمز");
+    }
+  }
+
+  private async issueSession(user: {
+    id: string;
+    accountType: string;
+    status: string;
+    displayName: string;
+    accountCode: string;
+    providerProfile?: { visibility?: string | null } | null;
+  }) {
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastActiveAt: new Date(), mobileVerifiedAt: new Date() },
+    });
+    const token = await this.jwt.signAsync({
+      sub: user.id,
+      accountType: user.accountType,
+      status: user.status,
+    });
+    return {
+      accessToken: token,
+      user: {
+        id: user.id,
+        accountType: user.accountType,
+        status: user.status,
+        displayName: user.displayName,
+        accountCode: user.accountCode,
+        visible: this.prisma.isPubliclyVisible({
+          status: user.status,
+          visibility: user.providerProfile?.visibility,
+        }),
+      },
+    };
   }
 
   private hashOtp(code: string) {

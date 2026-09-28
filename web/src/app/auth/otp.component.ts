@@ -69,7 +69,7 @@ export class OtpComponent implements OnInit, OnDestroy {
   loading = false;
   errorKey = '';
   errorRaw = '';
-  purpose: 'REGISTER' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER' = 'REGISTER';
+  purpose: 'REGISTER' | 'LOGIN' | 'LOGIN_NEW_DEVICE' | 'RESET_PASSWORD' | 'FIRST_BROWSER' = 'LOGIN';
 
   get errorText(): string {
     return this.errorKey ? this.locale.t(this.errorKey) : this.errorRaw;
@@ -97,6 +97,7 @@ export class OtpComponent implements OnInit, OnDestroy {
     const purpose = this.route.snapshot.queryParamMap.get('purpose');
     if (
       purpose === 'REGISTER' ||
+      purpose === 'LOGIN' ||
       purpose === 'LOGIN_NEW_DEVICE' ||
       purpose === 'RESET_PASSWORD' ||
       purpose === 'FIRST_BROWSER'
@@ -108,14 +109,6 @@ export class OtpComponent implements OnInit, OnDestroy {
       return;
     }
     this.startTimer();
-    if (this.purpose !== 'REGISTER') {
-      this.api.sendOtp(this.mobile, this.purpose).subscribe({
-        error: (err) => {
-          const message = apiMessage(err, '');
-          this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.sendFailed'));
-        },
-      });
-    }
   }
 
   ngOnDestroy(): void {
@@ -156,27 +149,24 @@ export class OtpComponent implements OnInit, OnDestroy {
     }
     this.loading = true;
     this.setError('');
-    this.api.verifyOtp(this.mobile, this.purpose, this.code).subscribe({
-      next: () => {
-        const draft = this.session.getDraft();
-        if (draft?.password) {
-          this.api.login(this.mobile, draft.password).subscribe({
-            next: (res) => {
-              this.session.clearDraft();
-              this.session.setSession(res.accessToken, res.user);
-              this.toast.show(this.locale.t('auth.otp.success'));
-              void this.router.navigateByUrl(this.session.homeFor(res.user.accountType));
-            },
-            error: (err) => {
-              this.loading = false;
-              const message = apiMessage(err, '');
-              this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.loginFailed'));
-            },
-          });
+    this.api.verifyPhone(this.mobile, this.code).subscribe({
+      next: (res) => {
+        if (res.accessToken && res.user) {
+          this.session.clearDraft();
+          this.session.setSession(res.accessToken, res.user);
+          this.toast.show(this.locale.t('auth.otp.success'));
+          void this.router.navigateByUrl(this.session.homeFor(res.user.accountType));
           return;
         }
-        this.toast.show(this.locale.t('auth.otp.loginNext'));
-        void this.router.navigateByUrl('/login');
+        const draft = this.session.getDraft();
+        this.session.saveDraft({
+          displayName: draft?.displayName ?? '',
+          mobile: this.mobile,
+          otpCode: this.code,
+          needsProfile: true,
+        });
+        this.toast.show(this.locale.t('auth.otp.success'));
+        void this.router.navigateByUrl('/complete');
       },
       error: (err) => {
         this.loading = false;
@@ -187,7 +177,7 @@ export class OtpComponent implements OnInit, OnDestroy {
   }
 
   resend(): void {
-    this.api.sendOtp(this.mobile, this.purpose).subscribe({
+    this.api.startPhone(this.mobile).subscribe({
       next: () => {
         this.seconds = 120;
         this.startTimer();

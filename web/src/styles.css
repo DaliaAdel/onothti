@@ -33,7 +33,7 @@
 .step-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
 .step-row b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--pearl);color:var(--copper-dark);font-size:10px}
 .service-card,.account-type-card{cursor:pointer;border:0;width:100%;text-align:right}
-.account-type-card{font:inherit;color:inherit}
+.account-type-card.active{border-color:var(--rose);box-shadow:var(--shadow)}
 .sidebar a.logout{border:0;background:transparent;cursor:pointer;width:100%}
 .provider .btn{text-decoration:none}
 .rating-stars{display:flex;gap:4px;margin-top:10px}

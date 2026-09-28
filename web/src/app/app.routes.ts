@@ -2,10 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth.guard';
 import { LoginComponent } from './auth/login.component';
 import { OtpComponent } from './auth/otp.component';
-import { SignupComponent } from './auth/signup.component';
-import { AccountTypeComponent } from './auth/account-type.component';
-import { SignupCustomerComponent } from './auth/signup-customer.component';
-import { SignupProviderComponent } from './auth/signup-provider.component';
+import { AccountCompleteComponent } from './auth/account-complete.component';
 import { LegalComponent } from './auth/legal.component';
 import { CustomerLayoutComponent } from './layouts/customer-layout.component';
 import { ProviderLayoutComponent } from './layouts/provider-layout.component';
@@ -29,11 +26,13 @@ import { ComingSoonComponent } from './shared/coming-soon.component';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
-  { path: 'otp', component: OtpComponent },
-  { path: 'signup', component: SignupComponent, canActivate: [guestGuard] },
-  { path: 'signup/type', component: AccountTypeComponent, canActivate: [guestGuard] },
-  { path: 'signup/customer', component: SignupCustomerComponent, canActivate: [guestGuard] },
-  { path: 'signup/provider', component: SignupProviderComponent, canActivate: [guestGuard] },
+  { path: 'otp', component: OtpComponent, canActivate: [guestGuard] },
+  { path: 'complete', component: AccountCompleteComponent, canActivate: [guestGuard] },
+  { path: 'signup', redirectTo: 'login' },
+  { path: 'signup/type', redirectTo: 'complete' },
+  { path: 'signup/customer', redirectTo: 'complete' },
+  { path: 'signup/provider', redirectTo: 'complete' },
+  { path: 'p/login', redirectTo: 'login' },
   { path: 'legal/terms', component: LegalComponent, data: { kind: 'terms' } },
   { path: 'legal/policies', component: LegalComponent, data: { kind: 'policies' } },
   {

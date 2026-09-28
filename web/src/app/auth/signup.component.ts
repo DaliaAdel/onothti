@@ -98,8 +98,8 @@ export class SignupComponent implements OnInit {
     this.displayName = draft.displayName;
     this.phone = toLocalPhone(draft.mobile);
     this.email = draft.email ?? '';
-    this.password = draft.password;
-    this.confirm = draft.password;
+    this.password = draft.password ?? '';
+    this.confirm = draft.password ?? '';
     this.terms = true;
   }
 

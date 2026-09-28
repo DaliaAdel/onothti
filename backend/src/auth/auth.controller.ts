@@ -11,6 +11,9 @@ import {
   VerifyOtpDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  PhoneStartDto,
+  PhoneVerifyDto,
+  PhoneCompleteDto,
 } from "./dto/auth.dto";
 
 @ApiTags("auth")
@@ -26,6 +29,21 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto);
+  }
+
+  @Post("phone/start")
+  startPhone(@Body() dto: PhoneStartDto) {
+    return this.auth.startPhone(dto);
+  }
+
+  @Post("phone/verify")
+  verifyPhone(@Body() dto: PhoneVerifyDto) {
+    return this.auth.verifyPhone(dto);
+  }
+
+  @Post("phone/complete")
+  completePhone(@Body() dto: PhoneCompleteDto) {
+    return this.auth.completePhone(dto);
   }
 
   @Post("otp/send")
