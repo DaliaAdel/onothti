@@ -1,6 +1,9 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -31,17 +34,69 @@ export class UpdateProviderProfileDto {
   @IsOptional()
   @IsString()
   cityId?: string;
-}
-
-export class AddProviderServiceDto {
-  @ApiPropertyOptional({ description: "معرّف الخدمة" })
-  @IsString()
-  serviceId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  subServiceId?: string;
+  email?: string;
+}
+
+export class AddProviderServiceDto {
+  @ApiPropertyOptional({ description: "معرّف الخدمة الرئيسية" })
+  @IsString()
+  serviceId!: string;
+
+  @ApiPropertyOptional({ description: "معرّف الخدمة الفرعية — مطلوب" })
+  @IsString()
+  subServiceId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceFrom?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceTo?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+}
+
+export class PatchProviderServiceDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceFrom?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceTo?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+}
+
+export class UpdateProviderCoverageDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  areaIds!: string[];
 }
 
 export class AddPortfolioDto {

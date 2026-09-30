@@ -1,5 +1,19 @@
-import { IsIn, IsOptional, IsString, Matches, MinLength } from "class-validator";
+import { Transform } from "class-transformer";
+import {
+  Equals,
+  IsBoolean,
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+function emptyToUndefined({ value }: { value: unknown }) {
+  return value === "" || value == null ? undefined : value;
+}
 
 export class RegisterDto {
   @ApiProperty({ enum: ["CUSTOMER", "PROVIDER"] })
@@ -22,9 +36,15 @@ export class RegisterDto {
   password?: string;
 
   @ApiPropertyOptional()
+  @Transform(emptyToUndefined)
   @IsOptional()
-  @IsString()
+  @IsEmail({}, { message: "البريد الإلكتروني غير صحيح" })
   email?: string;
+
+  @ApiProperty({ description: "الموافقة على الشروط" })
+  @IsBoolean()
+  @Equals(true, { message: "يجب الموافقة على الشروط والأحكام" })
+  acceptTerms!: boolean;
 }
 
 export class LoginDto {
@@ -36,6 +56,16 @@ export class LoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @ApiPropertyOptional({ enum: ["WEB", "APP"] })
+  @IsOptional()
+  @IsIn(["WEB", "APP"])
+  channel?: "WEB" | "APP";
 }
 
 export class SendOtpDto {
@@ -52,6 +82,17 @@ export class PhoneStartDto {
   @ApiProperty({ example: "0501234567" })
   @Matches(/^05[0-9]{8}$/, { message: "رقم الجوال لازم يكون سعودي 10 أرقام ويبدأ بـ 05" })
   mobile!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  deviceId?: string;
+
+  @ApiPropertyOptional({ enum: ["WEB", "APP"] })
+  @IsOptional()
+  @IsIn(["WEB", "APP"])
+  channel?: "WEB" | "APP";
 }
 
 export class PhoneVerifyDto extends PhoneStartDto {
@@ -77,9 +118,15 @@ export class PhoneCompleteDto extends PhoneVerifyDto {
   cityId!: string;
 
   @ApiPropertyOptional()
+  @Transform(emptyToUndefined)
   @IsOptional()
-  @IsString()
+  @IsEmail({}, { message: "البريد الإلكتروني غير صحيح" })
   email?: string;
+
+  @ApiProperty({ description: "الموافقة على الشروط" })
+  @IsBoolean()
+  @Equals(true, { message: "يجب الموافقة على الشروط والأحكام" })
+  acceptTerms!: boolean;
 }
 
 export class VerifyOtpDto extends SendOtpDto {
@@ -109,4 +156,11 @@ export class ForgotPasswordDto {
   @ApiProperty({ example: "0501234567" })
   @Matches(/^05[0-9]{8}$/)
   mobile!: string;
+}
+
+export class LogoutDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }

@@ -5,16 +5,26 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType, Visibility } from "../common/enums";
-import { publicUploadUrl } from "../common/upload-url";
+import { AccountType, ProfileChangeField, Visibility } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AddPortfolioDto,
   AddProviderServiceDto,
   CreateProviderTicketDto,
+  PatchProviderServiceDto,
   SubmitPaymentProofDto,
+  UpdateProviderCoverageDto,
   UpdateProviderProfileDto,
 } from "./dto/provider.dto";
+import {
+  assertUniqueDisplayName,
+  assertUniqueEmail,
+  liveCampaign,
+  pendingChangesFor,
+  pendingValue,
+  queueProfileChange,
+} from "../common/account-rules";
+import { publicUploadUrl } from "../common/upload-url";
 
 @Injectable()
 export class ProviderService {
@@ -26,7 +36,7 @@ export class ProviderService {
   }
 
   async uploadAvatar(userId: string, file?: { filename: string; mimetype: string; size: number }) {
-    await this.requireProvider(userId);
+    const user = await this.requireProvider(userId);
     if (!file) {
       throw new BadRequestException("اختاري صورة للحساب");
     }
@@ -36,14 +46,17 @@ export class ProviderService {
         mime: file.mimetype,
         sizeBytes: file.size,
         kind: "IMAGE",
-        status: "APPROVED",
+        status: "PENDING",
         uploadedById: userId,
       },
     });
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { avatarFileId: media.id },
-    });
+    await queueProfileChange(
+      this.prisma,
+      userId,
+      ProfileChangeField.AVATAR,
+      user.avatarFileId,
+      media.id,
+    );
     return this.getProfile(userId);
   }
 
@@ -56,28 +69,61 @@ export class ProviderService {
       if (!city) {
         throw new BadRequestException("المدينة غير متاحة");
       }
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.CITY,
+        user.providerProfile.cityId,
+        dto.cityId,
+      );
     }
-    let whatsapp = user.providerProfile.whatsapp;
+    if (dto.displayName) {
+      const name = await assertUniqueDisplayName(
+        this.prisma,
+        AccountType.PROVIDER,
+        dto.displayName,
+        userId,
+      );
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.DISPLAY_NAME,
+        user.displayName,
+        name,
+      );
+    }
+    if (dto.email !== undefined) {
+      const email = await assertUniqueEmail(this.prisma, dto.email, userId);
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.EMAIL,
+        user.email,
+        email ?? "",
+      );
+    }
+    if (dto.bio !== undefined) {
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.BIO,
+        user.providerProfile.bio,
+        dto.bio,
+      );
+    }
     if (dto.whatsapp !== undefined) {
       const mobile = toSaudiMobile(dto.whatsapp);
       if (!/^05[0-9]{8}$/.test(mobile)) {
         throw new BadRequestException("رقم الجوال لازم يكون سعودي 10 أرقام ويبدأ بـ 05");
       }
-      whatsapp = mobile;
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.WHATSAPP,
+        user.providerProfile.whatsapp,
+        mobile,
+      );
     }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(dto.displayName ? { displayName: dto.displayName } : {}),
-        providerProfile: {
-          update: {
-            ...(dto.bio !== undefined ? { bio: dto.bio } : {}),
-            ...(dto.whatsapp !== undefined ? { whatsapp } : {}),
-            ...(dto.cityId ? { cityId: dto.cityId } : {}),
-          },
-        },
-      },
-    });
     return this.getProfile(userId);
   }
 
@@ -142,18 +188,24 @@ export class ProviderService {
     if (!service) {
       throw new BadRequestException("الخدمة غير متاحة");
     }
-    if (dto.subServiceId) {
-      const sub = await this.prisma.subService.findFirst({
-        where: { id: dto.subServiceId, serviceId: dto.serviceId, isVisible: true },
-      });
-      if (!sub) {
-        throw new BadRequestException("الخدمة الفرعية غير متاحة");
-      }
+    const sub = await this.prisma.subService.findFirst({
+      where: { id: dto.subServiceId, serviceId: dto.serviceId, isVisible: true },
+    });
+    if (!sub) {
+      throw new BadRequestException("اختاري خدمة رئيسية وفرعية");
     }
+    this.assertPrices(dto.priceFrom, dto.priceTo);
     const limits = await this.packageLimits(userId);
     const count = await this.prisma.providerService.count({ where: { providerUserId: userId } });
     if (limits.maxServices != null && count >= limits.maxServices) {
       throw new ForbiddenException("تجاوزتِ حد الخدمات في باقتك");
+    }
+    const makePrimary = dto.isPrimary || count === 0;
+    if (makePrimary) {
+      await this.prisma.providerService.updateMany({
+        where: { providerUserId: userId },
+        data: { isPrimary: false },
+      });
     }
     try {
       return await this.prisma.providerService.create({
@@ -161,6 +213,9 @@ export class ProviderService {
           providerUserId: userId,
           serviceId: dto.serviceId,
           subServiceId: dto.subServiceId,
+          isPrimary: makePrimary,
+          priceFrom: dto.priceFrom,
+          priceTo: dto.priceTo,
           sortOrder: count,
         },
         include: { service: true, subService: true },
@@ -170,15 +225,87 @@ export class ProviderService {
     }
   }
 
-  async removeService(userId: string, id: string) {
+  async patchService(userId: string, id: string, dto: PatchProviderServiceDto) {
     await this.requireProvider(userId);
-    const deleted = await this.prisma.providerService.deleteMany({
+    const row = await this.prisma.providerService.findFirst({
       where: { id, providerUserId: userId },
     });
-    if (deleted.count === 0) {
+    if (!row) {
       throw new NotFoundException("الخدمة غير موجودة");
     }
+    const priceFrom = dto.priceFrom ?? (row.priceFrom == null ? undefined : Number(row.priceFrom));
+    const priceTo = dto.priceTo ?? (row.priceTo == null ? undefined : Number(row.priceTo));
+    this.assertPrices(priceFrom, priceTo);
+    if (dto.isPrimary) {
+      await this.prisma.providerService.updateMany({
+        where: { providerUserId: userId },
+        data: { isPrimary: false },
+      });
+    }
+    return this.prisma.providerService.update({
+      where: { id },
+      data: {
+        ...(dto.priceFrom !== undefined ? { priceFrom: dto.priceFrom } : {}),
+        ...(dto.priceTo !== undefined ? { priceTo: dto.priceTo } : {}),
+        ...(dto.isPrimary ? { isPrimary: true } : {}),
+      },
+      include: { service: true, subService: true },
+    });
+  }
+
+  async removeService(userId: string, id: string) {
+    await this.requireProvider(userId);
+    const row = await this.prisma.providerService.findFirst({
+      where: { id, providerUserId: userId },
+    });
+    if (!row) {
+      throw new NotFoundException("الخدمة غير موجودة");
+    }
+    const count = await this.prisma.providerService.count({ where: { providerUserId: userId } });
+    if (count <= 1) {
+      throw new BadRequestException("لازم تبقى خدمة رئيسية وفرعية واحدة على الأقل");
+    }
+    await this.prisma.providerService.delete({ where: { id } });
+    if (row.isPrimary) {
+      const next = await this.prisma.providerService.findFirst({
+        where: { providerUserId: userId },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (next) {
+        await this.prisma.providerService.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
     return { ok: true };
+  }
+
+  async listCoverage(userId: string) {
+    await this.requireProvider(userId);
+    return this.prisma.providerCoverage.findMany({
+      where: { providerUserId: userId },
+      include: { coverageArea: { include: { city: true } } },
+    });
+  }
+
+  async updateCoverage(userId: string, dto: UpdateProviderCoverageDto) {
+    const user = await this.requireProvider(userId);
+    const areas = await this.prisma.coverageArea.findMany({
+      where: {
+        id: { in: dto.areaIds },
+        isVisible: true,
+        ...(user.providerProfile.cityId ? { cityId: user.providerProfile.cityId } : {}),
+      },
+    });
+    if (areas.length !== dto.areaIds.length) {
+      throw new BadRequestException("مناطق التغطية غير متاحة لهذه المدينة");
+    }
+    await this.prisma.providerCoverage.deleteMany({ where: { providerUserId: userId } });
+    await this.prisma.providerCoverage.createMany({
+      data: dto.areaIds.map((coverageAreaId) => ({ providerUserId: userId, coverageAreaId })),
+    });
+    return this.listCoverage(userId);
   }
 
   async listPortfolio(userId: string) {
@@ -302,6 +429,61 @@ export class ProviderService {
       packages: packages.map(toPackage),
       bankAccounts,
       proofs,
+      campaign: await liveCampaign(this.prisma),
+      extensionMonths: await this.prisma.getSettingInt("package_extension_months", 0),
+    };
+  }
+
+  async joinCampaign(userId: string) {
+    await this.requireProvider(userId);
+    const campaign = await liveCampaign(this.prisma);
+    if (!campaign) {
+      throw new BadRequestException("لا توجد حملة مجانية مفعّلة حالياً");
+    }
+    const free = await this.prisma.package.findFirst({
+      where: { code: "FREE", isActive: true },
+    });
+    if (!free) {
+      throw new BadRequestException("الباقة المجانية غير متاحة");
+    }
+    const active = await this.prisma.subscription.findFirst({
+      where: { providerUserId: userId, status: "ACTIVE", endAt: { gte: new Date() } },
+    });
+    if (active) {
+      throw new BadRequestException("لديكِ اشتراك نشط بالفعل");
+    }
+    const startAt = new Date();
+    const endAt = new Date(startAt);
+    endAt.setDate(endAt.getDate() + campaign.benefitDays);
+    const subscription = await this.prisma.subscription.create({
+      data: {
+        providerUserId: userId,
+        packageId: free.id,
+        campaignId: campaign.id,
+        startAt,
+        endAt,
+        status: "ACTIVE",
+      },
+      include: { package: true, campaign: true },
+    });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: "ACTIVE",
+        providerProfile: { update: { visibility: Visibility.PUBLIC } },
+      },
+    });
+    return {
+      id: subscription.id,
+      status: subscription.status,
+      startAt: subscription.startAt,
+      endAt: subscription.endAt,
+      campaign: {
+        id: campaign.id,
+        nameAr: campaign.nameAr,
+        nameEn: campaign.nameEn,
+      },
+      package: toPackage(subscription.package),
     };
   }
 
@@ -316,18 +498,38 @@ export class ProviderService {
     if (!pkg) {
       throw new BadRequestException("الباقة غير متاحة");
     }
+    const months = await this.extensionMonths(pkg.durationMonths);
+    const campaign = pkg.code === "FREE" ? await liveCampaign(this.prisma) : null;
+    if (pkg.code === "FREE" && !campaign) {
+      throw new BadRequestException("الحملة المجانية غير مفعّلة");
+    }
     const startAt = new Date();
     const endAt = new Date(startAt);
-    endAt.setMonth(endAt.getMonth() + pkg.durationMonths);
+    if (campaign) {
+      endAt.setDate(endAt.getDate() + campaign.benefitDays);
+    } else {
+      endAt.setMonth(endAt.getMonth() + months);
+    }
+    const autoActivate = Boolean(campaign && pkg.code === "FREE");
     const subscription = await this.prisma.subscription.create({
       data: {
         providerUserId: userId,
         packageId: pkg.id,
+        campaignId: campaign?.id,
         startAt,
         endAt,
-        status: "PENDING",
+        status: autoActivate ? "ACTIVE" : "PENDING",
       },
     });
+    if (autoActivate) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: "ACTIVE",
+          providerProfile: { update: { visibility: Visibility.PUBLIC } },
+        },
+      });
+    }
     const kind = dto.kind ?? (dto.transferText ? "TEXT" : "IMAGE");
     const file = await this.prisma.mediaFile.create({
       data: {
@@ -511,33 +713,66 @@ export class ProviderService {
 
   private async toProfile(user: Awaited<ReturnType<ProviderService["requireProvider"]>>) {
     const profile = user.providerProfile;
+    const pending = await pendingChangesFor(this.prisma, user.id);
+    const pendingAvatarId = pendingValue(pending, ProfileChangeField.AVATAR);
+    const avatarId = pendingAvatarId || user.avatarFileId;
     let avatarUrl: string | null = null;
-    if (user.avatarFileId) {
+    if (avatarId) {
       const file = await this.prisma.mediaFile.findUnique({
-        where: { id: user.avatarFileId },
+        where: { id: avatarId },
       });
       avatarUrl = publicUploadUrl(file?.storageKey);
     }
+    const pendingCityId = pendingValue(pending, ProfileChangeField.CITY);
+    const city =
+      pendingCityId && pendingCityId !== profile.cityId
+        ? await this.prisma.city.findUnique({ where: { id: pendingCityId } })
+        : profile.city;
+    const services = await this.prisma.providerService.findMany({
+      where: { providerUserId: user.id },
+      select: { subServiceId: true, isPrimary: true },
+    });
     return {
       id: user.id,
-      displayName: user.displayName,
+      displayName: pendingValue(pending, ProfileChangeField.DISPLAY_NAME) ?? user.displayName,
       mobile: user.mobile,
-      email: user.email,
+      email: pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email,
       accountCode: user.accountCode,
       status: user.status,
       visibility: profile.visibility ?? Visibility.HIDDEN,
-      bio: profile.bio,
-      whatsapp: profile.whatsapp,
+      bio: pendingValue(pending, ProfileChangeField.BIO) ?? profile.bio,
+      whatsapp: pendingValue(pending, ProfileChangeField.WHATSAPP) ?? profile.whatsapp,
       badge: profile.badge,
-      city: profile.city,
+      city,
       avatarUrl,
+      coverage: profile.coverage.map((row) => row.coverageArea),
+      hasRequiredServices: services.some((row) => row.subServiceId) && services.some((row) => row.isPrimary),
+      pendingChanges: pending,
     };
+  }
+
+  private assertPrices(priceFrom?: number, priceTo?: number) {
+    if (priceFrom != null && priceTo != null && priceFrom > priceTo) {
+      throw new BadRequestException("السعر من يجب أن يكون أقل من أو يساوي السعر إلى");
+    }
+  }
+
+  private async extensionMonths(fallback: number) {
+    const months = await this.prisma.getSettingInt("package_extension_months", fallback);
+    return months > 0 ? months : fallback;
   }
 
   private async requireProvider(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { providerProfile: { include: { city: true } } },
+      include: {
+        providerProfile: {
+          include: {
+            city: true,
+            coverage: { include: { coverageArea: true } },
+          },
+        },
+      },
     });
     if (!user || user.accountType !== AccountType.PROVIDER) {
       throw new ForbiddenException("الحساب ليس حساب صانعة جمال");
@@ -545,6 +780,10 @@ export class ProviderService {
     if (!user.providerProfile) {
       throw new NotFoundException("الملف غير موجود");
     }
+    await this.prisma.providerProfile.update({
+      where: { userId },
+      data: { lastAppearedAt: new Date() },
+    });
     return user as typeof user & { providerProfile: NonNullable<typeof user.providerProfile> };
   }
 }

@@ -23,7 +23,21 @@ import {
   PhoneVerifyDto,
   PhoneCompleteDto,
 } from "./dto/auth.dto";
-import { AccountStatus, AccountType, OtpPurpose, type OtpPurposeValue } from "../common/enums";
+import {
+  AccountStatus,
+  AccountType,
+  AuthChannel,
+  OtpPurpose,
+  ProfileChangeField,
+  type AuthChannelValue,
+  type OtpPurposeValue,
+} from "../common/enums";
+import {
+  assertUniqueDisplayName,
+  assertUniqueEmail,
+  pendingChangesFor,
+  pendingValue,
+} from "../common/account-rules";
 
 @Injectable()
 export class AuthService {
@@ -35,19 +49,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const banned = await this.prisma.bannedPhone.findUnique({
-      where: { mobile: dto.mobile },
-    });
-    if (banned) {
-      throw new ForbiddenException("هذا الرقم محظور");
-    }
-
+    await this.assertNotBanned(dto.mobile);
     const existing = await this.prisma.user.findFirst({
       where: { mobile: dto.mobile },
     });
     if (existing) {
       throw new ConflictException("رقم الجوال مسجل بالفعل");
     }
+    const displayName = await assertUniqueDisplayName(this.prisma, dto.accountType, dto.displayName);
+    const email = await assertUniqueEmail(this.prisma, dto.email);
+    const termsVersion = await this.prisma.getSettingInt("terms_version", 1);
 
     const count = await this.prisma.user.count({
       where: { accountType: dto.accountType },
@@ -63,11 +74,13 @@ export class AuthService {
         data: {
           accountType: dto.accountType,
           mobile: dto.mobile,
-          email: dto.email,
+          email,
           passwordHash,
           status,
-          displayName: dto.displayName,
+          displayName,
           accountCode: this.prisma.nextAccountCode(dto.accountType, count),
+          termsAcceptedAt: new Date(),
+          termsVersion,
           customerProfile:
             dto.accountType === AccountType.CUSTOMER ? { create: {} } : undefined,
           providerProfile:
@@ -83,12 +96,7 @@ export class AuthService {
           },
         },
       })
-      .catch((error: unknown) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-          throw new ConflictException("رقم الجوال مسجل بالفعل");
-        }
-        throw error;
-      });
+      .catch((error: unknown) => this.rethrowUnique(error));
 
     const otp = await this.issueOtp(dto.mobile, OtpPurpose.REGISTER);
     return {
@@ -114,32 +122,37 @@ export class AuthService {
       throw new UnauthorizedException("بيانات الدخول غير صحيحة");
     }
     const user = matches[0];
-    if (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED) {
-      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
-    }
+    this.assertLoginAllowed(user.status);
 
     if (!user.mobileVerifiedAt) {
       throw new ForbiddenException("أكدِ رمز التحقق أولًا");
     }
 
-    return this.issueSession(user);
+    return this.issueSession(user, {
+      deviceId: dto.deviceId,
+      channel: dto.channel ?? AuthChannel.WEB,
+    });
   }
 
   async startPhone(dto: PhoneStartDto) {
-    const banned = await this.prisma.bannedPhone.findUnique({
-      where: { mobile: dto.mobile },
-    });
-    if (banned) {
-      throw new ForbiddenException("هذا الرقم محظور");
-    }
+    await this.assertNotBanned(dto.mobile);
     const user = await this.prisma.user.findFirst({
       where: { mobile: dto.mobile },
+      include: { providerProfile: true },
     });
-    if (user && (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED)) {
-      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+    if (user) {
+      this.assertLoginAllowed(user.status);
+    }
+    const channel = (dto.channel ?? AuthChannel.WEB) as AuthChannelValue;
+    if (user && channel === AuthChannel.APP && dto.deviceId) {
+      const trusted = await this.findTrustedDevice(user.id, dto.deviceId, channel);
+      if (trusted) {
+        const session = await this.issueSession(user, { deviceId: dto.deviceId, channel });
+        return { ...session, otpRequired: false, isNew: false };
+      }
     }
     const otp = await this.issueOtp(dto.mobile, OtpPurpose.LOGIN);
-    return { otpExpiresIn: otp.ttlSeconds, isNew: !user };
+    return { otpExpiresIn: otp.ttlSeconds, isNew: !user, otpRequired: true };
   }
 
   async verifyPhone(dto: PhoneVerifyDto) {
@@ -153,12 +166,13 @@ export class AuthService {
       include: { providerProfile: true },
     });
     if (!user) {
-      return { verified: true, needsProfile: true };
+      return { verified: true, needsProfile: true, otpRequired: false };
     }
-    if (user.status === AccountStatus.SUSPENDED || user.status === AccountStatus.DELETED) {
-      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
-    }
-    return this.issueSession(user);
+    this.assertLoginAllowed(user.status);
+    return this.issueSession(user, {
+      deviceId: dto.deviceId,
+      channel: dto.channel ?? AuthChannel.WEB,
+    });
   }
 
   async completePhone(dto: PhoneCompleteDto) {
@@ -168,10 +182,11 @@ export class AuthService {
       include: { providerProfile: true },
     });
     if (existing) {
-      if (existing.status === AccountStatus.SUSPENDED || existing.status === AccountStatus.DELETED) {
-        throw new ForbiddenException("الحساب غير مسموح له بالدخول");
-      }
-      return this.issueSession(existing);
+      this.assertLoginAllowed(existing.status);
+      return this.issueSession(existing, {
+        deviceId: dto.deviceId,
+        channel: dto.channel ?? AuthChannel.WEB,
+      });
     }
 
     const city = await this.prisma.city.findFirst({
@@ -180,6 +195,10 @@ export class AuthService {
     if (!city) {
       throw new BadRequestException("المدينة غير متاحة");
     }
+
+    const displayName = await assertUniqueDisplayName(this.prisma, dto.accountType, dto.displayName);
+    const email = await assertUniqueEmail(this.prisma, dto.email);
+    const termsVersion = await this.prisma.getSettingInt("terms_version", 1);
 
     const count = await this.prisma.user.count({
       where: { accountType: dto.accountType },
@@ -193,12 +212,14 @@ export class AuthService {
         data: {
           accountType: dto.accountType,
           mobile: dto.mobile,
-          email: dto.email,
+          email,
           passwordHash,
           status,
-          displayName: dto.displayName.trim(),
+          displayName,
           accountCode: this.prisma.nextAccountCode(dto.accountType, count),
           mobileVerifiedAt: new Date(),
+          termsAcceptedAt: new Date(),
+          termsVersion,
           customerProfile:
             dto.accountType === AccountType.CUSTOMER ? { create: { cityId: dto.cityId } } : undefined,
           providerProfile:
@@ -215,23 +236,16 @@ export class AuthService {
         },
         include: { providerProfile: true },
       })
-      .catch((error: unknown) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-          throw new ConflictException("رقم الجوال مسجل بالفعل");
-        }
-        throw error;
-      });
+      .catch((error: unknown) => this.rethrowUnique(error));
 
-    return this.issueSession(user);
+    return this.issueSession(user, {
+      deviceId: dto.deviceId,
+      channel: dto.channel ?? AuthChannel.WEB,
+    });
   }
 
   async sendOtp(dto: SendOtpDto) {
-    const banned = await this.prisma.bannedPhone.findUnique({
-      where: { mobile: dto.mobile },
-    });
-    if (banned) {
-      throw new ForbiddenException("هذا الرقم محظور");
-    }
+    await this.assertNotBanned(dto.mobile);
     const otp = await this.issueOtp(dto.mobile, dto.purpose);
     return { otpExpiresIn: otp.ttlSeconds };
   }
@@ -294,19 +308,34 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException("الحساب غير موجود");
     }
+    const pending = await pendingChangesFor(this.prisma, user.id);
+    const displayName =
+      pendingValue(pending, ProfileChangeField.DISPLAY_NAME) ?? user.displayName;
+    const email = pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email;
     return {
       id: user.id,
       accountType: user.accountType,
       status: user.status,
-      displayName: user.displayName,
+      displayName,
       mobile: user.mobile,
-      email: user.email,
+      email,
       accountCode: user.accountCode,
       city: user.customerProfile?.city ?? user.providerProfile?.city ?? null,
+      termsAcceptedAt: user.termsAcceptedAt,
+      termsVersion: user.termsVersion,
+      pendingChanges: pending,
     };
   }
 
-  logout() {
+  async logout(userId: string, deviceId?: string) {
+    await this.prisma.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(deviceId ? { deviceId } : {}),
+      },
+      data: { revokedAt: new Date() },
+    });
     return { ok: true };
   }
 
@@ -339,7 +368,9 @@ export class AuthService {
   }
 
   private async issueOtp(mobile: string, purpose: OtpPurposeValue) {
-    const ttlSeconds = Number(this.config.get("OTP_TTL_SECONDS") ?? 120);
+    const ttlSeconds = Number(
+      this.config.get("OTP_TTL_SECONDS") ?? (await this.prisma.getSetting("otp_ttl_seconds", "120")),
+    );
     const latest = await this.prisma.otpRequest.findFirst({
       where: { mobile, purpose },
       orderBy: { createdAt: "desc" },
@@ -381,17 +412,43 @@ export class AuthService {
     }
   }
 
-  private async issueSession(user: {
-    id: string;
-    accountType: string;
-    status: string;
-    displayName: string;
-    accountCode: string;
-    providerProfile?: { visibility?: string | null } | null;
-  }) {
+  private async issueSession(
+    user: {
+      id: string;
+      accountType: string;
+      status: string;
+      displayName: string;
+      accountCode: string;
+      providerProfile?: { visibility?: string | null } | null;
+    },
+    device?: { deviceId?: string; channel?: string },
+  ) {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastActiveAt: new Date(), mobileVerifiedAt: new Date() },
+    });
+    const channel = device?.channel ?? AuthChannel.WEB;
+    if (device?.deviceId) {
+      await this.prisma.session.updateMany({
+        where: {
+          userId: user.id,
+          deviceId: device.deviceId,
+          channel,
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
+      });
+    }
+    const days = 30;
+    await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        device: device?.deviceId ?? null,
+        deviceId: device?.deviceId ?? null,
+        channel,
+        refreshTokenHash: createHash("sha256").update(randomBytes(32)).digest("hex"),
+        expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+      },
     });
     const token = await this.jwt.signAsync({
       sub: user.id,
@@ -400,6 +457,7 @@ export class AuthService {
     });
     return {
       accessToken: token,
+      otpRequired: false,
       user: {
         id: user.id,
         accountType: user.accountType,
@@ -412,6 +470,44 @@ export class AuthService {
         }),
       },
     };
+  }
+
+  private async findTrustedDevice(userId: string, deviceId: string, channel: string) {
+    return this.prisma.session.findFirst({
+      where: {
+        userId,
+        deviceId,
+        channel,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+  }
+
+  private async assertNotBanned(mobile: string) {
+    const banned = await this.prisma.bannedPhone.findUnique({
+      where: { mobile },
+    });
+    if (banned) {
+      throw new ForbiddenException("هذا الرقم محظور");
+    }
+  }
+
+  private assertLoginAllowed(status: string) {
+    if (
+      status === AccountStatus.SUSPENDED ||
+      status === AccountStatus.DELETED ||
+      status === AccountStatus.CANCELLED
+    ) {
+      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+    }
+  }
+
+  private rethrowUnique(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ConflictException("البيانات مسجلة بالفعل");
+    }
+    throw error;
   }
 
   private hashOtp(code: string) {

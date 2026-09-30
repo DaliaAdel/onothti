@@ -31,4 +31,14 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
       input.status === AccountStatus.ACTIVE && input.visibility === "PUBLIC"
     );
   }
+
+  async getSetting(key: string, fallback = "") {
+    const row = await this.setting.findUnique({ where: { key } });
+    return row?.value ?? fallback;
+  }
+
+  async getSettingInt(key: string, fallback: number) {
+    const parsed = Number(await this.getSetting(key, String(fallback)));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
 }

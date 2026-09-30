@@ -14,6 +14,7 @@ import {
   PhoneStartDto,
   PhoneVerifyDto,
   PhoneCompleteDto,
+  LogoutDto,
 } from "./dto/auth.dto";
 
 @ApiTags("auth")
@@ -76,7 +77,7 @@ export class AuthController {
   @Post("logout")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  logout() {
-    return this.auth.logout();
+  logout(@CurrentUser() user: AuthUser, @Body() dto: LogoutDto) {
+    return this.auth.logout(user.sub, dto.deviceId);
   }
 }

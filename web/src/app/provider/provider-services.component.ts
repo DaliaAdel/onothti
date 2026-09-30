@@ -79,11 +79,15 @@ export class ProviderServicesPageComponent implements OnInit {
       this.toast.show('اختاري الخدمة أولًا');
       return;
     }
+    if (!this.subServiceId) {
+      this.toast.show('اختاري خدمة رئيسية وفرعية');
+      return;
+    }
     this.loading = true;
     this.api
       .addProviderService({
         serviceId: this.serviceId,
-        subServiceId: this.subServiceId || undefined,
+        subServiceId: this.subServiceId,
       })
       .subscribe({
         next: () => {

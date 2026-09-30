@@ -23,21 +23,37 @@ import type {
   TicketType,
 } from './models';
 
+import { SessionService } from './session.service';
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
+  private readonly session = inject(SessionService);
   private readonly base = environment.apiUrl;
+
+  private deviceId() {
+    return this.session.deviceId();
+  }
 
   login(mobile: string, password: string) {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`, { mobile, password });
   }
 
   startPhone(mobile: string) {
-    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/start`, { mobile });
+    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/start`, {
+      mobile,
+      deviceId: this.deviceId(),
+      channel: 'WEB',
+    });
   }
 
   verifyPhone(mobile: string, code: string) {
-    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/verify`, { mobile, code });
+    return this.http.post<PhoneAuthResponse>(`${this.base}/auth/phone/verify`, {
+      mobile,
+      code,
+      deviceId: this.deviceId(),
+      channel: 'WEB',
+    });
   }
 
   completePhone(body: {
@@ -48,7 +64,18 @@ export class ApiService {
     cityId: string;
     email?: string;
   }) {
-    return this.http.post<AuthResponse>(`${this.base}/auth/phone/complete`, body);
+    return this.http.post<AuthResponse>(`${this.base}/auth/phone/complete`, {
+      ...body,
+      acceptTerms: true,
+      deviceId: this.deviceId(),
+      channel: 'WEB',
+    });
+  }
+
+  logout() {
+    return this.http.post<{ ok: boolean }>(`${this.base}/auth/logout`, {
+      deviceId: this.deviceId(),
+    });
   }
 
   register(body: {
@@ -60,7 +87,7 @@ export class ApiService {
   }) {
     return this.http.post<{ userId: string; accountCode: string; status: string }>(
       `${this.base}/auth/register`,
-      body,
+      { ...body, acceptTerms: true },
     );
   }
 

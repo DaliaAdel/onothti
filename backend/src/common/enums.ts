@@ -28,6 +28,27 @@ export const Visibility = {
   PUBLIC: "PUBLIC",
 } as const;
 
+export const AuthChannel = {
+  WEB: "WEB",
+  APP: "APP",
+} as const;
+
+export const ProfileChangeField = {
+  DISPLAY_NAME: "DISPLAY_NAME",
+  BIO: "BIO",
+  CITY: "CITY",
+  WHATSAPP: "WHATSAPP",
+  AVATAR: "AVATAR",
+  EMAIL: "EMAIL",
+} as const;
+
+export const NotificationType = {
+  SYSTEM: "SYSTEM",
+  PROFILE_VIEW: "PROFILE_VIEW",
+  CONTACT: "CONTACT",
+} as const;
+
 export type AccountTypeValue = (typeof AccountType)[keyof typeof AccountType];
 export type AccountStatusValue = (typeof AccountStatus)[keyof typeof AccountStatus];
 export type OtpPurposeValue = (typeof OtpPurpose)[keyof typeof OtpPurpose];
+export type AuthChannelValue = (typeof AuthChannel)[keyof typeof AuthChannel];

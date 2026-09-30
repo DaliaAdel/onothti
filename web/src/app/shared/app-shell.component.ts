@@ -4,6 +4,7 @@ import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { ApiService } from '../core/api.service';
 import { BrandComponent } from './brand.component';
 import { IconComponent } from './icon.component';
 
@@ -68,6 +69,7 @@ export interface NavItem {
 })
 export class AppShellComponent {
   private readonly session = inject(SessionService);
+  private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   readonly toast = inject(ToastService);
   readonly shell = inject(ShellService);
@@ -89,8 +91,11 @@ export class AppShellComponent {
   }
 
   logout(): void {
-    this.session.clear();
-    this.toast.show(this.locale.t('toast.logout'));
-    void this.router.navigateByUrl('/login');
+    const finish = () => {
+      this.session.clear();
+      this.toast.show(this.locale.t('toast.logout'));
+      void this.router.navigateByUrl('/login');
+    };
+    this.api.logout().subscribe({ next: finish, error: finish });
   }
 }

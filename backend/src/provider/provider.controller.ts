@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -22,7 +23,9 @@ import {
   AddPortfolioDto,
   AddProviderServiceDto,
   CreateProviderTicketDto,
+  PatchProviderServiceDto,
   SubmitPaymentProofDto,
+  UpdateProviderCoverageDto,
   UpdateProviderProfileDto,
 } from "./dto/provider.dto";
 
@@ -75,9 +78,28 @@ export class ProviderController {
     return this.provider.addService(user.sub, dto);
   }
 
+  @Patch("services/:id")
+  patchService(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body() dto: PatchProviderServiceDto,
+  ) {
+    return this.provider.patchService(user.sub, id, dto);
+  }
+
   @Delete("services/:id")
   removeService(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.provider.removeService(user.sub, id);
+  }
+
+  @Get("coverage")
+  coverage(@CurrentUser() user: AuthUser) {
+    return this.provider.listCoverage(user.sub);
+  }
+
+  @Put("coverage")
+  updateCoverage(@CurrentUser() user: AuthUser, @Body() dto: UpdateProviderCoverageDto) {
+    return this.provider.updateCoverage(user.sub, dto);
   }
 
   @Get("portfolio")
@@ -124,6 +146,11 @@ export class ProviderController {
   @Get("subscription")
   subscription(@CurrentUser() user: AuthUser) {
     return this.provider.subscription(user.sub);
+  }
+
+  @Post("subscription/campaign")
+  joinCampaign(@CurrentUser() user: AuthUser) {
+    return this.provider.joinCampaign(user.sub);
   }
 
   @Get("payment-proofs")

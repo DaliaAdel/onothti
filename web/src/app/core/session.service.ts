@@ -5,6 +5,7 @@ const TOKEN_KEY = 'onothiti_token';
 const USER_KEY = 'onothiti_user';
 const DRAFT_KEY = 'onothiti_signup';
 const LOGIN_MOBILE_KEY = 'onothiti_login_mobile';
+const DEVICE_KEY = 'onothiti_device';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
@@ -64,6 +65,17 @@ export class SessionService {
 
   getLoginMobile(): string {
     return sessionStorage.getItem(LOGIN_MOBILE_KEY) ?? '';
+  }
+
+  deviceId(): string {
+    const existing = localStorage.getItem(DEVICE_KEY);
+    if (existing) {
+      return existing;
+    }
+    const created =
+      globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(DEVICE_KEY, created);
+    return created;
   }
 
   homeFor(type?: AccountType): string {

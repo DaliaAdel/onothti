@@ -8,6 +8,8 @@ import { DiscoveryModule } from "./discovery/discovery.module";
 import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProviderModule } from "./provider/provider.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { OpsModule } from "./ops/ops.module";
 import { SetupModule } from "./setup/setup.module";
 
 @Module({
@@ -21,6 +23,8 @@ import { SetupModule } from "./setup/setup.module";
     CustomerModule,
     ProviderModule,
     ContentModule,
+    NotificationsModule,
+    OpsModule,
     SetupModule,
   ],
 })

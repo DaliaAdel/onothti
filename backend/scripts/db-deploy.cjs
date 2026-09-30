@@ -5,6 +5,14 @@ const { applySchema } = require("./apply-schema.cjs");
 applySchema()
   .then((result) => {
     console.log(result.message);
+    const align = spawnSync("node", ["scripts/apply-0003.cjs"], {
+      stdio: "inherit",
+      env: process.env,
+      shell: true,
+    });
+    if (align.status) {
+      process.exit(align.status);
+    }
     const seed = spawnSync("npx", ["tsx", "prisma/seed.ts"], {
       stdio: "inherit",
       env: process.env,
