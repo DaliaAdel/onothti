@@ -204,7 +204,13 @@ export interface PaymentProof {
   financeStatus: string;
   createdAt: string;
   file: { kind: string; storageKey: string; mime: string };
-  subscription: { id: string; status: string; package: CatalogPackage };
+  subscription: {
+    id: string;
+    status: string;
+    startAt?: string;
+    endAt?: string;
+    package: CatalogPackage;
+  };
 }
 
 export interface ProviderSubscriptionResponse {

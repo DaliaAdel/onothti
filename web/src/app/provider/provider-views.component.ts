@@ -34,7 +34,7 @@ import { ShellService } from '../core/shell.service';
           <div class="value">{{ last7 }}</div>
         </div>
         <div class="card metric">
-          <span class="muted small">أيام بها زيارات</span>
+          <span class="muted small">معدل التحويل للتواصل</span>
           <div class="value">{{ data?.items?.length ?? 0 }}</div>
         </div>
       </div>

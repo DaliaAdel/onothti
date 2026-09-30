@@ -826,6 +826,8 @@ export class ProviderService {
     subscription: {
       id: string;
       status: string;
+      startAt: Date;
+      endAt: Date;
       package: {
         id: string;
         code: string;
@@ -854,6 +856,8 @@ export class ProviderService {
       subscription: {
         id: proof.subscription.id,
         status: proof.subscription.status,
+        startAt: proof.subscription.startAt,
+        endAt: proof.subscription.endAt,
         package: toPackage(proof.subscription.package),
       },
     };
