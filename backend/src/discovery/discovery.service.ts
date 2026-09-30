@@ -36,6 +36,7 @@ export class DiscoveryService {
           ? {
               services: {
                 some: {
+                  isActive: true,
                   ...(dto.serviceId ? { serviceId: dto.serviceId } : {}),
                   ...(dto.subServiceId ? { subServiceId: dto.subServiceId } : {}),
                 },
@@ -62,6 +63,7 @@ export class DiscoveryService {
             visibility: true,
             city: { select: { id: true, nameAr: true, nameEn: true } },
             services: {
+              where: { isActive: true },
               orderBy: { sortOrder: "asc" },
               select: {
                 isPrimary: true,
@@ -175,12 +177,16 @@ export class DiscoveryService {
           include: {
             city: true,
             services: {
+              where: { isActive: true },
               include: { service: true, subService: true },
               orderBy: { sortOrder: "asc" },
             },
             coverage: { include: { coverageArea: true } },
             portfolio: {
-              where: { approvalStatus: "APPROVED" },
+              where: {
+                approvalStatus: "APPROVED",
+                OR: [{ albumId: null }, { album: { isActive: true } }],
+              },
               include: { file: true },
               orderBy: { sortOrder: "asc" },
             },
@@ -299,7 +305,8 @@ export class DiscoveryService {
       },
     });
 
-    if (!provider?.providerProfile?.whatsapp) {
+    const contact = provider?.mobile || provider?.providerProfile?.whatsapp;
+    if (!contact) {
       throw new NotFoundException("رقم التواصل غير متاح");
     }
 
@@ -307,7 +314,7 @@ export class DiscoveryService {
     if (
       !canContactProvider({
         status: provider.status,
-        visibility: provider.providerProfile.visibility,
+        visibility: provider.providerProfile?.visibility,
         allowWhatsApp: pkg?.allowWhatsApp,
         hasLiveSubscription: Boolean(pkg),
       })
@@ -335,7 +342,7 @@ export class DiscoveryService {
       this.prisma.setting.findUnique({ where: { key: "whatsapp_disclaimer" } }),
       this.prisma.setting.findUnique({ where: { key: "whatsapp_disclaimer_en" } }),
     ]);
-    const phone = this.toWaPhone(provider.providerProfile.whatsapp);
+    const phone = this.toWaPhone(contact);
 
     return {
       phone,

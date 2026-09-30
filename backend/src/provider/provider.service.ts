@@ -10,7 +10,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import {
   AddPortfolioDto,
   AddProviderServiceDto,
+  CreatePortfolioAlbumDto,
   CreateProviderTicketDto,
+  PatchPortfolioAlbumDto,
   PatchProviderServiceDto,
   SubmitPaymentProofDto,
   UpdateProviderCoverageDto,
@@ -111,19 +113,6 @@ export class ProviderService {
         dto.bio,
       );
     }
-    if (dto.whatsapp !== undefined) {
-      const mobile = toSaudiMobile(dto.whatsapp);
-      if (!/^05[0-9]{8}$/.test(mobile)) {
-        throw new BadRequestException("رقم الجوال لازم يكون سعودي 10 أرقام ويبدأ بـ 05");
-      }
-      await queueProfileChange(
-        this.prisma,
-        userId,
-        ProfileChangeField.WHATSAPP,
-        user.providerProfile.whatsapp,
-        mobile,
-      );
-    }
     return this.getProfile(userId);
   }
 
@@ -144,14 +133,14 @@ export class ProviderService {
         where: { providerUserId: userId },
         select: { approvalStatus: true },
       }),
-      this.prisma.providerService.count({ where: { providerUserId: userId } }),
+      this.prisma.providerService.count({ where: { providerUserId: userId, isActive: true } }),
     ]);
     const photosApproved = photos.filter((item) => item.approvalStatus === "APPROVED").length;
     const photosPending = photos.filter((item) => item.approvalStatus === "PENDING").length;
     const completion = [
       Boolean(profile.displayName),
       Boolean(profile.city),
-      Boolean(profile.whatsapp),
+      Boolean(profile.mobile),
       Boolean(profile.bio),
       services > 0,
     ].filter(Boolean).length;
@@ -225,6 +214,28 @@ export class ProviderService {
     }
   }
 
+  async reorderServices(userId: string, ids: string[]) {
+    await this.requireProvider(userId);
+    const uniqueIds = [...new Set(ids)];
+    const existing = await this.prisma.providerService.findMany({
+      where: { providerUserId: userId },
+      select: { id: true },
+    });
+    const existingIds = new Set(existing.map((row) => row.id));
+    if (uniqueIds.length !== existing.length || uniqueIds.some((id) => !existingIds.has(id))) {
+      throw new BadRequestException("ترتيب الخدمات غير صالح");
+    }
+    await this.prisma.$transaction(
+      uniqueIds.map((id, index) =>
+        this.prisma.providerService.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return this.listServices(userId);
+  }
+
   async patchService(userId: string, id: string, dto: PatchProviderServiceDto) {
     await this.requireProvider(userId);
     const row = await this.prisma.providerService.findFirst({
@@ -242,12 +253,27 @@ export class ProviderService {
         data: { isPrimary: false },
       });
     }
+    if (dto.isActive === false && row.isPrimary) {
+      const next = await this.prisma.providerService.findFirst({
+        where: { providerUserId: userId, id: { not: id }, isActive: true },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (next) {
+        await this.prisma.providerService.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
     return this.prisma.providerService.update({
       where: { id },
       data: {
         ...(dto.priceFrom !== undefined ? { priceFrom: dto.priceFrom } : {}),
         ...(dto.priceTo !== undefined ? { priceTo: dto.priceTo } : {}),
         ...(dto.isPrimary ? { isPrimary: true } : {}),
+        ...(dto.isActive !== undefined
+          ? { isActive: dto.isActive, ...(dto.isActive === false ? { isPrimary: false } : {}) }
+          : {}),
       },
       include: { service: true, subService: true },
     });
@@ -308,14 +334,135 @@ export class ProviderService {
     return this.listCoverage(userId);
   }
 
-  async listPortfolio(userId: string) {
+  async listPortfolio(userId: string, albumId?: string) {
     await this.requireProvider(userId);
     const items = await this.prisma.portfolioItem.findMany({
-      where: { providerUserId: userId },
+      where: {
+        providerUserId: userId,
+        ...(albumId === "unfiled" ? { albumId: null } : albumId ? { albumId } : {}),
+      },
       include: { file: true },
       orderBy: { sortOrder: "asc" },
     });
     return items.map((item) => this.toPortfolioItem(item));
+  }
+
+  async listAlbums(userId: string) {
+    await this.requireProvider(userId);
+    const albums = await this.prisma.portfolioAlbum.findMany({
+      where: { providerUserId: userId },
+      include: { items: { include: { file: true }, orderBy: { sortOrder: "asc" } } },
+      orderBy: { sortOrder: "asc" },
+    });
+    const unfiled = await this.prisma.portfolioItem.findMany({
+      where: { providerUserId: userId, albumId: null },
+      include: { file: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    const mapped = albums.map((album, index) => this.toAlbum(album, index));
+    if (unfiled.length) {
+      mapped.push({
+        id: "unfiled",
+        name: "أعمال بدون ألبوم",
+        isActive: true,
+        sortOrder: mapped.length,
+        itemCount: unfiled.length,
+        photoCount: unfiled.filter((item) => item.file.kind === "IMAGE").length,
+        coverUrl: publicUploadUrl(unfiled.find((item) => item.file.kind === "IMAGE")?.file.storageKey),
+        virtual: true,
+      });
+    }
+    return mapped;
+  }
+
+  async createAlbum(userId: string, dto: CreatePortfolioAlbumDto) {
+    await this.requireProvider(userId);
+    const name = dto.name.trim();
+    if (!name) {
+      throw new BadRequestException("اكتبي اسم الألبوم");
+    }
+    const limits = await this.packageLimits(userId);
+    const count = await this.prisma.portfolioAlbum.count({ where: { providerUserId: userId } });
+    if (limits.maxAlbums != null && count >= limits.maxAlbums) {
+      throw new ForbiddenException("تجاوزتِ حد الألبومات في باقتك");
+    }
+    const album = await this.prisma.portfolioAlbum.create({
+      data: {
+        providerUserId: userId,
+        name,
+        sortOrder: count,
+      },
+      include: { items: { include: { file: true } } },
+    });
+    return this.toAlbum(album, count);
+  }
+
+  async getAlbum(userId: string, id: string) {
+    await this.requireProvider(userId);
+    if (id === "unfiled") {
+      const items = await this.listPortfolio(userId, "unfiled");
+      return {
+        album: {
+          id: "unfiled",
+          name: "أعمال بدون ألبوم",
+          isActive: true,
+          sortOrder: 0,
+          itemCount: items.length,
+          photoCount: items.filter((item) => item.kind !== "VIDEO").length,
+          coverUrl: items.find((item) => item.kind !== "VIDEO")?.url ?? null,
+          virtual: true,
+        },
+        items,
+      };
+    }
+    const album = await this.prisma.portfolioAlbum.findFirst({
+      where: { id, providerUserId: userId },
+      include: { items: { include: { file: true }, orderBy: { sortOrder: "asc" } } },
+    });
+    if (!album) {
+      throw new NotFoundException("الألبوم غير موجود");
+    }
+    return {
+      album: this.toAlbum(album),
+      items: album.items.map((item) => this.toPortfolioItem(item)),
+    };
+  }
+
+  async patchAlbum(userId: string, id: string, dto: PatchPortfolioAlbumDto) {
+    await this.requireProvider(userId);
+    if (id === "unfiled") {
+      throw new BadRequestException("لا يمكن تعديل هذا الألبوم");
+    }
+    const album = await this.prisma.portfolioAlbum.findFirst({
+      where: { id, providerUserId: userId },
+    });
+    if (!album) {
+      throw new NotFoundException("الألبوم غير موجود");
+    }
+    const updated = await this.prisma.portfolioAlbum.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      },
+      include: { items: { include: { file: true }, orderBy: { sortOrder: "asc" } } },
+    });
+    return this.toAlbum(updated);
+  }
+
+  async removeAlbum(userId: string, id: string) {
+    await this.requireProvider(userId);
+    if (id === "unfiled") {
+      throw new BadRequestException("لا يمكن حذف هذا الألبوم");
+    }
+    const album = await this.prisma.portfolioAlbum.findFirst({
+      where: { id, providerUserId: userId },
+    });
+    if (!album) {
+      throw new NotFoundException("الألبوم غير موجود");
+    }
+    await this.prisma.portfolioAlbum.delete({ where: { id } });
+    return { ok: true };
   }
 
   async addPortfolio(
@@ -345,6 +492,16 @@ export class ProviderService {
     if (kind === "VIDEO" && limits.maxVideos != null && videos >= limits.maxVideos) {
       throw new ForbiddenException("تجاوزتِ حد الفيديو في باقتك");
     }
+    let albumId: string | undefined;
+    if (dto.albumId && dto.albumId !== "unfiled") {
+      const album = await this.prisma.portfolioAlbum.findFirst({
+        where: { id: dto.albumId, providerUserId: userId },
+      });
+      if (!album) {
+        throw new BadRequestException("الألبوم غير موجود");
+      }
+      albumId = album.id;
+    }
     const count = photos + videos;
     const file = await this.prisma.mediaFile.create({
       data: {
@@ -360,6 +517,7 @@ export class ProviderService {
       data: {
         providerUserId: userId,
         fileId: file.id,
+        albumId,
         sortOrder: count,
         approvalStatus: "PENDING",
       },
@@ -531,14 +689,20 @@ export class ProviderService {
       });
     }
     const kind = dto.kind ?? (dto.transferText ? "TEXT" : "IMAGE");
+    const reference = dto.reference?.trim();
+    const transferText = [dto.transferText?.trim(), reference ? `مرجع التحويل: ${reference}` : ""]
+      .filter(Boolean)
+      .join("\n\n");
+    const storageKey = (
+      dto.storageKey
+        ? [dto.storageKey, reference ? `ref:${reference}` : ""].filter(Boolean).join(" | ")
+        : transferText || `proof/${userId}/${Date.now()}`
+    ).slice(0, 400);
     const file = await this.prisma.mediaFile.create({
       data: {
-        storageKey: (dto.storageKey || dto.transferText || `proof/${userId}/${Date.now()}`).slice(
-          0,
-          400,
-        ),
+        storageKey,
         mime: dto.mime || (kind === "TEXT" ? "text/plain" : "image/jpeg"),
-        sizeBytes: dto.sizeBytes ?? (dto.transferText ? dto.transferText.length : 0),
+        sizeBytes: dto.sizeBytes ?? (transferText ? transferText.length : 0),
         kind,
         status: "PENDING",
         uploadedById: userId,
@@ -548,7 +712,7 @@ export class ProviderService {
       data: {
         subscriptionId: subscription.id,
         fileId: file.id,
-        amount: dto.amount ?? pkg.price,
+        amount: Number(dto.amount || pkg.price),
         opsStatus: "PENDING",
         financeStatus: "PENDING",
       },
@@ -640,6 +804,7 @@ export class ProviderService {
         maxServices: current.package.maxServices,
         maxPhotos: current.package.maxPhotos,
         maxVideos: current.package.maxVideos,
+        maxAlbums: current.package.maxAlbums,
       };
     }
     const free = await this.prisma.package.findUnique({ where: { code: "FREE" } });
@@ -647,6 +812,7 @@ export class ProviderService {
       maxServices: free?.maxServices ?? 5,
       maxPhotos: free?.maxPhotos ?? 5,
       maxVideos: free?.maxVideos ?? 0,
+      maxAlbums: free?.maxAlbums ?? 1,
     };
   }
 
@@ -695,12 +861,14 @@ export class ProviderService {
 
   private toPortfolioItem(item: {
     id: string;
+    albumId?: string | null;
     approvalStatus: string;
     sortOrder: number;
     file: { storageKey: string; mime: string; kind: string; status: string };
   }) {
     return {
       id: item.id,
+      albumId: item.albumId ?? null,
       approvalStatus: item.approvalStatus,
       sortOrder: item.sortOrder,
       storageKey: item.file.storageKey,
@@ -708,6 +876,29 @@ export class ProviderService {
       kind: item.file.kind,
       status: item.file.status,
       url: publicUploadUrl(item.file.storageKey),
+    };
+  }
+
+  private toAlbum(
+    album: {
+      id: string;
+      name: string;
+      isActive: boolean;
+      sortOrder: number;
+      items: { file: { kind: string; storageKey: string } }[];
+    },
+    index?: number,
+  ) {
+    const photos = album.items.filter((item) => item.file.kind === "IMAGE");
+    return {
+      id: album.id,
+      name: album.name,
+      isActive: album.isActive,
+      sortOrder: index ?? album.sortOrder,
+      itemCount: album.items.length,
+      photoCount: photos.length,
+      coverUrl: publicUploadUrl(photos[0]?.file.storageKey),
+      virtual: false,
     };
   }
 
@@ -730,7 +921,7 @@ export class ProviderService {
         : profile.city;
     const services = await this.prisma.providerService.findMany({
       where: { providerUserId: user.id },
-      select: { subServiceId: true, isPrimary: true },
+      select: { subServiceId: true, isPrimary: true, isActive: true },
     });
     return {
       id: user.id,
@@ -741,12 +932,14 @@ export class ProviderService {
       status: user.status,
       visibility: profile.visibility ?? Visibility.HIDDEN,
       bio: pendingValue(pending, ProfileChangeField.BIO) ?? profile.bio,
-      whatsapp: pendingValue(pending, ProfileChangeField.WHATSAPP) ?? profile.whatsapp,
+      whatsapp: user.mobile,
       badge: profile.badge,
       city,
       avatarUrl,
       coverage: profile.coverage.map((row) => row.coverageArea),
-      hasRequiredServices: services.some((row) => row.subServiceId) && services.some((row) => row.isPrimary),
+      hasRequiredServices:
+        services.some((row) => row.subServiceId && row.isActive) &&
+        services.some((row) => row.isPrimary && row.isActive),
       pendingChanges: pending,
     };
   }
@@ -788,26 +981,6 @@ export class ProviderService {
   }
 }
 
-function toSaudiMobile(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 9 && digits.startsWith("5")) {
-    return `0${digits}`;
-  }
-  if (digits.length === 10 && digits.startsWith("05")) {
-    return digits;
-  }
-  if (digits.startsWith("966")) {
-    const local = digits.slice(3);
-    if (local.length === 9 && local.startsWith("5")) {
-      return `0${local}`;
-    }
-    if (local.length === 10 && local.startsWith("05")) {
-      return local;
-    }
-  }
-  return digits;
-}
-
 function daysAgo(days: number) {
   const date = new Date();
   date.setDate(date.getDate() - days);
@@ -826,6 +999,7 @@ function toPackage(pkg: {
   maxServices: number | null;
   maxPhotos: number | null;
   maxVideos: number | null;
+  maxAlbums?: number | null;
   allowWhatsApp?: boolean;
   allowRating?: boolean;
   hasBadge?: boolean;
@@ -841,6 +1015,7 @@ function toPackage(pkg: {
     maxServices: pkg.maxServices,
     maxPhotos: pkg.maxPhotos,
     maxVideos: pkg.maxVideos,
+    maxAlbums: pkg.maxAlbums ?? null,
     allowWhatsApp: pkg.allowWhatsApp ?? true,
     allowRating: pkg.allowRating ?? true,
     hasBadge: pkg.hasBadge ?? false,

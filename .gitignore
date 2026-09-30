@@ -10,3 +10,5 @@ coverage/
 .hostinger-pack/
 *.zip
 backend/uploads/
+*.docx
+Onothiti_Provider_Full_Flow_Web_Frontend/

@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   MinLength,
 } from "class-validator";
@@ -89,6 +90,19 @@ export class PatchProviderServiceDto {
   @IsOptional()
   @IsBoolean()
   isPrimary?: boolean;
+
+  @ApiPropertyOptional({ description: "تفعيل أو إيقاف ظهور الخدمة" })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class ReorderProviderServicesDto {
+  @ApiProperty({ type: [String], description: "معرّفات الخدمات بالترتيب الجديد" })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  ids!: string[];
 }
 
 export class UpdateProviderCoverageDto {
@@ -121,6 +135,33 @@ export class AddPortfolioDto {
   @IsOptional()
   @IsIn(["IMAGE", "VIDEO"])
   kind?: "IMAGE" | "VIDEO";
+
+  @ApiPropertyOptional({ description: "معرّف الألبوم" })
+  @IsOptional()
+  @IsString()
+  albumId?: string;
+}
+
+export class CreatePortfolioAlbumDto {
+  @ApiProperty({ example: "مكياج عرائس" })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name!: string;
+}
+
+export class PatchPortfolioAlbumDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class SubmitPaymentProofDto {
@@ -140,6 +181,12 @@ export class SubmitPaymentProofDto {
   @IsString()
   @MinLength(8)
   transferText?: string;
+
+  @ApiPropertyOptional({ description: "رقم مرجع التحويل" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  reference?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

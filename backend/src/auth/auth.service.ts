@@ -85,7 +85,7 @@ export class AuthService {
             dto.accountType === AccountType.CUSTOMER ? { create: {} } : undefined,
           providerProfile:
             dto.accountType === AccountType.PROVIDER
-              ? { create: { visibility: "HIDDEN" } }
+              ? { create: { visibility: "HIDDEN", whatsapp: dto.mobile } }
               : undefined,
           statusHistory: {
             create: {
@@ -224,7 +224,7 @@ export class AuthService {
             dto.accountType === AccountType.CUSTOMER ? { create: { cityId: dto.cityId } } : undefined,
           providerProfile:
             dto.accountType === AccountType.PROVIDER
-              ? { create: { visibility: "HIDDEN", cityId: dto.cityId } }
+              ? { create: { visibility: "HIDDEN", cityId: dto.cityId, whatsapp: dto.mobile } }
               : undefined,
           statusHistory: {
             create: {

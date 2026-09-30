@@ -1,63 +1,57 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
 import { apiMessage } from '../core/phone';
-import type { AccountType, CatalogCity } from '../core/models';
+import type { CatalogCity, CatalogService } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
-import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-account-complete',
-  imports: [FormsModule, RouterLink, AuthLayoutComponent, IconComponent],
+  imports: [FormsModule, AuthLayoutComponent],
   template: `
     <app-auth-layout>
-      <form class="auth-box signup-details" (ngSubmit)="submit()">
-        <a routerLink="/login" class="back-link">{{ locale.t('auth.complete.back') }}</a>
-        <span class="eyebrow">{{ locale.t('auth.complete.eyebrow') }}</span>
-        <h1>{{ locale.t('auth.complete.title') }}</h1>
-        <p class="sub">{{ locale.t('auth.complete.sub') }}</p>
-        <div class="account-type-grid" style="margin-bottom:18px">
-          <button class="account-type-card" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="accountType = 'CUSTOMER'">
-            <span class="type-icon"><app-icon name="search" /></span>
-            <div>
-              <h3>{{ locale.t('role.customer') }}</h3>
-              <p>{{ locale.t('auth.type.customerText') }}</p>
-            </div>
-          </button>
-          <button class="account-type-card" type="button" [class.active]="accountType === 'PROVIDER'" (click)="accountType = 'PROVIDER'">
-            <span class="type-icon"><app-icon name="spark" /></span>
-            <div>
-              <h3>{{ locale.t('role.provider') }}</h3>
-              <p>{{ locale.t('auth.type.providerText') }}</p>
-            </div>
-          </button>
-        </div>
-        <div class="form-grid">
-          <div class="field full">
-            <label>{{ locale.t('auth.name') }} *</label>
-            <input class="input" name="name" [(ngModel)]="displayName" required [placeholder]="locale.t('auth.namePlaceholder')" />
+      <form class="auth-box signup-box" (ngSubmit)="submit()">
+        <a class="auth-back" routerLink="/login">← رجوع</a>
+        <span class="auth-kicker">الخبيرة</span>
+        <h2>إكمال الملف الشخصي</h2>
+        <p class="muted">الاسم والمدينة مطلوبان، ويمكنكِ استكمال باقي البيانات لاحقًا.</p>
+        <div class="auth-grid">
+          <div class="field">
+            <label>الاسم *</label>
+            <input name="name" [(ngModel)]="displayName" placeholder="اسم العرض" />
           </div>
-          <div class="field full">
-            <label>{{ locale.t('auth.city') }} *</label>
-            <select class="input" name="city" [(ngModel)]="cityId">
-              <option value="">{{ locale.t('auth.cityPlaceholder') }}</option>
+          <div class="field">
+            <label>المدينة *</label>
+            <select name="city" [(ngModel)]="cityId">
+              <option value="">اختاري المدينة</option>
               @for (city of cities; track city.id) {
                 <option [value]="city.id">{{ locale.localizedName(city) }}</option>
               }
             </select>
           </div>
+          <div class="field">
+            <label>البريد الإلكتروني (اختياري)</label>
+            <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" />
+          </div>
+        </div>
+        <h3>الخدمات التي تقدمينها</h3>
+        <div class="chips disabled-services">
+          @for (service of previewServices; track service.id) {
+            <button class="chip" type="button" disabled>{{ locale.localizedName(service) }}</button>
+          }
+        </div>
+        <div class="subscription-note">
+          <b>الخدمات متاحة بعد الاشتراك</b>
+          <span>بعد الدخول اختاري باقة، وبعد اعتماد الدفع يمكنكِ إضافة خدماتك وألبومات أعمالك.</span>
         </div>
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary full" style="margin-top:20px" type="submit" [disabled]="loading">
-          {{ locale.t('auth.complete.submit') }}
-          <app-icon name="arrow" />
-        </button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ والدخول للرئيسية</button>
       </form>
     </app-auth-layout>
   `,
@@ -71,8 +65,9 @@ export class AccountCompleteComponent implements OnInit {
 
   displayName = '';
   cityId = '';
-  accountType: AccountType = 'CUSTOMER';
+  email = '';
   cities: CatalogCity[] = [];
+  previewServices: CatalogService[] = [];
   loading = false;
   errorKey = '';
   errorRaw = '';
@@ -89,8 +84,9 @@ export class AccountCompleteComponent implements OnInit {
     }
     this.displayName = draft.displayName || '';
     this.cityId = draft.cityId || '';
-    this.accountType = draft.accountType ?? 'CUSTOMER';
+    this.email = draft.email || '';
     this.api.cities().subscribe({ next: (cities) => (this.cities = cities) });
+    this.api.services().subscribe({ next: (services) => (this.previewServices = services.slice(0, 8)) });
   }
 
   submit(): void {
@@ -114,9 +110,10 @@ export class AccountCompleteComponent implements OnInit {
       .completePhone({
         mobile: draft.mobile,
         code: draft.otpCode,
-        accountType: this.accountType,
+        accountType: 'PROVIDER',
         displayName: this.displayName.trim(),
         cityId: this.cityId,
+        email: this.email.trim() || undefined,
       })
       .subscribe({
         next: (res) => {

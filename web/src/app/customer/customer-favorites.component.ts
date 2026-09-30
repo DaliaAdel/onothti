@@ -14,7 +14,7 @@ import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
     } @else if (favorites.items().length === 0) {
       <article class="card coming-card">
         <h2>لا توجد عناصر في المفضلة</h2>
-        <p>اضغطي القلب على ملف صانعة الجمال أو بطاقة الخدمة لحفظها هنا.</p>
+        <p>اضغطي القلب على ملف الخبيرة أو بطاقة الخدمة لحفظها هنا.</p>
         <a class="btn primary" routerLink="/c/services">تصفح الخدمات</a>
       </article>
     } @else {
@@ -24,7 +24,7 @@ import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
             <div class="provider-photo">{{ label(row).slice(0, 1) }}</div>
             <div>
               <h3>{{ label(row) }}</h3>
-              <p>{{ row.targetType === 'PROVIDER' ? 'صانعة جمال' : 'خدمة' }}</p>
+              <p>{{ row.targetType === 'PROVIDER' ? 'خبيرة' : 'خدمة' }}</p>
             </div>
             <div class="provider-actions">
               <app-favorite-btn [targetType]="row.targetType" [targetId]="row.targetId" />
@@ -45,7 +45,7 @@ export class CustomerFavoritesComponent implements OnInit {
   private readonly shell = inject(ShellService);
 
   ngOnInit(): void {
-    this.shell.set('المفضلة', 'صانعات الجمال والخدمات التي حفظتِها');
+    this.shell.set('المفضلة', 'الخبيرات والخدمات التي حفظتِها');
     this.favorites.reload();
   }
 

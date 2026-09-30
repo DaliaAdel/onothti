@@ -7,7 +7,7 @@ import { AppShellComponent, NavItem } from '../shared/app-shell.component';
   selector: 'app-customer-layout',
   imports: [AppShellComponent, RouterOutlet],
   template: `
-    <app-shell [items]="items" home="/c">
+    <app-shell [items]="items" home="/c" profileRoute="/c/account" notifyRoute="/c/notifications">
       <router-outlet />
     </app-shell>
   `,

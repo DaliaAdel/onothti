@@ -9,8 +9,10 @@ import type {
   FavoriteList,
   PaymentProof,
   PhoneAuthResponse,
+  AppNotification,
   ProviderDashboard,
   ProviderMe,
+  ProviderAlbum,
   ProviderPortfolioItem,
   ProviderProfile,
   ProviderReviews,
@@ -194,18 +196,50 @@ export class ApiService {
     return this.http.post<ProviderServiceRow>(`${this.base}/provider/services`, body);
   }
 
+  reorderProviderServices(ids: string[]) {
+    return this.http.put<ProviderServiceRow[]>(`${this.base}/provider/services/order`, { ids });
+  }
+
+  patchProviderService(id: string, body: { isActive?: boolean; isPrimary?: boolean }) {
+    return this.http.patch<ProviderServiceRow>(`${this.base}/provider/services/${id}`, body);
+  }
+
   removeProviderService(id: string) {
     return this.http.delete<{ ok: boolean }>(`${this.base}/provider/services/${id}`);
   }
 
-  providerPortfolio() {
-    return this.http.get<ProviderPortfolioItem[]>(`${this.base}/provider/portfolio`);
+  providerPortfolio(albumId?: string) {
+    const params = albumId ? `?albumId=${encodeURIComponent(albumId)}` : '';
+    return this.http.get<ProviderPortfolioItem[]>(`${this.base}/provider/portfolio${params}`);
   }
 
-  addProviderPortfolio(file: File, kind: 'IMAGE' | 'VIDEO') {
+  providerAlbums() {
+    return this.http.get<ProviderAlbum[]>(`${this.base}/provider/albums`);
+  }
+
+  createProviderAlbum(name: string) {
+    return this.http.post<ProviderAlbum>(`${this.base}/provider/albums`, { name });
+  }
+
+  providerAlbum(id: string) {
+    return this.http.get<{ album: ProviderAlbum; items: ProviderPortfolioItem[] }>(`${this.base}/provider/albums/${id}`);
+  }
+
+  patchProviderAlbum(id: string, body: { name?: string; isActive?: boolean }) {
+    return this.http.patch<ProviderAlbum>(`${this.base}/provider/albums/${id}`, body);
+  }
+
+  removeProviderAlbum(id: string) {
+    return this.http.delete<{ ok: boolean }>(`${this.base}/provider/albums/${id}`);
+  }
+
+  addProviderPortfolio(file: File, kind: 'IMAGE' | 'VIDEO', albumId?: string) {
     const data = new FormData();
     data.append('file', file);
     data.append('kind', kind);
+    if (albumId && albumId !== 'unfiled') {
+      data.append('albumId', albumId);
+    }
     return this.http.post<ProviderPortfolioItem>(`${this.base}/provider/portfolio`, data);
   }
 
@@ -229,6 +263,7 @@ export class ApiService {
     packageId: string;
     amount?: number;
     transferText?: string;
+    reference?: string;
     storageKey?: string;
     mime?: string;
     kind?: 'IMAGE' | 'PDF' | 'TEXT';
@@ -247,6 +282,18 @@ export class ApiService {
 
   createProviderTicket(body: { typeCode: string; body: string }) {
     return this.http.post<ProviderTicket>(`${this.base}/provider/tickets`, body);
+  }
+
+  notifications() {
+    return this.http.get<AppNotification[]>(`${this.base}/notifications`);
+  }
+
+  readNotification(id: string) {
+    return this.http.patch<{ ok: boolean }>(`${this.base}/notifications/${id}/read`, {});
+  }
+
+  readAllNotifications() {
+    return this.http.post<{ ok: boolean }>(`${this.base}/notifications/read-all`, {});
   }
 
   terms(audience: 'CUSTOMER' | 'PROVIDER') {

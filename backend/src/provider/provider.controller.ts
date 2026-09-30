@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -22,8 +23,11 @@ import { portfolioUpload } from "./portfolio-upload";
 import {
   AddPortfolioDto,
   AddProviderServiceDto,
+  CreatePortfolioAlbumDto,
   CreateProviderTicketDto,
+  PatchPortfolioAlbumDto,
   PatchProviderServiceDto,
+  ReorderProviderServicesDto,
   SubmitPaymentProofDto,
   UpdateProviderCoverageDto,
   UpdateProviderProfileDto,
@@ -78,6 +82,11 @@ export class ProviderController {
     return this.provider.addService(user.sub, dto);
   }
 
+  @Put("services/order")
+  reorderServices(@CurrentUser() user: AuthUser, @Body() dto: ReorderProviderServicesDto) {
+    return this.provider.reorderServices(user.sub, dto.ids);
+  }
+
   @Patch("services/:id")
   patchService(
     @CurrentUser() user: AuthUser,
@@ -103,8 +112,37 @@ export class ProviderController {
   }
 
   @Get("portfolio")
-  portfolio(@CurrentUser() user: AuthUser) {
-    return this.provider.listPortfolio(user.sub);
+  portfolio(@CurrentUser() user: AuthUser, @Query("albumId") albumId?: string) {
+    return this.provider.listPortfolio(user.sub, albumId);
+  }
+
+  @Get("albums")
+  albums(@CurrentUser() user: AuthUser) {
+    return this.provider.listAlbums(user.sub);
+  }
+
+  @Post("albums")
+  createAlbum(@CurrentUser() user: AuthUser, @Body() dto: CreatePortfolioAlbumDto) {
+    return this.provider.createAlbum(user.sub, dto);
+  }
+
+  @Get("albums/:id")
+  album(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.provider.getAlbum(user.sub, id);
+  }
+
+  @Patch("albums/:id")
+  patchAlbum(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body() dto: PatchPortfolioAlbumDto,
+  ) {
+    return this.provider.patchAlbum(user.sub, id, dto);
+  }
+
+  @Delete("albums/:id")
+  removeAlbum(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.provider.removeAlbum(user.sub, id);
   }
 
   @Post("portfolio")

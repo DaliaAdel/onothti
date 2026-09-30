@@ -143,7 +143,7 @@ export class ProviderProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('ملف صانعة الجمال', 'تفاصيل موثقة تساعدكِ على الاختيار بثقة');
+    this.shell.set('ملف الخبيرة', 'تفاصيل موثقة تساعدكِ على الاختيار بثقة');
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       this.loading = false;
@@ -153,7 +153,7 @@ export class ProviderProfileComponent implements OnInit {
     this.api.provider(id).subscribe({
       next: (profile) => {
         this.profile = profile;
-        this.shell.set(profile.displayName, profile.city?.nameAr || 'ملف صانعة الجمال');
+        this.shell.set(profile.displayName, profile.city?.nameAr || 'ملف الخبيرة');
         this.loading = false;
       },
       error: (err) => {

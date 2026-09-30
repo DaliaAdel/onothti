@@ -1,8 +1,10 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth.guard';
 import { LoginComponent } from './auth/login.component';
+import { LoginPhoneComponent } from './auth/login-phone.component';
 import { OtpComponent } from './auth/otp.component';
 import { AccountCompleteComponent } from './auth/account-complete.component';
+import { AccountTypeComponent } from './auth/account-type.component';
 import { LegalComponent } from './auth/legal.component';
 import { CustomerLayoutComponent } from './layouts/customer-layout.component';
 import { ProviderLayoutComponent } from './layouts/provider-layout.component';
@@ -21,16 +23,20 @@ import { ProviderPortfolioPageComponent } from './provider/provider-portfolio.co
 import { ProviderReviewsPageComponent } from './provider/provider-reviews.component';
 import { ProviderViewsPageComponent } from './provider/provider-views.component';
 import { ProviderSupportComponent } from './provider/provider-support.component';
+import { ProviderNotificationsComponent } from './provider/provider-notifications.component';
+import { ProviderPaymentStatusComponent } from './provider/provider-payment-status.component';
 import { ComingSoonComponent } from './shared/coming-soon.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
+  { path: 'login/phone', component: LoginPhoneComponent, canActivate: [guestGuard] },
   { path: 'otp', component: OtpComponent, canActivate: [guestGuard] },
   { path: 'complete', component: AccountCompleteComponent, canActivate: [guestGuard] },
-  { path: 'signup', redirectTo: 'login' },
-  { path: 'signup/type', redirectTo: 'complete' },
-  { path: 'signup/customer', redirectTo: 'complete' },
+  { path: 'signup', component: AccountTypeComponent, canActivate: [guestGuard] },
+  { path: 'signup/phone', component: LoginPhoneComponent, canActivate: [guestGuard] },
+  { path: 'signup/type', redirectTo: 'signup' },
+  { path: 'signup/customer', redirectTo: 'signup' },
   { path: 'signup/provider', redirectTo: 'complete' },
   { path: 'p/login', redirectTo: 'login' },
   { path: 'legal/terms', component: LegalComponent, data: { kind: 'terms' } },
@@ -80,7 +86,9 @@ export const routes: Routes = [
       { path: 'views', component: ProviderViewsPageComponent },
       { path: 'package', component: ProviderPackageComponent },
       { path: 'payment', component: ProviderPaymentComponent },
+      { path: 'payment-status', component: ProviderPaymentStatusComponent },
       { path: 'support', component: ProviderSupportComponent },
+      { path: 'notifications', component: ProviderNotificationsComponent },
       { path: 'account', component: ProviderAccountComponent },
     ],
   },

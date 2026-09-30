@@ -7,10 +7,9 @@ import { LocaleService } from '../core/locale.service';
   imports: [RouterLink],
   template: `
     <a class="brand" [routerLink]="link">
-      <img class="brand-logo" src="/hero.png" [alt]="locale.t('brand.alt')" />
+      <img src="/assets/logo.png" [alt]="locale.t('brand.alt')" />
       <div>
-        <strong>أنوثتي</strong>
-        <small>{{ locale.t('brand.tagline') }}</small>
+        <small>منصة الأنوثة والجمال</small>
       </div>
     </a>
   `,

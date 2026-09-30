@@ -13,11 +13,11 @@ import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
     @if (!cityId) {
       <article class="card coming-card">
         <h2>اختاري مدينتك أولًا</h2>
-        <p>نتائج البحث تعتمد على المدينة. حدّثي حسابك ثم عودي لعرض صانعات الجمال.</p>
+        <p>نتائج البحث تعتمد على المدينة. حدّثي حسابك ثم عودي لعرض الخبيرات.</p>
         <a class="btn primary" routerLink="/c/account">تحديث المدينة</a>
       </article>
     } @else if (loading) {
-      <p class="loading">جاري البحث عن صانعات الجمال...</p>
+      <p class="loading">جاري البحث عن الخبيرات...</p>
     } @else if (providers.length === 0) {
       <p class="page-empty">لا توجد نتائج مطابقة في هذه المدينة حاليًا.</p>
     } @else {
@@ -53,7 +53,7 @@ export class ProviderListComponent implements OnInit {
   loading = false;
 
   ngOnInit(): void {
-    this.shell.set('نتائج البحث', 'صانعات جمال يظهرن وفق المدينة والخدمة');
+    this.shell.set('نتائج البحث', 'خبيرات يظهرن وفق المدينة والخدمة');
     this.route.queryParamMap.subscribe((params) => {
       this.cityId = params.get('cityId') || this.session.user()?.city?.id || '';
       this.serviceId = params.get('serviceId') || '';

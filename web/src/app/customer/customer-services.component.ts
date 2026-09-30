@@ -100,7 +100,7 @@ export class CustomerServicesComponent implements OnInit {
 
   serviceDesc(service: CatalogService): string {
     const fallback = FALLBACK_SERVICES.find((item) => item.code === service.code || item.nameAr === service.nameAr);
-    return fallback?.desc ?? 'اكتشفي صانعات الجمال لهذه الخدمة';
+    return fallback?.desc ?? 'اكتشفي الخبيرات لهذه الخدمة';
   }
 
   private groupOf(service: CatalogService): string {

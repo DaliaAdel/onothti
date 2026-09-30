@@ -68,6 +68,27 @@ import { Component, Input } from '@angular/core';
           <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" />
           <path d="m14 7 3 3" />
         }
+        @case ('grid') {
+          <rect x="4" y="4" width="7" height="7" rx="1.6" />
+          <rect x="13" y="4" width="7" height="7" rx="1.6" />
+          <rect x="4" y="13" width="7" height="7" rx="1.6" />
+          <rect x="13" y="13" width="7" height="7" rx="1.6" />
+        }
+        @case ('chart') {
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+        }
+        @case ('brief') {
+          <rect x="3" y="7" width="18" height="13" rx="2" />
+          <path d="M8 7V4h8v3M3 12h18" />
+        }
+        @case ('card') {
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M3 10h18M7 15h4" />
+        }
+        @case ('pin') {
+          <path d="M12 21s7-6.6 7-12.2a7 7 0 0 0-14 0C5 14.4 12 21 12 21Z" />
+          <circle cx="12" cy="9" r="2.5" />
+        }
         @default {
           <path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z" />
         }

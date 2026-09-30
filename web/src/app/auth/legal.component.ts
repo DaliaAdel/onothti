@@ -10,7 +10,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
     <app-auth-layout>
       <div class="auth-box signup-details">
         <a routerLink="/signup" class="back-link">→ العودة لإنشاء الحساب</a>
-        <span class="eyebrow">{{ audience === 'PROVIDER' ? 'صانعة الجمال' : 'الباحثة' }}</span>
+        <span class="eyebrow">{{ audience === 'PROVIDER' ? 'الخبيرة' : 'العميلة' }}</span>
         <h1>{{ title }}</h1>
         @if (loading) {
           <p class="loading">جاري التحميل...</p>

@@ -2,72 +2,88 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
-import type { ProviderDashboard } from '../core/models';
+import { isLiveSubscription, type ProviderDashboard, type ProviderViews } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
-import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-dashboard',
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink],
   template: `
-    <section class="hero">
-      <div class="hero-copy">
-        <span class="eyebrow">{{ locale.t('p.hero.eyebrow') }}{{ packageLabel }}</span>
-        <h2>{{ locale.t('p.hero.hello') }}{{ name }}</h2>
-        <p>{{ locale.t('p.hero.text') }}</p>
-        <div class="hero-actions">
-          <a class="btn primary" routerLink="/p/account">{{ locale.t('p.hero.profile') }} <app-icon name="edit" /></a>
-          <a class="btn ghost" routerLink="/p/package">{{ locale.t('p.hero.package') }}</a>
-        </div>
-      </div>
-      <img class="hero-art" src="/hero.png" alt="" />
-    </section>
-    <div class="section-head">
+    <div class="page-head">
       <div>
-        <h2>{{ locale.t('p.overview.title') }}</h2>
-        <p>{{ locale.t('p.overview.sub') }}</p>
+        <h1>مرحبًا{{ name ? '، ' + name : '' }}</h1>
+        <p>{{ live ? 'هذا ملخص أداء حسابك اليوم' : 'يمكنكِ تصفح حسابك الآن، وتُفتح أدوات النشر بعد تفعيل الباقة' }}</p>
       </div>
     </div>
-    <div class="grid four">
+    @if (!live) {
+      <a class="subscription-note dashboard-subscription" routerLink="/p/package">
+        <b>حسابك غير مشترك حاليًا</b>
+        <span>اختاري باقة لتتمكني من إضافة الخدمات والألبومات والظهور للعميلات.</span>
+      </a>
+    } @else if (packageName) {
+      <div class="active-package">
+        <div>
+          <span class="status success">الباقة مفعّلة</span>
+          <h3>{{ packageTitle }}</h3>
+          <p>يمكنكِ استخدام الخدمات والألبومات وجميع أدوات الحساب{{ endLabel }}.</p>
+        </div>
+        <a class="btn secondary" routerLink="/p/package">إدارة الاشتراك</a>
+      </div>
+    }
+    <div class="grid cols-4">
       @for (metric of metrics; track metric.label) {
-        <article class="card metric">
-          <div>
-            <span>{{ metric.label }}</span>
-            <strong>{{ metric.value }}</strong>
-            <span class="trend">{{ metric.trend }}</span>
-          </div>
-          <div class="metric-icon"><app-icon [name]="metric.icon" /></div>
-        </article>
+        <div class="card metric">
+          <span class="muted small">{{ metric.label }}</span>
+          <div class="value">{{ metric.value }}</div>
+          @if (metric.stars) {
+            <span class="stars">{{ metric.stars }}</span>
+          } @else if (metric.trend) {
+            <span class="delta">{{ metric.trend }}</span>
+          }
+        </div>
       }
     </div>
-    <div class="section-head">
-      <div>
-        <h2>{{ locale.t('p.manage.title') }}</h2>
-        <p>{{ locale.t('p.manage.sub') }}</p>
+    <br />
+    @if (live) {
+      <div class="grid wide-side">
+        <div class="card">
+          <h3>المشاهدات آخر 7 أيام</h3>
+          @if (chartBars.length) {
+            <div class="chart-summary">
+              <span><b>{{ chartTotal }}</b> إجمالي المشاهدات</span>
+            </div>
+            <div class="chart-layout">
+              <div class="chart-scale"><span>أعلى</span><span></span><span></span><span></span><span>0</span></div>
+              <div class="chart clear-chart">
+                @for (bar of chartBars; track bar.label) {
+                  <div class="bar-item">
+                    <span class="bar-value">{{ bar.value }}</span>
+                    <div class="bar" [style.height.%]="bar.height"></div>
+                    <span class="bar-day">{{ bar.label }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <p class="muted small">ستظهر المشاهدات بعد زيارة العميلات لملفك.</p>
+          }
+        </div>
+        <div class="card">
+          <span class="status success">الحساب نشط</span>
+          <h3 style="margin-top:14px">ملفك ظاهر للعميلات</h3>
+          <p class="small muted">يمكنكِ إدارة الخدمات والألبومات ومتابعة الأداء من القائمة.</p>
+          <a class="btn primary" routerLink="/p/services">إدارة الخدمات</a>
+        </div>
       </div>
-    </div>
-    <div class="grid three">
-      <article class="card hover">
-        <div class="metric-icon"><app-icon name="user" /></div>
-        <h3>{{ locale.t('p.card.profile') }}</h3>
-        <p style="color:var(--muted);font-size:10px">{{ completion }}٪</p>
-        <div class="progress"><span [style.width.%]="completion"></span></div>
-        <a class="btn ghost" routerLink="/p/account">{{ locale.t('p.hero.profile') }}</a>
-      </article>
-      <article class="card hover">
-        <div class="metric-icon"><app-icon name="spark" /></div>
-        <h3>{{ locale.t('p.card.services') }}</h3>
-        <p style="color:var(--muted);font-size:10px">{{ locale.t('p.card.servicesText') }}</p>
-        <a class="btn ghost" routerLink="/p/services">{{ locale.t('p.card.servicesBtn') }}</a>
-      </article>
-      <article class="card hover">
-        <div class="metric-icon"><app-icon name="image" /></div>
-        <h3>{{ locale.t('p.card.portfolio') }}</h3>
-        <p style="color:var(--muted);font-size:10px">{{ locale.t('p.card.portfolioText') }}</p>
-        <a class="btn ghost" routerLink="/p/portfolio">{{ locale.t('p.card.portfolioBtn') }}</a>
-      </article>
-    </div>
+    } @else {
+      <div class="card empty">
+        <div class="symbol">◇</div>
+        <h3>ابدئي باختيار باقتك</h3>
+        <p class="small muted">يمكنكِ دخول الرئيسية وإدارة بياناتك، لكن إضافة الخدمات والأعمال تتطلب باقة مفعّلة.</p>
+        <a class="btn primary" routerLink="/p/package">عرض الباقات والاشتراك</a>
+      </div>
+    }
   `,
 })
 export class ProviderDashboardComponent implements OnInit {
@@ -76,9 +92,10 @@ export class ProviderDashboardComponent implements OnInit {
   private readonly shell = inject(ShellService);
   readonly locale = inject(LocaleService);
   data: ProviderDashboard | null = null;
+  views: ProviderViews | null = null;
 
   ngOnInit(): void {
-    this.shell.set(this.locale.t('p.dash.title'), this.locale.t('p.dash.subtitle'));
+    this.shell.set('لوحة التحكم');
     this.api.providerDashboard().subscribe({
       next: (data) => {
         this.data = data;
@@ -89,48 +106,81 @@ export class ProviderDashboardComponent implements OnInit {
         });
       },
     });
+    this.api.providerViews().subscribe({ next: (views) => (this.views = views) });
   }
 
-  get completion(): number {
-    return this.data?.stats?.completionPercent ?? 0;
+  get live(): boolean {
+    return isLiveSubscription(this.data?.subscription);
   }
 
   get name(): string {
-    return this.data?.profile.displayName || this.session.user()?.displayName || this.locale.t('p.nameFallback');
+    return this.data?.profile.displayName || this.session.user()?.displayName || '';
   }
 
-  get packageLabel(): string {
-    const name = this.data?.subscription?.package;
-    return name ? ` · ${this.locale.localizedName(name)}` : '';
+  get packageName(): string {
+    const pkg = this.data?.subscription?.package;
+    return pkg ? this.locale.localizedName(pkg) : '';
+  }
+
+  get packageTitle(): string {
+    const name = this.packageName;
+    if (!name) {
+      return '';
+    }
+    return name.includes('باقة') ? name : `الباقة ${name}`;
+  }
+
+  get endLabel(): string {
+    const end = this.data?.subscription?.endAt;
+    if (!end) {
+      return '';
+    }
+    const date = new Date(end);
+    if (Number.isNaN(date.getTime())) {
+      return ` حتى ${end.slice(0, 10)}`;
+    }
+    return ` حتى ${new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)}`;
   }
 
   get metrics() {
     const stats = this.data?.stats;
+    if (!this.live) {
+      return [
+        { label: 'مشاهدات الملف', value: '0', trend: 'بعد تفعيل الباقة' },
+        { label: 'مرات التواصل', value: '0', trend: 'بعد تفعيل الباقة' },
+        { label: 'العميلات', value: '—', trend: 'إجمالي الحسابات المسجلة' },
+        { label: 'التقييم', value: '—', trend: 'لا توجد تقييمات' },
+      ];
+    }
+    const rating = stats?.ratingAvg;
     return [
+      { label: 'مشاهدات الملف', value: this.formatCount(stats?.views30d ?? 0), trend: '' },
+      { label: 'مرات التواصل', value: '0', trend: '' },
+      { label: 'العميلات', value: '—', trend: 'إجمالي الحسابات المسجلة' },
       {
-        icon: 'eye',
-        label: this.locale.t('p.metric.views'),
-        value: stats ? String(stats.views30d) : '—',
-        trend: this.locale.t('p.overview.sub'),
-      },
-      {
-        icon: 'star',
-        label: this.locale.t('p.metric.rating'),
-        value: stats?.ratingAvg != null ? String(stats.ratingAvg) : '—',
-        trend: String(stats?.ratingCount ?? 0),
-      },
-      {
-        icon: 'image',
-        label: this.locale.t('p.metric.photos'),
-        value: stats ? String(stats.photosApproved) : '—',
-        trend: String(stats?.photosPending ?? 0),
-      },
-      {
-        icon: 'spark',
-        label: this.locale.t('p.metric.services'),
-        value: stats ? String(stats.servicesCount) : '—',
-        trend: this.locale.t('p.card.servicesBtn'),
+        label: 'التقييم',
+        value: rating != null ? String(rating) : '—',
+        trend: '',
+        stars: rating != null ? '★★★★★' : '',
       },
     ];
+  }
+
+  private formatCount(value: number): string {
+    return value.toLocaleString('en-US');
+  }
+
+  get chartBars() {
+    const items = (this.views?.items ?? []).slice(-7);
+    const max = Math.max(1, ...items.map((item) => item.viewCount));
+    return items.map((item) => ({
+      label: String(item.date).slice(5, 10),
+      value: item.viewCount,
+      height: Math.round((item.viewCount / max) * 100),
+    }));
+  }
+
+  get chartTotal(): number {
+    return this.chartBars.reduce((sum, bar) => sum + bar.value, 0);
   }
 }

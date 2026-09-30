@@ -102,6 +102,7 @@ export interface CatalogPackage {
   maxServices?: number | null;
   maxPhotos?: number | null;
   maxVideos?: number | null;
+  maxAlbums?: number | null;
   monthlyPrice?: number | string;
 }
 
@@ -152,17 +153,30 @@ export interface ProviderServiceRow {
   id: string;
   serviceId: string;
   subServiceId?: string | null;
+  isActive?: boolean;
   service: CatalogService;
   subService?: { id: string; nameAr: string; nameEn: string } | null;
 }
 
 export interface ProviderPortfolioItem {
   id: string;
+  albumId?: string | null;
   approvalStatus: string;
   storageKey: string;
   kind: string;
   status?: string;
   url?: string | null;
+}
+
+export interface ProviderAlbum {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+  itemCount: number;
+  photoCount: number;
+  coverUrl?: string | null;
+  virtual?: boolean;
 }
 
 export interface ProviderReviews {
@@ -215,6 +229,66 @@ export interface ProviderTicket {
   createdAt: string;
   type: TicketType;
 }
+
+export interface AppNotification {
+  id: string;
+  type?: string;
+  titleAr?: string;
+  titleEn?: string;
+  bodyAr?: string;
+  bodyEn?: string;
+  status?: string;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export function isLiveSubscription(sub?: ProviderSubscription | null): boolean {
+  if (!sub || sub.status !== 'ACTIVE') {
+    return false;
+  }
+  return !sub.endAt || new Date(sub.endAt).getTime() > Date.now();
+}
+
+export const PACKAGE_COLORS: Record<string, string> = {
+  FREE: '#8C9A8D',
+  GREEN: '#527A5B',
+  BRONZE: '#9A6446',
+  SILVER: '#7D858D',
+  GOLD: '#B0873D',
+};
+
+export const PACKAGE_POLICIES: Record<string, { duration: string; limits: string; features: string[]; policy: string }> = {
+  FREE: {
+    duration: 'مدة مرنة تحددها الإدارة حسب الحملة',
+    limits: '5 خدمات رئيسية · 5 ألبومات · 40 صورة · فيديو واحد',
+    features: ['إنشاء ملف شخصي ونبذة تعريفية', 'استقبال الطلبات على واتساب', 'عرض عدد زيارات الملف وأكثر الخدمات مشاهدة', 'الظهور في الصفحة الرئيسية حسب الأولوية', 'إشعار عند مشاهدة الملف واستقبال التقييمات', 'تثبيت عرض أو خدمة وتغيير الخدمات خلال فترة الباقة'],
+    policy: 'باقة ترويجية مؤقتة تبدأ من تاريخ اعتماد الحساب. لا تمددها الخبيرة بنفسها، وبعد انتهائها تُقيّد الخدمات والألبومات والظهور والتواصل والتقييم ما لم تتم الترقية.',
+  },
+  GREEN: {
+    duration: '30 يومًا قابلة للتمديد وفق إعدادات الإدارة',
+    limits: 'خدمة رئيسية واحدة · ألبوم واحد · 5 صور',
+    features: ['إنشاء ملف شخصي ونبذة تعريفية', 'استقبال الطلبات على واتساب', 'عرض عدد زيارات الملف', 'عروض وخصومات لتجديد الاشتراك', 'الظهور بعد البرونزية حسب الأولوية', 'إشعار عند مشاهدة الملف واستقبال التقييمات'],
+    policy: 'باقة أعمال مدفوعة. تُطبق حدود المحتوى والظهور المعتمدة، ويُعاد ضبط الحساب عند الترقية بما يتوافق مع حدودها.',
+  },
+  BRONZE: {
+    duration: '90 يومًا عند الاشتراك الأول، وقابلة للتمديد',
+    limits: 'خدمتان رئيسيتان · ألبومان · 20 صورة',
+    features: ['إنشاء ملف شخصي ونبذة تعريفية', 'استقبال الطلبات على واتساب', 'عرض عدد زيارات الملف', 'عروض وخصومات للتجديد', 'الظهور بعد الفضية حسب الأولوية', 'إشعارات المشاهدة والتقييمات', 'تغيير الخدمات وتعديل الصور'],
+    policy: 'يمكن الترقية إليها من المجانية أو الخضراء. تُطبق حدود الخدمات والمحتوى والظهور المحددة في مصفوفة الباقات.',
+  },
+  SILVER: {
+    duration: '180 يومًا عند الاشتراك الأول، وقابلة للتمديد',
+    limits: '3 خدمات رئيسية · 3 ألبومات · 40 صورة · فيديو واحد',
+    features: ['كل مميزات الملف والتواصل والتقييم', 'الظهور بعد الذهبية حسب الأولوية', 'معرفة أكثر الخدمات مشاهدة', 'إشعار عند مشاهدة الملف', 'تثبيت عرض أو خدمة', 'تغيير الخدمات وتعديل الصور', 'فرصة الظهور في الحملات والإعلانات'],
+    policy: 'يمكن الترقية إليها من الباقات الأدنى. يُعاد ضبط المحتوى بما يتوافق مع حدود الباقة ومصفوفة المميزات المعتمدة.',
+  },
+  GOLD: {
+    duration: '360 يومًا عند الاشتراك الأول، وقابلة للتمديد',
+    limits: 'خدمات رئيسية غير محدودة · 5 ألبومات · 60 صورة · فيديوهان',
+    features: ['أعلى أولوية في نتائج البحث', 'شارة مميزة وظهور في الصفحة الرئيسية', 'كل مميزات الملف والتواصل والتقييم', 'معرفة أكثر الخدمات مشاهدة', 'إشعارات المشاهدة', 'تثبيت عرض أو خدمة', 'تغيير الخدمات وتعديل الصور', 'فرصة الظهور في الحملات والإعلانات'],
+    policy: 'أعلى باقة أعمال وأولوية ظهور. يمكن الترقية إليها من أي باقة أدنى، وتبدأ بعد اعتماد الترقية وفق إجراءات مراجعة الدفع.',
+  },
+};
 
 export const FALLBACK_SERVICES = [
   { id: 'hair', code: 'hair', nameAr: 'خبيرة الشعر', nameEn: 'Hair', desc: 'قص، تسريحات وعلاجات متخصصة', descEn: 'Cuts, styling, and specialist treatments' },

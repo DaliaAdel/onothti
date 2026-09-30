@@ -21,49 +21,45 @@ export interface NavItem {
     <div class="app">
       <aside class="sidebar">
         <app-brand [link]="home" />
-        <div class="nav-label">{{ locale.t('nav.menu') }}</div>
         <nav class="nav">
           @for (item of items; track item.route) {
             <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.exact ?? false }">
-              <span class="nav-icon"><app-icon [name]="item.icon" /></span>
+              <span class="ico nav-icon"><app-icon [name]="item.icon" /></span>
               <span>{{ locale.t(item.label) }}</span>
             </a>
           }
         </nav>
         <div class="sidebar-foot">
-          <button class="account-mini logout" type="button" (click)="logout()">
-            <div class="avatar">{{ initial }}</div>
-            <div>
-              <strong>{{ name }}</strong>
-              <span>{{ roleLabel }}</span>
-            </div>
-            <app-icon name="chev" />
-          </button>
+          <button class="logout" type="button" (click)="logout()">↪ تسجيل الخروج</button>
         </div>
       </aside>
-      <section class="workspace">
+      <main class="main">
         <header class="topbar">
-          <div class="page-title">
-            <h1>{{ shell.title() }}</h1>
-            <p>{{ shell.subtitle() }}</p>
+          <div class="crumb">
+            @if (home === '/p') {
+              <small>حساب الخبيرة</small>
+            }
+            <b>{{ shell.title() }}</b>
           </div>
           <div class="top-actions">
+            <a class="city" [routerLink]="profileRoute">
+              <span class="ico"><app-icon name="pin" /></span>
+              {{ cityLabel }}
+            </a>
             <div class="lang-switch" role="group" aria-label="Language">
               <button type="button" [class.active]="locale.lang() === 'ar'" (click)="locale.set('ar')">عربي</button>
               <button type="button" [class.active]="locale.lang() === 'en'" (click)="locale.set('en')">EN</button>
             </div>
-            <button class="icon-btn has-dot" type="button" (click)="toast.show(locale.t('toast.notifications'))">
-              <app-icon name="bell" />
-            </button>
-            <button class="icon-btn" type="button" (click)="toast.show(locale.t('toast.help'))">
-              <app-icon name="help" />
-            </button>
+            <a class="icon-btn" [routerLink]="notifyRoute">
+              <span class="ico"><app-icon name="bell" /></span>
+            </a>
+            <div class="avatar">{{ initial }}</div>
           </div>
         </header>
-        <main class="main reveal">
+        <section class="content">
           <ng-content />
-        </main>
-      </section>
+        </section>
+      </main>
     </div>
   `,
 })
@@ -77,6 +73,8 @@ export class AppShellComponent {
 
   @Input({ required: true }) items: (NavItem & { exact?: boolean })[] = [];
   @Input() home = '/c';
+  @Input() profileRoute = '/c/account';
+  @Input() notifyRoute = '/c/notifications';
 
   get name(): string {
     return this.session.user()?.displayName || this.locale.t('account.mine');
@@ -86,11 +84,16 @@ export class AppShellComponent {
     return this.name.slice(0, 1);
   }
 
-  get roleLabel(): string {
-    return this.session.user()?.accountType === 'PROVIDER' ? this.locale.t('role.provider') : this.locale.t('role.customer');
+  get cityLabel(): string {
+    return this.session.user()?.city
+      ? this.locale.localizedName(this.session.user()!.city)
+      : 'المدينة';
   }
 
   logout(): void {
+    if (!confirm('نتمنى لكِ يومًا جميلًا. هل تريدين تسجيل الخروج؟')) {
+      return;
+    }
     const finish = () => {
       this.session.clear();
       this.toast.show(this.locale.t('toast.logout'));

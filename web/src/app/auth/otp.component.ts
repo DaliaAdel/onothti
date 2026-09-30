@@ -6,22 +6,18 @@ import { apiMessage, displayPhone } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
-import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-otp',
-  imports: [RouterLink, AuthLayoutComponent, IconComponent],
+  imports: [RouterLink, AuthLayoutComponent],
   template: `
     <app-auth-layout>
       <form class="auth-box" (submit)="submit($event)">
-        <a routerLink="/login" class="back-link">{{ locale.t('auth.otp.back') }}</a>
-        <span class="eyebrow">{{ locale.t('auth.otp.eyebrow') }}</span>
-        <h1>{{ locale.t('auth.otp.title') }}</h1>
-        <p class="sub">
-          {{ locale.t('auth.otp.sent') }}
-          <b dir="ltr">{{ phoneLabel }}</b>
-        </p>
-        <div class="otp">
+        <a class="auth-back" [routerLink]="backLink">← رجوع</a>
+        <span class="auth-kicker">التحقق من رقم الجوال</span>
+        <h2>أدخلي رمز التحقق</h2>
+        <p class="muted">أرسلنا رمزًا من 6 أرقام إلى <b dir="ltr">{{ phoneLabel }}</b></p>
+        <div class="otp-fields" dir="ltr">
           @for (digit of digits; track $index) {
             <input
               maxlength="1"
@@ -36,21 +32,14 @@ import { IconComponent } from '../shared/icon.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary full" style="margin-top:20px" type="submit" [disabled]="loading">
-          {{ locale.t('auth.otp.submit') }}
-          <app-icon name="arrow" />
-        </button>
-        <button class="btn soft full" style="margin-top:9px" type="button" (click)="resend()" [disabled]="seconds > 0 || loading">
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">تأكيد ومتابعة</button>
+        <button class="btn ghost auth-submit" style="margin-top:9px" type="button" (click)="resend()" [disabled]="seconds > 0 || loading">
           @if (seconds > 0) {
             {{ locale.t('auth.otp.resendIn') }} {{ timerLabel }}
           } @else {
             {{ locale.t('auth.otp.resend') }}
           }
         </button>
-        <div class="auth-note">
-          <b>✓</b>
-          <span>{{ locale.t('auth.otp.note') }}</span>
-        </div>
       </form>
     </app-auth-layout>
   `,
@@ -91,6 +80,10 @@ export class OtpComponent implements OnInit, OnDestroy {
 
   get code(): string {
     return this.digits.join('');
+  }
+
+  get backLink(): string {
+    return this.purpose === 'REGISTER' ? '/signup/phone' : '/login/phone';
   }
 
   ngOnInit(): void {

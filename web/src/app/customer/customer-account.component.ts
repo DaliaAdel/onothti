@@ -56,7 +56,7 @@ export class CustomerAccountComponent implements OnInit {
   loading = false;
 
   ngOnInit(): void {
-    this.shell.set('حسابي', 'حدّثي المعلومات الأساسية لحساب الباحثة');
+    this.shell.set('حسابي', 'حدّثي المعلومات الأساسية لحساب العميلة');
     this.api.cities().subscribe({ next: (cities) => (this.cities = cities) });
     this.api.customerProfile().subscribe({
       next: (profile) => {
