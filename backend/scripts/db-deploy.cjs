@@ -13,6 +13,16 @@ applySchema()
     if (align.status) {
       process.exit(align.status);
     }
+    for (const script of ["scripts/apply-0004.cjs", "scripts/apply-0005.cjs"]) {
+      const extra = spawnSync("node", [script], {
+        stdio: "inherit",
+        env: process.env,
+        shell: true,
+      });
+      if (extra.status) {
+        process.exit(extra.status);
+      }
+    }
     const seed = spawnSync("npx", ["tsx", "prisma/seed.ts"], {
       stdio: "inherit",
       env: process.env,
