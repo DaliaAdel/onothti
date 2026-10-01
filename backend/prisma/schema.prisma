@@ -11,8 +11,8 @@ datasource db {
 model User {
   id              String         @id @default(uuid()) @db.Char(36)
   accountType     String         @db.VarChar(20)
-  mobile          String         @db.VarChar(10)
-  email           String?        @db.VarChar(255)
+  mobile          String         @unique @db.VarChar(10)
+  email           String?        @unique @db.VarChar(255)
   passwordHash    String         @db.VarChar(255)
   status          String         @default("INACTIVE") @db.VarChar(30)
   displayName     String         @db.VarChar(120)
@@ -20,6 +20,8 @@ model User {
   avatarFileId    String?        @db.Char(36)
   mobileVerifiedAt DateTime?     @db.DateTime(0)
   lastActiveAt    DateTime?      @db.DateTime(0)
+  termsAcceptedAt DateTime?      @db.DateTime(0)
+  termsVersion    Int?
   createdAt       DateTime       @default(now()) @db.DateTime(0)
   updatedAt       DateTime       @updatedAt @db.DateTime(0)
 
@@ -46,10 +48,11 @@ model User {
   whatsappClicksTo   WhatsAppClick[] @relation("WhatsAppProvider")
   searchLogs      SearchLog[]
   subscriptions   Subscription[]
+  profileChanges  ProfileChangeRequest[]
 
-  @@unique([mobile, accountType], name: "UQ_Users_Mobile_AccountType")
   @@index([status, accountType])
   @@index([accountCode])
+  @@index([accountType, displayName])
   @@map("user")
 }
 
@@ -109,25 +112,32 @@ model ProviderProfile {
   visibility String      @default("HIDDEN") @db.VarChar(20)
   badge      String?     @db.VarChar(40)
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lastAppearedAt DateTime? @db.DateTime(0)
   city       City?       @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   services   ProviderService[]
   portfolio  PortfolioItem[]
+  albums     PortfolioAlbum[]
   viewDaily  ProfileViewDaily[]
+  coverage   ProviderCoverage[]
 
   @@index([cityId, visibility])
   @@map("providerprofile")
 }
 
 model Session {
-  id               String   @id @default(uuid()) @db.Char(36)
-  userId           String   @db.Char(36)
-  device           String?  @db.VarChar(180)
-  refreshTokenHash String   @db.VarChar(255)
-  expiresAt        DateTime @db.DateTime(0)
-  createdAt        DateTime @default(now()) @db.DateTime(0)
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid()) @db.Char(36)
+  userId           String    @db.Char(36)
+  device           String?   @db.VarChar(180)
+  deviceId         String?   @db.VarChar(80)
+  channel          String    @default("WEB") @db.VarChar(10)
+  refreshTokenHash String    @db.VarChar(255)
+  expiresAt        DateTime  @db.DateTime(0)
+  revokedAt        DateTime? @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @db.DateTime(0)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, deviceId, channel])
   @@map("session")
 }
 
@@ -191,6 +201,7 @@ model City {
   providers  ProviderProfile[]
   viewDaily  ProfileViewDaily[]
   searchLogs SearchLog[]
+  coverageAreas CoverageArea[]
 
   @@index([isVisible])
   @@map("city")
@@ -226,17 +237,69 @@ model SubService {
 }
 
 model ProviderService {
-  id            String      @id @default(uuid()) @db.Char(36)
-  providerUserId String     @db.Char(36)
-  serviceId     String      @db.Char(36)
-  subServiceId  String?     @db.Char(36)
-  sortOrder     Int         @default(0)
-  provider      ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
-  service       Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  subService    SubService? @relation(fields: [subServiceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id             String      @id @default(uuid()) @db.Char(36)
+  providerUserId String      @db.Char(36)
+  serviceId      String      @db.Char(36)
+  subServiceId   String?     @db.Char(36)
+  isPrimary      Boolean     @default(false)
+  priceFrom      Decimal?    @db.Decimal(10, 2)
+  priceTo        Decimal?    @db.Decimal(10, 2)
+  sortOrder      Int         @default(0)
+  isActive       Boolean     @default(true)
+  provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  service        Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subService     SubService? @relation(fields: [subServiceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([providerUserId, serviceId, subServiceId], name: "UQ_ProviderService")
   @@map("providerservice")
+}
+
+model CoverageArea {
+  id        String  @id @default(uuid()) @db.Char(36)
+  cityId    String  @db.Char(36)
+  code      String  @unique @db.VarChar(40)
+  nameAr    String  @db.VarChar(120)
+  nameEn    String  @db.VarChar(120)
+  isVisible Boolean @default(true)
+  city      City    @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  providers ProviderCoverage[]
+  @@map("coveragearea")
+}
+
+model ProviderCoverage {
+  providerUserId  String @db.Char(36)
+  coverageAreaId  String @db.Char(36)
+  coverageArea    CoverageArea @relation(fields: [coverageAreaId], references: [id], onDelete: Cascade)
+  profile         ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+
+  @@id([providerUserId, coverageAreaId])
+  @@map("providercoverage")
+}
+
+model ProfileChangeRequest {
+  id         String    @id @default(uuid()) @db.Char(36)
+  userId     String    @db.Char(36)
+  field      String    @db.VarChar(40)
+  oldValue   String?   @db.LongText
+  newValue   String    @db.LongText
+  status     String    @default("PENDING") @db.VarChar(20)
+  createdAt  DateTime  @default(now()) @db.DateTime(0)
+  reviewedAt DateTime? @db.DateTime(0)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([field, status])
+  @@map("profilechangerequest")
+}
+
+model WelcomeMessage {
+  id       String  @id @default(uuid()) @db.Char(36)
+  audience String  @db.VarChar(20)
+  kind     String  @db.VarChar(20)
+  bodyAr   String  @db.VarChar(400)
+  bodyEn   String  @default("") @db.VarChar(400)
+  isActive Boolean @default(true)
+  @@map("welcomemessage")
 }
 
 model Package {
@@ -251,6 +314,7 @@ model Package {
   maxServices   Int?
   maxPhotos     Int?
   maxVideos     Int?
+  maxAlbums     Int?
   allowWhatsApp Boolean        @default(true)
   allowRating   Boolean        @default(true)
   hasBadge      Boolean        @default(false)
@@ -339,14 +403,30 @@ model MediaFile {
   @@map("mediafile")
 }
 
-model PortfolioItem {
-  id             String         @id @default(uuid()) @db.Char(36)
-  providerUserId String         @db.Char(36)
-  fileId         String         @db.Char(36)
-  sortOrder      Int            @default(0)
-  approvalStatus String         @default("PENDING") @db.VarChar(20)
+model PortfolioAlbum {
+  id             String          @id @default(uuid()) @db.Char(36)
+  providerUserId String          @db.Char(36)
+  name           String          @db.VarChar(120)
+  sortOrder      Int             @default(0)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @db.DateTime(0)
   provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
-  file           MediaFile      @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  items          PortfolioItem[]
+
+  @@index([providerUserId, sortOrder])
+  @@map("portfolioalbum")
+}
+
+model PortfolioItem {
+  id             String          @id @default(uuid()) @db.Char(36)
+  providerUserId String          @db.Char(36)
+  fileId         String          @db.Char(36)
+  albumId        String?         @db.Char(36)
+  sortOrder      Int             @default(0)
+  approvalStatus String          @default("PENDING") @db.VarChar(20)
+  provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  file           MediaFile       @relation(fields: [fileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  album          PortfolioAlbum? @relation(fields: [albumId], references: [id], onDelete: Cascade)
   @@map("portfolioitem")
 }
 
@@ -466,16 +546,20 @@ model TicketComment {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Char(36)
-  userId    String?  @db.Char(36)
-  audience  String?  @db.VarChar(20)
-  titleAr   String   @default("") @db.VarChar(160)
-  titleEn   String   @default("") @db.VarChar(160)
-  bodyAr    String   @default("") @db.VarChar(800)
-  bodyEn    String   @default("") @db.VarChar(800)
-  status    String   @default("SENT") @db.VarChar(20)
-  createdAt DateTime @default(now()) @db.DateTime(0)
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String?   @db.Char(36)
+  audience  String?   @db.VarChar(20)
+  type      String    @default("SYSTEM") @db.VarChar(40)
+  ref       String?   @db.VarChar(80)
+  titleAr   String    @default("") @db.VarChar(160)
+  titleEn   String    @default("") @db.VarChar(160)
+  bodyAr    String    @default("") @db.VarChar(800)
+  bodyEn    String    @default("") @db.VarChar(800)
+  status    String    @default("SENT") @db.VarChar(20)
+  readAt    DateTime? @db.DateTime(0)
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
   @@map("notification")
 }
 

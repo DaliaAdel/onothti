@@ -159,8 +159,10 @@ async function main() {
     { parent: "MS-11", code: "MS-11-003", nameAr: "مصورات المنتجات", nameEn: "Product photography" },
     { parent: "MS-11", code: "MS-11-004", nameAr: "مصورات المحتوى", nameEn: "Content photography" },
     { parent: "MS-11", code: "MS-11-005", nameAr: "كشك التصوير", nameEn: "Photo booth" },
+    { parent: "MS-12", code: "MS-12-001", nameAr: "الموديل", nameEn: "Model" },
     { parent: "MS-13", code: "MS-13-001", nameAr: "بوث القهوة", nameEn: "Coffee booth" },
     { parent: "MS-13", code: "MS-13-002", nameAr: "بوث المشروبات", nameEn: "Beverage booth" },
+    { parent: "MS-14", code: "MS-14-001", nameAr: "التخريم", nameEn: "Piercing" },
   ];
 
   for (const [index, item] of subServices.entries()) {
@@ -196,6 +198,7 @@ async function main() {
       maxServices: 5,
       maxPhotos: 40,
       maxVideos: 1,
+      maxAlbums: 5,
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
@@ -211,6 +214,7 @@ async function main() {
       maxServices: 1,
       maxPhotos: 5,
       maxVideos: 0,
+      maxAlbums: 1,
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
@@ -226,6 +230,7 @@ async function main() {
       maxServices: 2,
       maxPhotos: 20,
       maxVideos: 0,
+      maxAlbums: 2,
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
@@ -241,6 +246,7 @@ async function main() {
       maxServices: 3,
       maxPhotos: 40,
       maxVideos: 1,
+      maxAlbums: 3,
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
@@ -256,6 +262,7 @@ async function main() {
       maxServices: null,
       maxPhotos: 60,
       maxVideos: 2,
+      maxAlbums: 5,
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: true,
@@ -290,6 +297,22 @@ async function main() {
       value: "Appointment, price, and payment are outside the platform",
     },
   });
+  const extraSettings = [
+    { key: "package_extension_months", value: "1" },
+    { key: "idle_after_days", value: "90" },
+    { key: "terms_version", value: "1" },
+    { key: "rating_note_max", value: "100" },
+  ];
+  for (const item of extraSettings) {
+    await prisma.setting.upsert({
+      where: { key: item.key },
+      update: { value: item.value },
+      create: item,
+    });
+  }
+
+  await seedCoverageAndCampaign();
+  await seedWelcomeMessages();
 
   await prisma.bankAccount.upsert({
     where: { id: "00000000-0000-0000-0000-000000000001" },
@@ -469,12 +492,7 @@ async function seedDemoProviders() {
 
   for (const demo of demos) {
     const user = await prisma.user.upsert({
-      where: {
-        UQ_Users_Mobile_AccountType: {
-          mobile: demo.mobile,
-          accountType: "PROVIDER",
-        },
-      },
+      where: { mobile: demo.mobile },
       update: {
         displayName: demo.displayName,
         status: "ACTIVE",
@@ -522,6 +540,10 @@ async function seedDemoProviders() {
       },
     });
 
+    const sub = await prisma.subService.findFirst({
+      where: { serviceId: demo.serviceId, isVisible: true },
+      orderBy: { sortOrder: "asc" },
+    });
     const existingService = await prisma.providerService.findFirst({
       where: { providerUserId: user.id, serviceId: demo.serviceId },
     });
@@ -530,8 +552,15 @@ async function seedDemoProviders() {
         data: {
           providerUserId: user.id,
           serviceId: demo.serviceId,
+          subServiceId: sub?.id,
+          isPrimary: true,
           sortOrder: 1,
         },
+      });
+    } else if (!existingService.subServiceId && sub) {
+      await prisma.providerService.update({
+        where: { id: existingService.id },
+        data: { subServiceId: sub.id, isPrimary: true },
       });
     }
 
@@ -558,12 +587,7 @@ async function seedDemoCustomer() {
   const passwordHash = await bcrypt.hash("Secret123", 10);
   const riyadh = await prisma.city.findUnique({ where: { code: "RIYADH" } });
   const existing = await prisma.user.findUnique({
-    where: {
-      UQ_Users_Mobile_AccountType: {
-        mobile: "0504444444",
-        accountType: "CUSTOMER",
-      },
-    },
+    where: { mobile: "0504444444" },
   });
   if (existing) {
     await prisma.user.update({
@@ -706,6 +730,99 @@ async function seedLegalPages() {
         bodyEn: page.bodyEn,
         version: 1,
       },
+    });
+  }
+}
+
+async function seedCoverageAndCampaign() {
+  const cities = await prisma.city.findMany();
+  const areasByCity: Record<string, { code: string; nameAr: string; nameEn: string }[]> = {
+    RIYADH: [
+      { code: "RIYADH-NORTH", nameAr: "شمال الرياض", nameEn: "North Riyadh" },
+      { code: "RIYADH-EAST", nameAr: "شرق الرياض", nameEn: "East Riyadh" },
+      { code: "RIYADH-WEST", nameAr: "غرب الرياض", nameEn: "West Riyadh" },
+    ],
+    JEDDAH: [
+      { code: "JEDDAH-NORTH", nameAr: "شمال جدة", nameEn: "North Jeddah" },
+      { code: "JEDDAH-SOUTH", nameAr: "جنوب جدة", nameEn: "South Jeddah" },
+    ],
+    DAMMAM: [{ code: "DAMMAM-CENTER", nameAr: "وسط الدمام", nameEn: "Dammam Center" }],
+    KHOBAR: [{ code: "KHOBAR-CORNICHE", nameAr: "كورنيش الخبر", nameEn: "Khobar Corniche" }],
+  };
+  for (const city of cities) {
+    for (const area of areasByCity[city.code] ?? []) {
+      await prisma.coverageArea.upsert({
+        where: { code: area.code },
+        update: { nameAr: area.nameAr, nameEn: area.nameEn, cityId: city.id, isVisible: true },
+        create: { ...area, cityId: city.id, isVisible: true },
+      });
+    }
+  }
+
+  const start = new Date();
+  const end = new Date();
+  end.setDate(end.getDate() + 30);
+  await prisma.campaign.upsert({
+    where: { id: "00000000-0000-0000-0000-0000000000c1" },
+    update: {
+      nameAr: "حملة الباقة المجانية",
+      nameEn: "Free package campaign",
+      benefitDays: 30,
+    },
+    create: {
+      id: "00000000-0000-0000-0000-0000000000c1",
+      nameAr: "حملة الباقة المجانية",
+      nameEn: "Free package campaign",
+      startDate: start,
+      endDate: end,
+      benefitDays: 30,
+      isActive: false,
+    },
+  });
+}
+
+async function seedWelcomeMessages() {
+  const messages = [
+    {
+      id: "00000000-0000-0000-0000-0000000000w1",
+      audience: "CUSTOMER",
+      kind: "WELCOME",
+      bodyAr: "مرحباً بكِ في أنوثتي. ابحثي عن صانعة الجمال المناسبة لمدينتكِ.",
+      bodyEn: "Welcome to Onothiti. Find the beauty provider that fits your city.",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000000w2",
+      audience: "PROVIDER",
+      kind: "WELCOME",
+      bodyAr: "مرحباً بكِ كصانعة جمال. أكملِ ملفكِ واعتمدي الباقة ليظهر حسابكِ.",
+      bodyEn: "Welcome as a beauty provider. Complete your profile and activate a package.",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000000w3",
+      audience: "ALL",
+      kind: "MOTIVATIONAL",
+      bodyAr: "جمالكِ قصتكِ، وأنوثتي مساحة لتظهر.",
+      bodyEn: "Your beauty is your story, and Onothiti is a space for it to appear.",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000000w4",
+      audience: "PROVIDER",
+      kind: "MOTIVATIONAL",
+      bodyAr: "كل صورة معتمدة تقربكِ من الباحثات في مدينتكِ.",
+      bodyEn: "Every approved photo brings you closer to seekers in your city.",
+    },
+  ];
+  for (const item of messages) {
+    await prisma.welcomeMessage.upsert({
+      where: { id: item.id },
+      update: {
+        audience: item.audience,
+        kind: item.kind,
+        bodyAr: item.bodyAr,
+        bodyEn: item.bodyEn,
+        isActive: true,
+      },
+      create: { ...item, isActive: true },
     });
   }
 }

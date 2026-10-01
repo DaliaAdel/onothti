@@ -4,9 +4,16 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType } from "../common/enums";
+import { AccountType, ProfileChangeField } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
-import { FavoriteDto, UpdateCustomerProfileDto } from "./dto/customer.dto";
+import { CreateComplaintDto, FavoriteDto, UpdateCustomerProfileDto } from "./dto/customer.dto";
+import {
+  assertUniqueDisplayName,
+  assertUniqueEmail,
+  pendingChangesFor,
+  pendingValue,
+  queueProfileChange,
+} from "../common/account-rules";
 
 @Injectable()
 export class CustomerService {
@@ -14,19 +21,21 @@ export class CustomerService {
 
   async getProfile(userId: string) {
     const user = await this.requireCustomer(userId);
+    const pending = await pendingChangesFor(this.prisma, userId);
     return {
       id: user.id,
-      displayName: user.displayName,
+      displayName: pendingValue(pending, ProfileChangeField.DISPLAY_NAME) ?? user.displayName,
       mobile: user.mobile,
-      email: user.email,
+      email: pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email,
       accountCode: user.accountCode,
       status: user.status,
       city: user.customerProfile?.city ?? null,
+      pendingChanges: pending,
     };
   }
 
   async updateProfile(userId: string, dto: UpdateCustomerProfileDto) {
-    await this.requireCustomer(userId);
+    const user = await this.requireCustomer(userId);
     if (dto.cityId) {
       const city = await this.prisma.city.findFirst({
         where: { id: dto.cityId, isVisible: true },
@@ -34,16 +43,38 @@ export class CustomerService {
       if (!city) {
         throw new BadRequestException("المدينة غير متاحة");
       }
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          customerProfile: { upsert: { create: { cityId: dto.cityId }, update: { cityId: dto.cityId } } },
+        },
+      });
     }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(dto.displayName ? { displayName: dto.displayName } : {}),
-        customerProfile: dto.cityId
-          ? { upsert: { create: { cityId: dto.cityId }, update: { cityId: dto.cityId } } }
-          : undefined,
-      },
-    });
+    if (dto.displayName) {
+      const name = await assertUniqueDisplayName(
+        this.prisma,
+        AccountType.CUSTOMER,
+        dto.displayName,
+        userId,
+      );
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.DISPLAY_NAME,
+        user.displayName,
+        name,
+      );
+    }
+    if (dto.email !== undefined) {
+      const email = await assertUniqueEmail(this.prisma, dto.email, userId);
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.EMAIL,
+        user.email,
+        email ?? "",
+      );
+    }
     return this.getProfile(userId);
   }
 
@@ -71,10 +102,17 @@ export class CustomerService {
     ]);
     const providerById = Object.fromEntries(providers.map((item) => [item.id, item]));
     const serviceById = Object.fromEntries(services.map((item) => [item.id, item]));
-    return rows.map((row) => ({
+    const toObject = (row: (typeof rows)[number]) => ({
       ...row,
-      item: row.targetType === "PROVIDER" ? providerById[row.targetId] ?? null : serviceById[row.targetId] ?? null,
-    }));
+      item:
+        row.targetType === "PROVIDER"
+          ? providerById[row.targetId] ?? null
+          : serviceById[row.targetId] ?? null,
+    });
+    return {
+      provider: rows.filter((row) => row.targetType === "PROVIDER").map(toObject),
+      service: rows.filter((row) => row.targetType === "SERVICE").map(toObject),
+    };
   }
 
   async addFavorite(userId: string, dto: FavoriteDto) {
@@ -133,6 +171,33 @@ export class CustomerService {
       },
       update: { viewedAt: new Date() },
       create: { customerUserId, providerUserId },
+    });
+  }
+
+  async listComplaints(userId: string) {
+    await this.requireCustomer(userId);
+    return this.prisma.complaint.findMany({
+      where: { reporterId: userId },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async createComplaint(userId: string, dto: CreateComplaintDto) {
+    await this.requireCustomer(userId);
+    const target = await this.prisma.user.findFirst({
+      where: { id: dto.targetUserId, accountType: AccountType.PROVIDER },
+    });
+    if (!target) {
+      throw new NotFoundException("صانعة الجمال غير موجودة");
+    }
+    return this.prisma.complaint.create({
+      data: {
+        reporterId: userId,
+        targetUserId: target.id,
+        targetRef: dto.targetRef,
+        reason: dto.reason.trim(),
+        status: "OPEN",
+      },
     });
   }
 

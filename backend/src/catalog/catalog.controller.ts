@@ -1,6 +1,7 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../prisma/prisma.service";
+import { liveCampaign } from "../common/account-rules";
 
 @ApiTags("catalog")
 @Controller("catalog")
@@ -11,7 +12,10 @@ export class CatalogController {
   cities() {
     return this.prisma.city.findMany({
       where: { isVisible: true },
-      include: { region: true },
+      include: {
+        region: true,
+        coverageAreas: { where: { isVisible: true }, orderBy: { nameAr: "asc" } },
+      },
       orderBy: { nameAr: "asc" },
     });
   }
@@ -36,5 +40,21 @@ export class CatalogController {
       where: { isActive: true },
       orderBy: { rank: "asc" },
     });
+  }
+
+  @Get("campaign")
+  campaign() {
+    return liveCampaign(this.prisma);
+  }
+
+  @Get("settings")
+  async settings() {
+    const [extensionMonths, idleAfterDays, termsVersion, ratingNoteMax] = await Promise.all([
+      this.prisma.getSettingInt("package_extension_months", 1),
+      this.prisma.getSettingInt("idle_after_days", 90),
+      this.prisma.getSettingInt("terms_version", 1),
+      this.prisma.getSettingInt("rating_note_max", 100),
+    ]);
+    return { extensionMonths, idleAfterDays, termsVersion, ratingNoteMax };
   }
 }

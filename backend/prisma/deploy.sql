@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE INDEX `user_accountCode_key`(`accountCode`),
     INDEX `user_status_accountType_idx`(`status`, `accountType`),
     INDEX `user_accountCode_idx`(`accountCode`),
-    UNIQUE INDEX `user_mobile_accountType_key`(`mobile`, `accountType`),
+    UNIQUE INDEX `user_mobile_key`(`mobile`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS `providerservice` (
     `serviceId` CHAR(36) NOT NULL,
     `subServiceId` CHAR(36) NULL,
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
 
     UNIQUE INDEX `providerservice_providerUserId_serviceId_subServiceId_key`(`providerUserId`, `serviceId`, `subServiceId`),
     PRIMARY KEY (`id`)
@@ -215,6 +216,7 @@ CREATE TABLE IF NOT EXISTS `package` (
     `maxServices` INTEGER NULL,
     `maxPhotos` INTEGER NULL,
     `maxVideos` INTEGER NULL,
+    `maxAlbums` INTEGER NULL,
     `allowWhatsApp` BOOLEAN NOT NULL DEFAULT true,
     `allowRating` BOOLEAN NOT NULL DEFAULT true,
     `hasBadge` BOOLEAN NOT NULL DEFAULT false,
@@ -312,7 +314,20 @@ CREATE TABLE IF NOT EXISTS `portfolioitem` (
     `fileId` CHAR(36) NOT NULL,
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
     `approvalStatus` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    `albumId` CHAR(36) NULL,
 
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE IF NOT EXISTS `portfolioalbum` (
+    `id` CHAR(36) NOT NULL,
+    `providerUserId` CHAR(36) NOT NULL,
+    `name` VARCHAR(120) NOT NULL,
+    `sortOrder` INTEGER NOT NULL DEFAULT 0,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    INDEX `portfolioalbum_providerUserId_sortOrder_idx`(`providerUserId`, `sortOrder`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -570,6 +585,10 @@ ALTER TABLE `portfolioitem` ADD CONSTRAINT `portfolioitem_providerUserId_fkey` F
 
 -- AddForeignKey
 ALTER TABLE `portfolioitem` ADD CONSTRAINT `portfolioitem_fileId_fkey` FOREIGN KEY (`fileId`) REFERENCES `mediafile`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE `portfolioitem` ADD CONSTRAINT `portfolioitem_albumId_fkey` FOREIGN KEY (`albumId`) REFERENCES `portfolioalbum`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `portfolioalbum` ADD CONSTRAINT `portfolioalbum_providerUserId_fkey` FOREIGN KEY (`providerUserId`) REFERENCES `providerprofile`(`userId`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `favorite` ADD CONSTRAINT `favorite_customerUserId_fkey` FOREIGN KEY (`customerUserId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

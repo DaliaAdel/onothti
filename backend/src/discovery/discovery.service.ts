@@ -6,8 +6,15 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AccountStatus, AccountType, Visibility } from "../common/enums";
+import { publicUploadUrl } from "../common/upload-url";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchProvidersDto } from "./dto/search-providers.dto";
+import {
+  canContactProvider,
+  providerSearchWhere,
+  refreshExpiredProviders,
+} from "../common/account-rules";
+import { notifyContact, notifyProfileView } from "../common/notify";
 
 @Injectable()
 export class DiscoveryService {
@@ -18,17 +25,18 @@ export class DiscoveryService {
       throw new BadRequestException("البحث برقم الجوال غير مسموح");
     }
 
+    await refreshExpiredProviders(this.prisma);
+
     const where: Prisma.UserWhereInput = {
-      accountType: AccountType.PROVIDER,
-      status: AccountStatus.ACTIVE,
+      ...providerSearchWhere(),
       providerProfile: {
-        visibility: Visibility.PUBLIC,
         cityId: dto.cityId,
         city: { isVisible: true },
         ...(dto.serviceId || dto.subServiceId
           ? {
               services: {
                 some: {
+                  isActive: true,
                   ...(dto.serviceId ? { serviceId: dto.serviceId } : {}),
                   ...(dto.subServiceId ? { subServiceId: dto.subServiceId } : {}),
                 },
@@ -45,15 +53,22 @@ export class DiscoveryService {
       where,
       select: {
         id: true,
+        status: true,
         displayName: true,
         lastActiveAt: true,
         providerProfile: {
           select: {
             badge: true,
+            lastAppearedAt: true,
+            visibility: true,
             city: { select: { id: true, nameAr: true, nameEn: true } },
             services: {
+              where: { isActive: true },
               orderBy: { sortOrder: "asc" },
               select: {
+                isPrimary: true,
+                priceFrom: true,
+                priceTo: true,
                 service: { select: { id: true, nameAr: true, nameEn: true, code: true } },
                 subService: { select: { nameAr: true, nameEn: true } },
               },
@@ -110,14 +125,22 @@ export class DiscoveryService {
         dto.minRating ? (item.ratingAvg ?? 0) >= dto.minRating : true,
       )
       .sort((a, b) => {
+        if (a.appearanceTier !== b.appearanceTier) {
+          return a.appearanceTier - b.appearanceTier;
+        }
         if (a.packageRank !== b.packageRank) {
           return a.packageRank - b.packageRank;
         }
-        const activity = (b.lastActiveAt ?? "").localeCompare(a.lastActiveAt ?? "");
+        const activity = (b.lastAppearedAt ?? b.lastActiveAt ?? "").localeCompare(
+          a.lastAppearedAt ?? a.lastActiveAt ?? "",
+        );
         if (activity !== 0) {
           return activity;
         }
-        return (b.ratingAvg ?? 0) - (a.ratingAvg ?? 0);
+        if ((b.ratingAvg ?? 0) !== (a.ratingAvg ?? 0)) {
+          return (b.ratingAvg ?? 0) - (a.ratingAvg ?? 0);
+        }
+        return (b.ratingCount ?? 0) - (a.ratingCount ?? 0);
       });
 
     const page = dto.page ?? 1;
@@ -141,23 +164,29 @@ export class DiscoveryService {
   }
 
   async getProfile(providerId: string, customerUserId?: string) {
+    await refreshExpiredProviders(this.prisma);
     const provider = await this.prisma.user.findFirst({
       where: {
         id: providerId,
         accountType: AccountType.PROVIDER,
-        status: AccountStatus.ACTIVE,
-        providerProfile: { visibility: Visibility.PUBLIC },
+        status: { in: [AccountStatus.ACTIVE, AccountStatus.RESTRICTED] },
+        providerProfile: { visibility: { in: [Visibility.PUBLIC, Visibility.LIMITED] } },
       },
       include: {
         providerProfile: {
           include: {
             city: true,
             services: {
+              where: { isActive: true },
               include: { service: true, subService: true },
               orderBy: { sortOrder: "asc" },
             },
+            coverage: { include: { coverageArea: true } },
             portfolio: {
-              where: { approvalStatus: "APPROVED" },
+              where: {
+                approvalStatus: "APPROVED",
+                OR: [{ albumId: null }, { album: { isActive: true } }],
+              },
               include: { file: true },
               orderBy: { sortOrder: "asc" },
             },
@@ -223,17 +252,37 @@ export class DiscoveryService {
         update: { viewedAt: new Date() },
         create: { customerUserId, providerUserId: provider.id },
       });
+      const viewer = await this.prisma.user.findUnique({
+        where: { id: customerUserId },
+        select: { displayName: true },
+      });
+      await notifyProfileView(this.prisma, provider.id, customerUserId, viewer?.displayName);
     }
     return {
       ...card,
       bio: provider.providerProfile.bio,
       ratings: provider.ratingsReceived,
+      coverage: provider.providerProfile.coverage.map((row) => row.coverageArea),
+      services: provider.providerProfile.services.map((row) => ({
+        nameAr: row.subService?.nameAr ?? row.service.nameAr,
+        nameEn: row.subService?.nameEn ?? row.service.nameEn,
+        serviceCode: row.service.code,
+        isPrimary: row.isPrimary,
+        priceFrom: row.priceFrom == null ? null : Number(row.priceFrom),
+        priceTo: row.priceTo == null ? null : Number(row.priceTo),
+      })),
       portfolio: provider.providerProfile.portfolio.map((item) => ({
         id: item.id,
         storageKey: item.file.storageKey,
         kind: item.file.kind,
+        url: publicUploadUrl(item.file.storageKey),
       })),
-      canContact: Boolean(pkg?.allowWhatsApp),
+      canContact: canContactProvider({
+        status: provider.status,
+        visibility: provider.providerProfile.visibility,
+        allowWhatsApp: pkg?.allowWhatsApp,
+        hasLiveSubscription: Boolean(pkg),
+      }),
     };
   }
 
@@ -256,13 +305,21 @@ export class DiscoveryService {
       },
     });
 
-    if (!provider?.providerProfile?.whatsapp) {
+    const contact = provider?.mobile || provider?.providerProfile?.whatsapp;
+    if (!contact) {
       throw new NotFoundException("رقم التواصل غير متاح");
     }
 
     const pkg = provider.subscriptions[0]?.package;
-    if (!pkg?.allowWhatsApp) {
-      throw new ForbiddenException("التواصل غير مسموح لهذه الباقة");
+    if (
+      !canContactProvider({
+        status: provider.status,
+        visibility: provider.providerProfile?.visibility,
+        allowWhatsApp: pkg?.allowWhatsApp,
+        hasLiveSubscription: Boolean(pkg),
+      })
+    ) {
+      throw new ForbiddenException("التواصل غير متاح لهذا الحساب");
     }
 
     await this.prisma.whatsAppClick.create({
@@ -271,12 +328,21 @@ export class DiscoveryService {
         customerUserId,
       },
     });
+    if (customerUserId) {
+      const viewer = await this.prisma.user.findUnique({
+        where: { id: customerUserId },
+        select: { displayName: true },
+      });
+      await notifyContact(this.prisma, provider.id, customerUserId, viewer?.displayName);
+    } else {
+      await notifyContact(this.prisma, provider.id);
+    }
 
     const [disclaimerAr, disclaimerEn] = await Promise.all([
       this.prisma.setting.findUnique({ where: { key: "whatsapp_disclaimer" } }),
       this.prisma.setting.findUnique({ where: { key: "whatsapp_disclaimer_en" } }),
     ]);
-    const phone = this.toWaPhone(provider.providerProfile.whatsapp);
+    const phone = this.toWaPhone(contact);
 
     return {
       phone,
@@ -314,6 +380,15 @@ export class DiscoveryService {
       throw new ForbiddenException("التقييم غير متاح لهذه الباقة");
     }
 
+    if ((note ?? "").length > 100) {
+      throw new BadRequestException("ملاحظة التقييم بحد أقصى 100 حرف");
+    }
+    const viewed = await this.prisma.recentView.findFirst({
+      where: { customerUserId, providerUserId: providerId },
+    });
+    if (!viewed) {
+      throw new BadRequestException("قيّمي الصانعة من صفحة الملف بعد فتحه");
+    }
     const since = new Date();
     since.setDate(since.getDate() - 30);
     const recentCount = await this.prisma.rating.count({
@@ -341,12 +416,18 @@ export class DiscoveryService {
   private toCard(
     provider: {
       id: string;
+      status?: string;
       displayName: string;
       lastActiveAt: Date | null;
       providerProfile: {
         badge: string | null;
+        visibility?: string | null;
+        lastAppearedAt?: Date | null;
         city: { id: string; nameAr: string; nameEn: string } | null;
         services: {
+          isPrimary?: boolean;
+          priceFrom?: { toString(): string } | number | null;
+          priceTo?: { toString(): string } | number | null;
           service: { id: string; nameAr: string; nameEn: string; code: string };
           subService: { nameAr: string; nameEn: string } | null;
         }[];
@@ -366,6 +447,12 @@ export class DiscoveryService {
     ratingCount: number,
   ) {
     const pkg = provider.subscriptions[0]?.package;
+    const visibility = provider.providerProfile?.visibility;
+    const status = provider.status ?? AccountStatus.ACTIVE;
+    const lastAppearedAt =
+      provider.providerProfile?.lastAppearedAt?.toISOString() ??
+      provider.lastActiveAt?.toISOString() ??
+      null;
 
     return {
       id: provider.id,
@@ -374,15 +461,25 @@ export class DiscoveryService {
       badge: pkg?.hasBadge ? provider.providerProfile?.badge ?? pkg.nameAr : null,
       packageCode: pkg?.code ?? "FREE",
       packageRank: pkg?.rank ?? 99,
+      appearanceTier: status === AccountStatus.ACTIVE && visibility === Visibility.PUBLIC ? 0 : 1,
       services: provider.providerProfile?.services.map((row) => ({
         nameAr: row.subService?.nameAr ?? row.service.nameAr,
         nameEn: row.subService?.nameEn ?? row.service.nameEn,
         serviceCode: row.service.code,
+        isPrimary: Boolean(row.isPrimary),
+        priceFrom: row.priceFrom == null ? null : Number(row.priceFrom),
+        priceTo: row.priceTo == null ? null : Number(row.priceTo),
       })),
       ratingAvg,
       ratingCount,
       lastActiveAt: provider.lastActiveAt?.toISOString() ?? null,
-      canContact: Boolean(pkg?.allowWhatsApp),
+      lastAppearedAt,
+      canContact: canContactProvider({
+        status,
+        visibility,
+        allowWhatsApp: pkg?.allowWhatsApp,
+        hasLiveSubscription: Boolean(pkg),
+      }),
     };
   }
 

@@ -29,6 +29,27 @@ export class ContentController {
     };
   }
 
+  @Get("content/welcome")
+  async welcome(@Query() query: LegalAudienceDto) {
+    const rows = await this.prisma.welcomeMessage.findMany({
+      where: {
+        isActive: true,
+        audience: { in: [query.audience, "ALL"] },
+      },
+    });
+    const pick = (kind: string) => {
+      const pool = rows.filter((row) => row.kind === kind);
+      if (!pool.length) {
+        return null;
+      }
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+    return {
+      welcome: pick("WELCOME"),
+      motivational: pick("MOTIVATIONAL"),
+    };
+  }
+
   private async legalPage(code: string, audience: "CUSTOMER" | "PROVIDER") {
     const page = await this.prisma.legalPage.findUnique({ where: { code } });
     if (!page) {

@@ -11,6 +11,10 @@ import {
   VerifyOtpDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  PhoneStartDto,
+  PhoneVerifyDto,
+  PhoneCompleteDto,
+  LogoutDto,
 } from "./dto/auth.dto";
 
 @ApiTags("auth")
@@ -26,6 +30,21 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto);
+  }
+
+  @Post("phone/start")
+  startPhone(@Body() dto: PhoneStartDto) {
+    return this.auth.startPhone(dto);
+  }
+
+  @Post("phone/verify")
+  verifyPhone(@Body() dto: PhoneVerifyDto) {
+    return this.auth.verifyPhone(dto);
+  }
+
+  @Post("phone/complete")
+  completePhone(@Body() dto: PhoneCompleteDto) {
+    return this.auth.completePhone(dto);
   }
 
   @Post("otp/send")
@@ -58,7 +77,7 @@ export class AuthController {
   @Post("logout")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  logout() {
-    return this.auth.logout();
+  logout(@CurrentUser() user: AuthUser, @Body() dto: LogoutDto) {
+    return this.auth.logout(user.sub, dto.deviceId);
   }
 }
