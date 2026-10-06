@@ -100,7 +100,8 @@ model CustomerProfile {
   cityId     String? @db.Char(36)
   interests  String? @db.LongText
   user       User    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  city       City?   @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city       City?   @relation("CustomerPrimaryCity", fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cities     CustomerCity[]
   @@map("customerprofile")
 }
 
@@ -113,12 +114,13 @@ model ProviderProfile {
   badge      String?     @db.VarChar(40)
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   lastAppearedAt DateTime? @db.DateTime(0)
-  city       City?       @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  city       City?       @relation("ProviderPrimaryCity", fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   services   ProviderService[]
   portfolio  PortfolioItem[]
   albums     PortfolioAlbum[]
   viewDaily  ProfileViewDaily[]
   coverage   ProviderCoverage[]
+  cities     ProviderCity[]
 
   @@index([cityId, visibility])
   @@map("providerprofile")
@@ -181,11 +183,15 @@ model AccountStatusHistory {
 }
 
 model Region {
-  id     String @id @default(uuid()) @db.Char(36)
-  code   String @unique @db.VarChar(20)
-  nameAr String @db.VarChar(80)
-  nameEn String @db.VarChar(80)
-  cities City[]
+  id        String  @id @default(uuid()) @db.Char(36)
+  code      String  @unique @db.VarChar(20)
+  nameAr    String  @db.VarChar(80)
+  nameEn    String  @db.VarChar(80)
+  isVisible Boolean @default(true)
+  sortOrder Int     @default(0)
+  cities    City[]
+
+  @@index([isVisible, sortOrder])
   @@map("region")
 }
 
@@ -197,14 +203,41 @@ model City {
   nameEn     String  @db.VarChar(80)
   isVisible  Boolean @default(false)
   region     Region  @relation(fields: [regionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  customers  CustomerProfile[]
-  providers  ProviderProfile[]
+  customers  CustomerProfile[] @relation("CustomerPrimaryCity")
+  providers  ProviderProfile[] @relation("ProviderPrimaryCity")
+  customerCities CustomerCity[]
+  providerCities ProviderCity[]
   viewDaily  ProfileViewDaily[]
   searchLogs SearchLog[]
   coverageAreas CoverageArea[]
 
+  @@index([regionId, isVisible])
   @@index([isVisible])
   @@map("city")
+}
+
+model CustomerCity {
+  customerUserId String @db.Char(36)
+  cityId         String @db.Char(36)
+  sortOrder      Int    @default(0)
+  customer       CustomerProfile @relation(fields: [customerUserId], references: [userId], onDelete: Cascade)
+  city           City            @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([customerUserId, cityId])
+  @@index([cityId])
+  @@map("customercity")
+}
+
+model ProviderCity {
+  providerUserId String @db.Char(36)
+  cityId         String @db.Char(36)
+  sortOrder      Int    @default(0)
+  provider       ProviderProfile @relation(fields: [providerUserId], references: [userId], onDelete: Cascade)
+  city           City            @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([providerUserId, cityId])
+  @@index([cityId])
+  @@map("providercity")
 }
 
 model Service {

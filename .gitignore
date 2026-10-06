@@ -12,3 +12,7 @@ coverage/
 backend/uploads/
 *.docx
 Onothiti_Provider_Full_Flow_Web_Frontend/
+Onothiti_Unified_Web_PlatformV2/
+.tmp-sow19/
+.tmp-extract-sow.js
+*.txt

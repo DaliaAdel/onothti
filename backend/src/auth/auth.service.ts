@@ -38,6 +38,12 @@ import {
   pendingChangesFor,
   pendingValue,
 } from "../common/account-rules";
+import {
+  assertVisibleCitiesInSameRegion,
+  geoPayload,
+  orderedCitiesFromRows,
+  resolveCityIds,
+} from "../common/geo";
 
 @Injectable()
 export class AuthService {
@@ -189,12 +195,12 @@ export class AuthService {
       });
     }
 
-    const city = await this.prisma.city.findFirst({
-      where: { id: dto.cityId, isVisible: true },
-    });
-    if (!city) {
-      throw new BadRequestException("المدينة غير متاحة");
-    }
+    const cityIds = resolveCityIds(dto.cityId, dto.cityIds);
+    const cities = await assertVisibleCitiesInSameRegion(this.prisma, cityIds);
+    const primaryCityId = cities[0].id;
+    const cityLinks = {
+      create: cities.map((city, sortOrder) => ({ cityId: city.id, sortOrder })),
+    };
 
     const displayName = await assertUniqueDisplayName(this.prisma, dto.accountType, dto.displayName);
     const email = await assertUniqueEmail(this.prisma, dto.email);
@@ -221,10 +227,19 @@ export class AuthService {
           termsAcceptedAt: new Date(),
           termsVersion,
           customerProfile:
-            dto.accountType === AccountType.CUSTOMER ? { create: { cityId: dto.cityId } } : undefined,
+            dto.accountType === AccountType.CUSTOMER
+              ? { create: { cityId: primaryCityId, cities: cityLinks } }
+              : undefined,
           providerProfile:
             dto.accountType === AccountType.PROVIDER
-              ? { create: { visibility: "HIDDEN", cityId: dto.cityId, whatsapp: dto.mobile } }
+              ? {
+                  create: {
+                    visibility: "HIDDEN",
+                    cityId: primaryCityId,
+                    whatsapp: dto.mobile,
+                    cities: cityLinks,
+                  },
+                }
               : undefined,
           statusHistory: {
             create: {
@@ -301,8 +316,18 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        customerProfile: { include: { city: true } },
-        providerProfile: { include: { city: true } },
+        customerProfile: {
+          include: {
+            city: { include: { region: true } },
+            cities: { include: { city: { include: { region: true } } }, orderBy: { sortOrder: "asc" } },
+          },
+        },
+        providerProfile: {
+          include: {
+            city: { include: { region: true } },
+            cities: { include: { city: { include: { region: true } } }, orderBy: { sortOrder: "asc" } },
+          },
+        },
       },
     });
     if (!user) {
@@ -312,6 +337,11 @@ export class AuthService {
     const displayName =
       pendingValue(pending, ProfileChangeField.DISPLAY_NAME) ?? user.displayName;
     const email = pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email;
+    const geo = user.customerProfile
+      ? orderedCitiesFromRows(user.customerProfile.cities, user.customerProfile.city)
+      : user.providerProfile
+        ? orderedCitiesFromRows(user.providerProfile.cities, user.providerProfile.city)
+        : geoPayload(null, []);
     return {
       id: user.id,
       accountType: user.accountType,
@@ -320,7 +350,9 @@ export class AuthService {
       mobile: user.mobile,
       email,
       accountCode: user.accountCode,
-      city: user.customerProfile?.city ?? user.providerProfile?.city ?? null,
+      city: geo.city,
+      cities: geo.cities,
+      region: geo.region,
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,
       pendingChanges: pending,

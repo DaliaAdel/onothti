@@ -2,7 +2,16 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@ne
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { StaffGuard } from "./ops.guard";
 import { OpsService } from "./ops.service";
-import { PatchCampaignDto, ReviewChangeDto, UpdateSettingDto, UpsertWelcomeDto } from "./dto/ops.dto";
+import {
+  CreateCityDto,
+  PatchCampaignDto,
+  PatchCityDto,
+  PatchRegionDto,
+  ReviewChangeDto,
+  UpdateSettingDto,
+  UpsertRegionDto,
+  UpsertWelcomeDto,
+} from "./dto/ops.dto";
 
 @ApiTags("ops")
 @ApiBearerAuth()
@@ -59,5 +68,35 @@ export class OpsController {
   @Get("complaints")
   complaints() {
     return this.ops.complaints();
+  }
+
+  @Get("regions")
+  regions() {
+    return this.ops.regions();
+  }
+
+  @Post("regions")
+  createRegion(@Body() dto: UpsertRegionDto) {
+    return this.ops.createRegion(dto);
+  }
+
+  @Patch("regions/:id")
+  patchRegion(@Param("id") id: string, @Body() dto: PatchRegionDto) {
+    return this.ops.patchRegion(id, dto);
+  }
+
+  @Get("cities")
+  cities() {
+    return this.ops.cities();
+  }
+
+  @Post("cities")
+  createCity(@Body() dto: CreateCityDto) {
+    return this.ops.createCity(dto);
+  }
+
+  @Patch("cities/:id")
+  patchCity(@Param("id") id: string, @Body() dto: PatchCityDto) {
+    return this.ops.patchCity(id, dto);
   }
 }

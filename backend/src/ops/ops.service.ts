@@ -1,8 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileChangeField, Visibility } from "../common/enums";
 import { assertUniqueDisplayName, assertUniqueEmail } from "../common/account-rules";
-import { PatchCampaignDto, UpdateSettingDto, UpsertWelcomeDto } from "./dto/ops.dto";
+import {
+  CreateCityDto,
+  PatchCampaignDto,
+  PatchCityDto,
+  PatchRegionDto,
+  UpdateSettingDto,
+  UpsertRegionDto,
+  UpsertWelcomeDto,
+} from "./dto/ops.dto";
+import { parseCityIds, replaceProviderCities } from "../common/geo";
 
 @Injectable()
 export class OpsService {
@@ -115,6 +125,101 @@ export class OpsService {
     });
   }
 
+  regions() {
+    return this.prisma.region.findMany({
+      include: { cities: { orderBy: { nameAr: "asc" } } },
+      orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
+    });
+  }
+
+  async createRegion(dto: UpsertRegionDto) {
+    return this.prisma.region
+      .create({
+        data: {
+          code: dto.code.trim().toUpperCase(),
+          nameAr: dto.nameAr.trim(),
+          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          isVisible: dto.isVisible ?? true,
+          sortOrder: dto.sortOrder ?? 0,
+        },
+        include: { cities: true },
+      })
+      .catch((error: unknown) => this.rethrowUnique(error, "رمز المنطقة مستخدم"));
+  }
+
+  async patchRegion(id: string, dto: PatchRegionDto) {
+    const region = await this.prisma.region.findUnique({ where: { id } });
+    if (!region) {
+      throw new NotFoundException("المنطقة غير موجودة");
+    }
+    return this.prisma.region.update({
+      where: { id },
+      data: {
+        ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
+        ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      },
+      include: { cities: { orderBy: { nameAr: "asc" } } },
+    });
+  }
+
+  cities() {
+    return this.prisma.city.findMany({
+      include: { region: true },
+      orderBy: [{ region: { nameAr: "asc" } }, { nameAr: "asc" }],
+    });
+  }
+
+  async createCity(dto: CreateCityDto) {
+    const region = await this.prisma.region.findUnique({ where: { id: dto.regionId } });
+    if (!region) {
+      throw new NotFoundException("المنطقة غير موجودة");
+    }
+    return this.prisma.city
+      .create({
+        data: {
+          regionId: dto.regionId,
+          code: dto.code.trim().toUpperCase(),
+          nameAr: dto.nameAr.trim(),
+          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          isVisible: dto.isVisible ?? true,
+        },
+        include: { region: true },
+      })
+      .catch((error: unknown) => this.rethrowUnique(error, "رمز المدينة مستخدم"));
+  }
+
+  async patchCity(id: string, dto: PatchCityDto) {
+    const city = await this.prisma.city.findUnique({ where: { id } });
+    if (!city) {
+      throw new NotFoundException("المدينة غير موجودة");
+    }
+    if (dto.regionId && dto.regionId !== city.regionId) {
+      const region = await this.prisma.region.findUnique({ where: { id: dto.regionId } });
+      if (!region) {
+        throw new NotFoundException("المنطقة غير موجودة");
+      }
+    }
+    return this.prisma.city.update({
+      where: { id },
+      data: {
+        ...(dto.regionId ? { regionId: dto.regionId } : {}),
+        ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
+        ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
+      },
+      include: { region: true },
+    });
+  }
+
+  private rethrowUnique(error: unknown, message: string) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ConflictException(message);
+    }
+    throw error;
+  }
+
   private async applyChange(change: {
     userId: string;
     field: string;
@@ -168,9 +273,14 @@ export class OpsService {
       return;
     }
     if (change.field === ProfileChangeField.CITY) {
+      const cityIds = parseCityIds(change.newValue);
+      if (!cityIds.length) {
+        throw new BadRequestException("المدن غير صحيحة");
+      }
+      await replaceProviderCities(this.prisma, change.userId, cityIds);
       await this.prisma.providerProfile.update({
         where: { userId: change.userId },
-        data: { cityId: change.newValue, visibility: Visibility.HIDDEN },
+        data: { visibility: Visibility.HIDDEN },
       });
     }
   }

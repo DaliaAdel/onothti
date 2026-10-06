@@ -3,9 +3,15 @@ import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class SearchProvidersDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  cityId!: string;
+  cityId?: string;
+
+  @ApiPropertyOptional({ description: "البحث بكل مدن المنطقة" })
+  @IsOptional()
+  @IsString()
+  regionId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

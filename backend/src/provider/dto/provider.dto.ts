@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
@@ -35,6 +36,13 @@ export class UpdateProviderProfileDto {
   @IsOptional()
   @IsString()
   cityId?: string;
+
+  @ApiPropertyOptional({ type: [String], description: "مدن الحساب داخل نفس المنطقة" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  cityIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

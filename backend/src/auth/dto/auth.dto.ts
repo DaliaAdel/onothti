@@ -1,6 +1,8 @@
 import { Transform } from "class-transformer";
 import {
+  ArrayMaxSize,
   Equals,
+  IsArray,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -116,6 +118,13 @@ export class PhoneCompleteDto extends PhoneVerifyDto {
   @IsString()
   @MinLength(8)
   cityId!: string;
+
+  @ApiPropertyOptional({ type: [String], description: "مدن إضافية تابعة لنفس المنطقة" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  cityIds?: string[];
 
   @ApiPropertyOptional()
   @Transform(emptyToUndefined)

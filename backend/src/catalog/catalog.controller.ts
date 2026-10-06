@@ -8,6 +8,23 @@ import { liveCampaign } from "../common/account-rules";
 export class CatalogController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get("regions")
+  regions() {
+    return this.prisma.region.findMany({
+      where: { isVisible: true, cities: { some: { isVisible: true } } },
+      include: {
+        cities: {
+          where: { isVisible: true },
+          include: {
+            coverageAreas: { where: { isVisible: true }, orderBy: { nameAr: "asc" } },
+          },
+          orderBy: { nameAr: "asc" },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
+    });
+  }
+
   @Get("cities")
   cities() {
     return this.prisma.city.findMany({

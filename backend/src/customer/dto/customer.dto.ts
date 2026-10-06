@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 function emptyToUndefined({ value }: { value: unknown }) {
@@ -17,6 +17,13 @@ export class UpdateCustomerProfileDto {
   @IsOptional()
   @IsString()
   cityId?: string;
+
+  @ApiPropertyOptional({ type: [String], description: "مدن الحساب داخل نفس المنطقة" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  cityIds?: string[];
 
   @ApiPropertyOptional()
   @Transform(emptyToUndefined)

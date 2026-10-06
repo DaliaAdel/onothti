@@ -26,6 +26,7 @@ import {
   pendingValue,
   queueProfileChange,
 } from "../common/account-rules";
+import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, resolveCityIds, serializeCityIds } from "../common/geo";
 import { publicUploadUrl } from "../common/upload-url";
 
 @Injectable()
@@ -64,19 +65,19 @@ export class ProviderService {
 
   async updateProfile(userId: string, dto: UpdateProviderProfileDto) {
     const user = await this.requireProvider(userId);
-    if (dto.cityId) {
-      const city = await this.prisma.city.findFirst({
-        where: { id: dto.cityId, isVisible: true },
-      });
-      if (!city) {
-        throw new BadRequestException("المدينة غير متاحة");
+    const cityIds = resolveCityIds(dto.cityId, dto.cityIds);
+    if (cityIds.length) {
+      const cities = await assertVisibleCitiesInSameRegion(this.prisma, cityIds);
+      const currentIds = (user.providerProfile.cities ?? []).map((row) => row.cityId);
+      if (!currentIds.length && user.providerProfile.cityId) {
+        currentIds.push(user.providerProfile.cityId);
       }
       await queueProfileChange(
         this.prisma,
         userId,
         ProfileChangeField.CITY,
-        user.providerProfile.cityId,
-        dto.cityId,
+        serializeCityIds(currentIds),
+        serializeCityIds(cities.map((city) => city.id)),
       );
     }
     if (dto.displayName) {
@@ -317,11 +318,17 @@ export class ProviderService {
 
   async updateCoverage(userId: string, dto: UpdateProviderCoverageDto) {
     const user = await this.requireProvider(userId);
+    const cityIds =
+      user.providerProfile.cities?.length
+        ? user.providerProfile.cities.map((row) => row.cityId)
+        : user.providerProfile.cityId
+          ? [user.providerProfile.cityId]
+          : [];
     const areas = await this.prisma.coverageArea.findMany({
       where: {
         id: { in: dto.areaIds },
         isVisible: true,
-        ...(user.providerProfile.cityId ? { cityId: user.providerProfile.cityId } : {}),
+        ...(cityIds.length ? { cityId: { in: cityIds } } : {}),
       },
     });
     if (areas.length !== dto.areaIds.length) {
@@ -918,11 +925,23 @@ export class ProviderService {
       });
       avatarUrl = publicUploadUrl(file?.storageKey);
     }
-    const pendingCityId = pendingValue(pending, ProfileChangeField.CITY);
-    const city =
-      pendingCityId && pendingCityId !== profile.cityId
-        ? await this.prisma.city.findUnique({ where: { id: pendingCityId } })
-        : profile.city;
+    const pendingCityRaw = pendingValue(pending, ProfileChangeField.CITY);
+    const pendingCityIds = parseCityIds(pendingCityRaw);
+    const savedGeo = orderedCitiesFromRows(profile.cities ?? [], profile.city);
+    let geo = savedGeo;
+    if (pendingCityIds.length) {
+      const pendingCities = await this.prisma.city.findMany({
+        where: { id: { in: pendingCityIds } },
+        include: { region: true },
+      });
+      const byId = new Map(pendingCities.map((city) => [city.id, city]));
+      geo = orderedCitiesFromRows(
+        pendingCityIds
+          .filter((id) => byId.has(id))
+          .map((id, sortOrder) => ({ city: byId.get(id)!, sortOrder })),
+        pendingCities[0] ?? profile.city,
+      );
+    }
     const services = await this.prisma.providerService.findMany({
       where: { providerUserId: user.id },
       select: { subServiceId: true, isPrimary: true, isActive: true },
@@ -938,7 +957,9 @@ export class ProviderService {
       bio: pendingValue(pending, ProfileChangeField.BIO) ?? profile.bio,
       whatsapp: user.mobile,
       badge: profile.badge,
-      city,
+      city: geo.city,
+      cities: geo.cities,
+      region: geo.region,
       avatarUrl,
       coverage: profile.coverage.map((row) => row.coverageArea),
       hasRequiredServices:
@@ -965,8 +986,12 @@ export class ProviderService {
       include: {
         providerProfile: {
           include: {
-            city: true,
+            city: { include: { region: true } },
             coverage: { include: { coverageArea: true } },
+            cities: {
+              include: { city: { include: { region: true } } },
+              orderBy: { sortOrder: "asc" },
+            },
           },
         },
       },

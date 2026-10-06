@@ -61,6 +61,107 @@ export class UpsertWelcomeDto {
   isActive?: boolean;
 }
 
+export class UpsertRegionDto {
+  @ApiProperty({ example: "EAS" })
+  @IsString()
+  @MinLength(2)
+  code!: string;
+
+  @ApiProperty({ example: "الشرقية" })
+  @IsString()
+  @MinLength(2)
+  nameAr!: string;
+
+  @ApiPropertyOptional({ example: "Eastern" })
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isVisible?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+}
+
+export class PatchRegionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isVisible?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+}
+
+export class CreateCityDto {
+  @ApiProperty()
+  @IsString()
+  regionId!: string;
+
+  @ApiProperty({ example: "DHAHRAN" })
+  @IsString()
+  @MinLength(2)
+  code!: string;
+
+  @ApiProperty({ example: "الظهران" })
+  @IsString()
+  @MinLength(2)
+  nameAr!: string;
+
+  @ApiPropertyOptional({ example: "Dhahran" })
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isVisible?: boolean;
+}
+
+export class PatchCityDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  regionId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isVisible?: boolean;
+}
+
 export class ReviewChangeDto {
   @ApiPropertyOptional()
   @Transform(({ value }) => value === true || value === "true")

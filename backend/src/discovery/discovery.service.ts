@@ -25,24 +25,41 @@ export class DiscoveryService {
       throw new BadRequestException("البحث برقم الجوال غير مسموح");
     }
 
+    if (!dto.cityId && !dto.regionId) {
+      throw new BadRequestException("اختاري المدينة أو المنطقة");
+    }
+
     await refreshExpiredProviders(this.prisma);
+
+    const locationFilter: Prisma.ProviderProfileWhereInput = dto.cityId
+      ? {
+          OR: [{ cityId: dto.cityId }, { cities: { some: { cityId: dto.cityId } } }],
+        }
+      : {
+          OR: [
+            { city: { regionId: dto.regionId } },
+            { cities: { some: { city: { regionId: dto.regionId } } } },
+          ],
+        };
 
     const where: Prisma.UserWhereInput = {
       ...providerSearchWhere(),
       providerProfile: {
-        cityId: dto.cityId,
-        city: { isVisible: true },
-        ...(dto.serviceId || dto.subServiceId
-          ? {
-              services: {
-                some: {
-                  isActive: true,
-                  ...(dto.serviceId ? { serviceId: dto.serviceId } : {}),
-                  ...(dto.subServiceId ? { subServiceId: dto.subServiceId } : {}),
+        AND: [
+          { city: { isVisible: true } },
+          locationFilter,
+          dto.serviceId || dto.subServiceId
+            ? {
+                services: {
+                  some: {
+                    isActive: true,
+                    ...(dto.serviceId ? { serviceId: dto.serviceId } : {}),
+                    ...(dto.subServiceId ? { subServiceId: dto.subServiceId } : {}),
+                  },
                 },
-              },
-            }
-          : {}),
+              }
+            : {},
+        ],
       },
       ...(dto.q
         ? { displayName: { contains: dto.q.trim() } }
@@ -61,7 +78,14 @@ export class DiscoveryService {
             badge: true,
             lastAppearedAt: true,
             visibility: true,
-            city: { select: { id: true, nameAr: true, nameEn: true } },
+            city: { select: { id: true, nameAr: true, nameEn: true, regionId: true } },
+            cities: {
+              orderBy: { sortOrder: "asc" },
+              select: {
+                sortOrder: true,
+                city: { select: { id: true, nameAr: true, nameEn: true, regionId: true } },
+              },
+            },
             services: {
               where: { isActive: true },
               orderBy: { sortOrder: "asc" },
@@ -175,7 +199,11 @@ export class DiscoveryService {
       include: {
         providerProfile: {
           include: {
-            city: true,
+            city: { include: { region: true } },
+            cities: {
+              include: { city: { include: { region: true } } },
+              orderBy: { sortOrder: "asc" },
+            },
             services: {
               where: { isActive: true },
               include: { service: true, subService: true },
@@ -263,6 +291,10 @@ export class DiscoveryService {
       bio: provider.providerProfile.bio,
       ratings: provider.ratingsReceived,
       coverage: provider.providerProfile.coverage.map((row) => row.coverageArea),
+      cities: (provider.providerProfile.cities ?? [])
+        .map((row) => row.city)
+        .filter(Boolean),
+      region: provider.providerProfile.city?.region ?? null,
       services: provider.providerProfile.services.map((row) => ({
         nameAr: row.subService?.nameAr ?? row.service.nameAr,
         nameEn: row.subService?.nameEn ?? row.service.nameEn,
@@ -424,6 +456,7 @@ export class DiscoveryService {
         visibility?: string | null;
         lastAppearedAt?: Date | null;
         city: { id: string; nameAr: string; nameEn: string } | null;
+        cities?: { city: { id: string; nameAr: string; nameEn: string } }[];
         services: {
           isPrimary?: boolean;
           priceFrom?: { toString(): string } | number | null;
@@ -458,6 +491,7 @@ export class DiscoveryService {
       id: provider.id,
       displayName: provider.displayName,
       city: provider.providerProfile?.city,
+      cities: (provider.providerProfile?.cities ?? []).map((row) => row.city),
       badge: pkg?.hasBadge ? provider.providerProfile?.badge ?? pkg.nameAr : null,
       packageCode: pkg?.code ?? "FREE",
       packageRank: pkg?.rank ?? 99,

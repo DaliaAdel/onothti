@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -14,6 +13,7 @@ import {
   pendingValue,
   queueProfileChange,
 } from "../common/account-rules";
+import { orderedCitiesFromRows, replaceCustomerCities, resolveCityIds } from "../common/geo";
 
 @Injectable()
 export class CustomerService {
@@ -22,6 +22,10 @@ export class CustomerService {
   async getProfile(userId: string) {
     const user = await this.requireCustomer(userId);
     const pending = await pendingChangesFor(this.prisma, userId);
+    const geo = orderedCitiesFromRows(
+      user.customerProfile?.cities ?? [],
+      user.customerProfile?.city ?? null,
+    );
     return {
       id: user.id,
       displayName: pendingValue(pending, ProfileChangeField.DISPLAY_NAME) ?? user.displayName,
@@ -29,26 +33,18 @@ export class CustomerService {
       email: pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email,
       accountCode: user.accountCode,
       status: user.status,
-      city: user.customerProfile?.city ?? null,
+      city: geo.city,
+      cities: geo.cities,
+      region: geo.region,
       pendingChanges: pending,
     };
   }
 
   async updateProfile(userId: string, dto: UpdateCustomerProfileDto) {
     const user = await this.requireCustomer(userId);
-    if (dto.cityId) {
-      const city = await this.prisma.city.findFirst({
-        where: { id: dto.cityId, isVisible: true },
-      });
-      if (!city) {
-        throw new BadRequestException("المدينة غير متاحة");
-      }
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          customerProfile: { upsert: { create: { cityId: dto.cityId }, update: { cityId: dto.cityId } } },
-        },
-      });
+    const cityIds = resolveCityIds(dto.cityId, dto.cityIds);
+    if (cityIds.length) {
+      await replaceCustomerCities(this.prisma, userId, cityIds);
     }
     if (dto.displayName) {
       const name = await assertUniqueDisplayName(
@@ -204,7 +200,17 @@ export class CustomerService {
   private async requireCustomer(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { customerProfile: { include: { city: true } } },
+      include: {
+        customerProfile: {
+          include: {
+            city: { include: { region: true } },
+            cities: {
+              include: { city: { include: { region: true } } },
+              orderBy: { sortOrder: "asc" },
+            },
+          },
+        },
+      },
     });
     if (!user || user.accountType !== AccountType.CUSTOMER) {
       throw new ForbiddenException("الحساب ليس حساب باحثة عن الأنوثة");

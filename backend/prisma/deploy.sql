@@ -142,8 +142,11 @@ CREATE TABLE IF NOT EXISTS `region` (
     `code` VARCHAR(20) NOT NULL,
     `nameAr` VARCHAR(80) NOT NULL,
     `nameEn` VARCHAR(80) NOT NULL,
+    `isVisible` BOOLEAN NOT NULL DEFAULT true,
+    `sortOrder` INTEGER NOT NULL DEFAULT 0,
 
     UNIQUE INDEX `region_code_key`(`code`),
+    INDEX `region_isVisible_sortOrder_idx`(`isVisible`, `sortOrder`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -158,7 +161,26 @@ CREATE TABLE IF NOT EXISTS `city` (
 
     UNIQUE INDEX `city_code_key`(`code`),
     INDEX `city_isVisible_idx`(`isVisible`),
+    INDEX `city_regionId_isVisible_idx`(`regionId`, `isVisible`),
     PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `customercity` (
+    `customerUserId` CHAR(36) NOT NULL,
+    `cityId` CHAR(36) NOT NULL,
+    `sortOrder` INTEGER NOT NULL DEFAULT 0,
+
+    INDEX `customercity_cityId_idx`(`cityId`),
+    PRIMARY KEY (`customerUserId`, `cityId`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `providercity` (
+    `providerUserId` CHAR(36) NOT NULL,
+    `cityId` CHAR(36) NOT NULL,
+    `sortOrder` INTEGER NOT NULL DEFAULT 0,
+
+    INDEX `providercity_cityId_idx`(`cityId`),
+    PRIMARY KEY (`providerUserId`, `cityId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -531,6 +553,11 @@ ALTER TABLE `providerprofile` ADD CONSTRAINT `providerprofile_userId_fkey` FOREI
 
 -- AddForeignKey
 ALTER TABLE `providerprofile` ADD CONSTRAINT `providerprofile_cityId_fkey` FOREIGN KEY (`cityId`) REFERENCES `city`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE `customercity` ADD CONSTRAINT `customercity_customerUserId_fkey` FOREIGN KEY (`customerUserId`) REFERENCES `customerprofile`(`userId`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `customercity` ADD CONSTRAINT `customercity_cityId_fkey` FOREIGN KEY (`cityId`) REFERENCES `city`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE `providercity` ADD CONSTRAINT `providercity_providerUserId_fkey` FOREIGN KEY (`providerUserId`) REFERENCES `providerprofile`(`userId`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `providercity` ADD CONSTRAINT `providercity_cityId_fkey` FOREIGN KEY (`cityId`) REFERENCES `city`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 -- AddForeignKey
 ALTER TABLE `session` ADD CONSTRAINT `session_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

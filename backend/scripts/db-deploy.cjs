@@ -13,7 +13,7 @@ applySchema()
     if (align.status) {
       process.exit(align.status);
     }
-    for (const script of ["scripts/apply-0004.cjs", "scripts/apply-0005.cjs"]) {
+    for (const script of ["scripts/apply-0004.cjs", "scripts/apply-0005.cjs", "scripts/apply-0006.cjs"]) {
       const extra = spawnSync("node", [script], {
         stdio: "inherit",
         env: process.env,
