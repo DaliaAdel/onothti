@@ -487,6 +487,8 @@ export class AuthService {
       accountType: user.accountType,
       status: user.status,
     });
+    const staff =
+      user.accountType === AccountType.STAFF ? await this.staffSession(user.id) : null;
     return {
       accessToken: token,
       otpRequired: false,
@@ -500,7 +502,23 @@ export class AuthService {
           status: user.status,
           visibility: user.providerProfile?.visibility,
         }),
+        ...(staff ?? {}),
       },
+    };
+  }
+
+  private async staffSession(userId: string) {
+    const staff = await this.prisma.staffUser.findUnique({
+      where: { userId },
+      include: { role: { include: { permissions: { include: { permission: true } } } } },
+    });
+    if (!staff) {
+      return { roleCode: null as string | null, roleNameAr: null as string | null, permissions: [] as string[] };
+    }
+    return {
+      roleCode: staff.role.code,
+      roleNameAr: staff.role.nameAr,
+      permissions: staff.role.permissions.map((row) => row.permission.code),
     };
   }
 

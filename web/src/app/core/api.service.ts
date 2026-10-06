@@ -23,6 +23,28 @@ import type {
   SearchResponse,
   SessionUser,
   TicketType,
+  OpsDashboard,
+  OpsMediaItem,
+  OpsPendingProvider,
+  OpsCampaign,
+  OpsRating,
+  OpsComplaint,
+  OpsProfileChange,
+  OpsRegion,
+  OpsCity,
+  OpsSetting,
+  OpsWelcome,
+  OpsRole,
+  OpsStaff,
+  OpsPermission,
+  OpsLegalPage,
+  OpsCatalogService,
+  OpsSubService,
+  OpsTicket,
+  OpsBankAccount,
+  OpsBannedPhone,
+  OpsCoverage,
+  OpsManagedAccount,
 } from './models';
 
 import { SessionService } from './session.service';
@@ -308,5 +330,255 @@ export class ApiService {
       `${this.base}/legal/policies`,
       { params: { audience } },
     );
+  }
+
+  opsDashboard() {
+    return this.http.get<OpsDashboard>(`${this.base}/ops/dashboard`);
+  }
+
+  opsMedia(query: { status?: string; kind?: string; purpose?: string; accountType?: string } = {}) {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value) {
+        params = params.set(key, value);
+      }
+    }
+    return this.http.get<OpsMediaItem[]>(`${this.base}/ops/media`, { params });
+  }
+
+  opsReviewMedia(
+    id: string,
+    body: { approve?: boolean; requestClearer?: boolean; note?: string; startAt?: string; endAt?: string },
+  ) {
+    return this.http.post<OpsMediaItem>(`${this.base}/ops/media/${id}/review`, body);
+  }
+
+  opsPendingProviders() {
+    return this.http.get<OpsPendingProvider[]>(`${this.base}/ops/providers/pending`);
+  }
+
+  opsReviewProvider(id: string, approve: boolean, reason?: string) {
+    return this.http.post<{ ok: boolean }>(`${this.base}/ops/providers/${id}/review`, { approve, reason });
+  }
+
+  opsPackages() {
+    return this.http.get<CatalogPackage[]>(`${this.base}/ops/packages`);
+  }
+
+  opsCreatePackage(body: Partial<CatalogPackage> & { code: string; nameAr: string; durationMonths: number; price: number; rank: number }) {
+    return this.http.post<CatalogPackage>(`${this.base}/ops/packages`, body);
+  }
+
+  opsPatchPackage(id: string, body: Partial<CatalogPackage>) {
+    return this.http.patch<CatalogPackage>(`${this.base}/ops/packages/${id}`, body);
+  }
+
+  opsCampaigns() {
+    return this.http.get<OpsCampaign[]>(`${this.base}/ops/campaigns`);
+  }
+
+  opsCreateCampaign(body: {
+    nameAr: string;
+    nameEn?: string;
+    startDate: string;
+    endDate: string;
+    benefitDays: number;
+    isActive?: boolean;
+  }) {
+    return this.http.post<OpsCampaign>(`${this.base}/ops/campaigns`, body);
+  }
+
+  opsPatchCampaign(id: string, body: Partial<OpsCampaign>) {
+    return this.http.patch<OpsCampaign>(`${this.base}/ops/campaigns/${id}`, body);
+  }
+
+  opsRatings(status = 'PENDING') {
+    return this.http.get<OpsRating[]>(`${this.base}/ops/ratings`, { params: { status } });
+  }
+
+  opsReviewRating(id: string, approve: boolean, note?: string) {
+    return this.http.post<OpsRating>(`${this.base}/ops/ratings/${id}/review`, { approve, note });
+  }
+
+  opsComplaints(status?: string) {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<OpsComplaint[]>(`${this.base}/ops/complaints`, { params });
+  }
+
+  opsPatchComplaint(id: string, status: 'OPEN' | 'CLOSED' | 'ESCALATED', note?: string) {
+    return this.http.patch<OpsComplaint>(`${this.base}/ops/complaints/${id}`, { status, note });
+  }
+
+  opsProfileChanges(status = 'PENDING') {
+    return this.http.get<OpsProfileChange[]>(`${this.base}/ops/profile-changes`, { params: { status } });
+  }
+
+  opsReviewChange(id: string, approve: boolean) {
+    return this.http.post<OpsProfileChange>(`${this.base}/ops/profile-changes/${id}/review`, { approve });
+  }
+
+  opsRegions() {
+    return this.http.get<OpsRegion[]>(`${this.base}/ops/regions`);
+  }
+
+  opsCreateRegion(body: { code: string; nameAr: string; nameEn?: string; isVisible?: boolean; sortOrder?: number }) {
+    return this.http.post<OpsRegion>(`${this.base}/ops/regions`, body);
+  }
+
+  opsPatchRegion(id: string, body: Partial<Pick<OpsRegion, 'nameAr' | 'nameEn' | 'isVisible' | 'sortOrder'>>) {
+    return this.http.patch<OpsRegion>(`${this.base}/ops/regions/${id}`, body);
+  }
+
+  opsCreateCity(body: { regionId: string; code: string; nameAr: string; nameEn?: string; isVisible?: boolean }) {
+    return this.http.post<OpsCity>(`${this.base}/ops/cities`, body);
+  }
+
+  opsPatchCity(id: string, body: Partial<Pick<OpsCity, 'regionId' | 'nameAr' | 'nameEn' | 'isVisible'>>) {
+    return this.http.patch<OpsCity>(`${this.base}/ops/cities/${id}`, body);
+  }
+
+  opsMe() {
+    return this.http.get<OpsStaff>(`${this.base}/ops/me`);
+  }
+
+  opsSettings() {
+    return this.http.get<OpsSetting[]>(`${this.base}/ops/settings`);
+  }
+
+  opsPatchSetting(key: string, value: string) {
+    return this.http.patch<OpsSetting>(`${this.base}/ops/settings`, { key, value });
+  }
+
+  opsWelcome() {
+    return this.http.get<OpsWelcome[]>(`${this.base}/ops/welcome-messages`);
+  }
+
+  opsCreateWelcome(body: { audience: string; kind: string; bodyAr: string; bodyEn?: string; isActive?: boolean }) {
+    return this.http.post<OpsWelcome>(`${this.base}/ops/welcome-messages`, body);
+  }
+
+  opsPatchWelcome(id: string, body: Partial<OpsWelcome>) {
+    return this.http.patch<OpsWelcome>(`${this.base}/ops/welcome-messages/${id}`, body);
+  }
+
+  opsRoles() {
+    return this.http.get<OpsRole[]>(`${this.base}/ops/roles`);
+  }
+
+  opsStaff() {
+    return this.http.get<OpsStaff[]>(`${this.base}/ops/staff`);
+  }
+
+  opsCreateStaff(body: { mobile: string; displayName: string; roleId: string; team?: string }) {
+    return this.http.post<OpsStaff>(`${this.base}/ops/staff`, body);
+  }
+
+  opsPatchStaff(id: string, body: { displayName?: string; roleId?: string; status?: 'ACTIVE' | 'SUSPENDED'; team?: string }) {
+    return this.http.patch<OpsStaff>(`${this.base}/ops/staff/${id}`, body);
+  }
+
+  opsPermissions() {
+    return this.http.get<OpsPermission[]>(`${this.base}/ops/permissions`);
+  }
+
+  opsPatchRolePermissions(id: string, permissionCodes: string[]) {
+    return this.http.patch<OpsRole>(`${this.base}/ops/roles/${id}/permissions`, { permissionCodes });
+  }
+
+  opsLegal() {
+    return this.http.get<OpsLegalPage[]>(`${this.base}/ops/legal`);
+  }
+
+  opsPatchLegal(id: string, body: { titleAr: string; bodyAr: string; titleEn?: string; bodyEn?: string }) {
+    return this.http.patch<OpsLegalPage>(`${this.base}/ops/legal/${id}`, body);
+  }
+
+  opsCatalog() {
+    return this.http.get<OpsCatalogService[]>(`${this.base}/ops/catalog`);
+  }
+
+  opsCreateService(body: { code: string; nameAr: string; nameEn?: string; sortOrder?: number; isVisible?: boolean }) {
+    return this.http.post<OpsCatalogService>(`${this.base}/ops/catalog`, body);
+  }
+
+  opsPatchService(id: string, body: Partial<Pick<OpsCatalogService, 'nameAr' | 'nameEn' | 'sortOrder' | 'isVisible'>>) {
+    return this.http.patch<OpsCatalogService>(`${this.base}/ops/catalog/${id}`, body);
+  }
+
+  opsCreateSubService(serviceId: string, body: { code: string; nameAr: string; nameEn?: string; sortOrder?: number }) {
+    return this.http.post<OpsSubService>(`${this.base}/ops/catalog/${serviceId}/sub-services`, body);
+  }
+
+  opsPatchSubService(id: string, body: Partial<Pick<OpsSubService, 'nameAr' | 'nameEn' | 'sortOrder' | 'isVisible'>>) {
+    return this.http.patch<OpsSubService>(`${this.base}/ops/sub-services/${id}`, body);
+  }
+
+  opsTickets(status?: string) {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<OpsTicket[]>(`${this.base}/ops/tickets`, { params });
+  }
+
+  opsPatchTicket(id: string, status: 'SENT' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED') {
+    return this.http.patch<OpsTicket>(`${this.base}/ops/tickets/${id}`, { status });
+  }
+
+  opsCommentTicket(id: string, body: string) {
+    return this.http.post<OpsTicket>(`${this.base}/ops/tickets/${id}/comments`, { body });
+  }
+
+  opsBankAccounts() {
+    return this.http.get<OpsBankAccount[]>(`${this.base}/ops/bank-accounts`);
+  }
+
+  opsCreateBank(body: { bankName: string; iban: string; accountName: string; isActive?: boolean }) {
+    return this.http.post<OpsBankAccount>(`${this.base}/ops/bank-accounts`, body);
+  }
+
+  opsPatchBank(id: string, body: Partial<OpsBankAccount>) {
+    return this.http.patch<OpsBankAccount>(`${this.base}/ops/bank-accounts/${id}`, body);
+  }
+
+  opsBannedPhones() {
+    return this.http.get<OpsBannedPhone[]>(`${this.base}/ops/banned-phones`);
+  }
+
+  opsBanPhone(body: { mobile: string; reason: string }) {
+    return this.http.post<OpsBannedPhone>(`${this.base}/ops/banned-phones`, body);
+  }
+
+  opsUnbanPhone(mobile: string) {
+    return this.http.post<{ ok: boolean }>(`${this.base}/ops/banned-phones/${mobile}/lift`, {});
+  }
+
+  opsCreateCoverage(body: { cityId: string; code: string; nameAr: string; nameEn?: string; isVisible?: boolean }) {
+    return this.http.post<OpsCoverage>(`${this.base}/ops/coverage`, body);
+  }
+
+  opsPatchCoverage(id: string, body: Partial<Pick<OpsCoverage, 'nameAr' | 'nameEn' | 'isVisible'>>) {
+    return this.http.patch<OpsCoverage>(`${this.base}/ops/coverage/${id}`, body);
+  }
+
+  opsAccounts(query: { q?: string; accountType?: string; status?: string } = {}) {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value) {
+        params = params.set(key, value);
+      }
+    }
+    return this.http.get<OpsManagedAccount[]>(`${this.base}/ops/accounts`, { params });
+  }
+
+  opsPatchAccount(id: string, body: { status: string; reason?: string; visibility?: string }) {
+    return this.http.patch<OpsManagedAccount>(`${this.base}/ops/accounts/${id}`, body);
+  }
+
+  opsBroadcast(body: { audience: 'CUSTOMER' | 'PROVIDER' | 'ALL'; titleAr: string; bodyAr: string }) {
+    return this.http.post<{ sent: number }>(`${this.base}/ops/broadcast`, body);
   }
 }

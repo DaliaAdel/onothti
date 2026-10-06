@@ -748,7 +748,13 @@ export class ProviderService {
     await this.requireProvider(userId);
     return this.prisma.ticket.findMany({
       where: { ownerId: userId },
-      include: { type: true },
+      include: {
+        type: true,
+        comments: {
+          include: { author: { select: { displayName: true, accountType: true } } },
+          orderBy: { createdAt: "asc" },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
   }

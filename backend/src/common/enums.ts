@@ -48,6 +48,23 @@ export const NotificationType = {
   CONTACT: "CONTACT",
 } as const;
 
+export const StaffPermission = {
+  PROVIDERS_APPROVE: "PROVIDERS_APPROVE",
+  CUSTOMERS_REVIEW: "CUSTOMERS_REVIEW",
+  PAYMENTS_REVIEW: "PAYMENTS_REVIEW",
+  PAYMENTS_CONFIRM: "PAYMENTS_CONFIRM",
+  USERS_MANAGE: "USERS_MANAGE",
+  SETTINGS_MANAGE: "SETTINGS_MANAGE",
+  REPORTS_VIEW: "REPORTS_VIEW",
+  TICKETS_MANAGE: "TICKETS_MANAGE",
+  RATINGS_REVIEW: "RATINGS_REVIEW",
+  MEDIA_REVIEW: "MEDIA_REVIEW",
+  PACKAGES_MANAGE: "PACKAGES_MANAGE",
+  GEO_MANAGE: "GEO_MANAGE",
+  LEGAL_MANAGE: "LEGAL_MANAGE",
+  CATALOG_MANAGE: "CATALOG_MANAGE",
+} as const;
+
 export type AccountTypeValue = (typeof AccountType)[keyof typeof AccountType];
 export type AccountStatusValue = (typeof AccountStatus)[keyof typeof AccountStatus];
 export type OtpPurposeValue = (typeof OtpPurpose)[keyof typeof OtpPurpose];

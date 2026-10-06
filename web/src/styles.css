@@ -62,6 +62,10 @@ app-favorite-btn{display:inline-flex;line-height:0}
 .service-card{position:relative}
 .service-card .service-fav{position:absolute;top:12px;left:12px;z-index:2}
 .service-open{display:block;width:100%;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:inherit;cursor:pointer}
+.ops-preview{border-radius:18px;overflow:hidden;background:#fbf5f2;min-height:180px;display:grid;place-items:center}
+.ops-preview img,.ops-preview video{width:100%;max-height:280px;object-fit:cover;display:block}
+.ops-preview pre{margin:0;padding:16px;white-space:pre-wrap;font-size:11px;line-height:1.8;color:#594845;width:100%}
+.muted.small,.small.muted{font-size:10px;color:var(--muted)}
 @media(max-width:780px){
   .provider-actions{grid-column:1/-1}
   .profile-actions{width:100%}

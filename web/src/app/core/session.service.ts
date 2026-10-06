@@ -79,7 +79,22 @@ export class SessionService {
   }
 
   homeFor(type?: AccountType): string {
-    return type === 'PROVIDER' ? '/p' : '/c';
+    if (type === 'PROVIDER') {
+      return '/p';
+    }
+    if (type === 'STAFF') {
+      return '/ops';
+    }
+    return '/c';
+  }
+
+  hasPermission(code: string): boolean {
+    return this.user()?.permissions?.includes(code) === true;
+  }
+
+  hasAnyPermission(...codes: string[]): boolean {
+    const perms = this.user()?.permissions ?? [];
+    return codes.some((code) => perms.includes(code));
   }
 
   private readUser(): SessionUser | null {

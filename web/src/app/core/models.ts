@@ -1,4 +1,4 @@
-export type AccountType = 'CUSTOMER' | 'PROVIDER';
+export type AccountType = 'CUSTOMER' | 'PROVIDER' | 'STAFF';
 
 export interface SessionUser {
   id: string;
@@ -10,6 +10,9 @@ export interface SessionUser {
   mobile?: string;
   email?: string;
   city?: { id: string; nameAr: string; nameEn: string } | null;
+  roleCode?: string | null;
+  roleNameAr?: string | null;
+  permissions?: string[];
 }
 
 export interface AuthResponse {
@@ -104,6 +107,11 @@ export interface CatalogPackage {
   maxVideos?: number | null;
   maxAlbums?: number | null;
   monthlyPrice?: number | string;
+  vatPercent?: number | string;
+  allowWhatsApp?: boolean;
+  allowRating?: boolean;
+  hasBadge?: boolean;
+  isActive?: boolean;
 }
 
 export interface NamedCity {
@@ -234,6 +242,7 @@ export interface ProviderTicket {
   body: string;
   createdAt: string;
   type: TicketType;
+  comments?: { id: string; body: string; createdAt: string; author: { displayName: string } }[];
 }
 
 export interface AppNotification {
@@ -295,6 +304,248 @@ export const PACKAGE_POLICIES: Record<string, { duration: string; limits: string
     policy: 'أعلى باقة أعمال وأولوية ظهور. يمكن الترقية إليها من أي باقة أدنى، وتبدأ بعد اعتماد الترقية وفق إجراءات مراجعة الدفع.',
   },
 };
+
+export interface OpsDashboard {
+  pendingMedia: number;
+  pendingReceipts: number;
+  pendingProviders: number;
+  pendingProfileChanges: number;
+  pendingRatings: number;
+  openComplaints: number;
+  openTickets?: number;
+  activeProviders: number;
+  customers: number;
+  expiringSubscriptions: number;
+}
+
+export interface OpsMediaItem {
+  id: string;
+  purpose: 'AVATAR' | 'PORTFOLIO' | 'RECEIPT' | 'FILE';
+  kind: string;
+  status: string;
+  mime: string;
+  createdAt: string;
+  url?: string | null;
+  text?: string | null;
+  owner: {
+    id: string;
+    displayName: string;
+    accountType: string;
+    accountCode: string;
+    mobile: string;
+    status: string;
+  };
+  proofs: {
+    id: string;
+    opsStatus: string;
+    amount: number;
+    package: { code: string; nameAr: string; durationMonths: number };
+  }[];
+}
+
+export interface OpsPendingProvider {
+  id: string;
+  displayName: string;
+  accountCode: string;
+  mobile: string;
+  status: string;
+  city?: { nameAr: string } | null;
+  package?: { code: string; nameAr: string } | null;
+  createdAt: string;
+}
+
+export interface OpsCampaign {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  startDate: string;
+  endDate: string;
+  benefitDays: number;
+  isActive: boolean;
+}
+
+export interface OpsAccountRef {
+  id: string;
+  displayName: string;
+  accountType?: string;
+  accountCode: string;
+  mobile?: string;
+}
+
+export interface OpsRating {
+  id: string;
+  stars: number;
+  note?: string | null;
+  status: string;
+  createdAt: string;
+  customer: OpsAccountRef;
+  provider: OpsAccountRef;
+}
+
+export interface OpsComplaint {
+  id: string;
+  reason: string;
+  status: string;
+  targetRef?: string | null;
+  createdAt: string;
+  reporter: OpsAccountRef;
+  target?: OpsAccountRef | null;
+}
+
+export interface OpsProfileChange {
+  id: string;
+  field: string;
+  oldValue?: string | null;
+  newValue: string;
+  status: string;
+  createdAt: string;
+  user: OpsAccountRef;
+}
+
+export interface OpsCity {
+  id: string;
+  regionId: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  isVisible: boolean;
+  coverageAreas?: OpsCoverage[];
+}
+
+export interface OpsCoverage {
+  id: string;
+  cityId: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  isVisible: boolean;
+}
+
+export interface OpsRegion {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  isVisible: boolean;
+  sortOrder: number;
+  cities: OpsCity[];
+}
+
+export interface OpsSetting {
+  key: string;
+  value: string;
+}
+
+export interface OpsWelcome {
+  id: string;
+  audience: string;
+  kind: string;
+  bodyAr: string;
+  bodyEn: string;
+  isActive: boolean;
+}
+
+export interface OpsRole {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  permissions?: { permission: { code: string; nameAr: string } }[];
+}
+
+export interface OpsPermission {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn?: string;
+}
+
+export interface OpsLegalPage {
+  id: string;
+  code: string;
+  titleAr: string;
+  titleEn: string;
+  bodyAr: string;
+  bodyEn: string;
+  version: number;
+}
+
+export interface OpsStaff {
+  id: string;
+  displayName: string;
+  mobile: string;
+  accountCode: string;
+  status: string;
+  team: string;
+  level: number;
+  role: { id: string; code: string; nameAr: string; nameEn: string } | null;
+  permissions: string[];
+}
+
+export interface OpsCatalogService {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  sortOrder: number;
+  isVisible: boolean;
+  subServices: OpsSubService[];
+}
+
+export interface OpsSubService {
+  id: string;
+  serviceId?: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  sortOrder: number;
+  isVisible: boolean;
+}
+
+export interface OpsTicketComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { displayName: string; accountType?: string; accountCode?: string };
+}
+
+export interface OpsTicket {
+  id: string;
+  refNo: string;
+  status: string;
+  body: string;
+  createdAt: string;
+  type: TicketType;
+  owner: OpsAccountRef;
+  comments: OpsTicketComment[];
+}
+
+export interface OpsBankAccount {
+  id: string;
+  bankName: string;
+  iban: string;
+  accountName: string;
+  isActive: boolean;
+}
+
+export interface OpsBannedPhone {
+  mobile: string;
+  reason: string;
+  createdAt: string;
+  createdBy?: { displayName: string; accountCode: string } | null;
+}
+
+export interface OpsManagedAccount {
+  id: string;
+  displayName: string;
+  accountCode: string;
+  mobile: string;
+  accountType: AccountType;
+  status: string;
+  createdAt: string;
+  customerProfile?: { city?: { nameAr: string } | null } | null;
+  providerProfile?: { city?: { nameAr: string } | null; visibility?: string | null } | null;
+}
 
 export const FALLBACK_SERVICES = [
   { id: 'hair', code: 'hair', nameAr: 'خبيرة الشعر', nameEn: 'Hair', desc: 'قص، تسريحات وعلاجات متخصصة', descEn: 'Cuts, styling, and specialist treatments' },

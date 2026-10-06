@@ -32,6 +32,11 @@ async function main() {
     { code: "REPORTS_VIEW", nameAr: "عرض التقارير", nameEn: "View reports" },
     { code: "TICKETS_MANAGE", nameAr: "إدارة الطلبات", nameEn: "Manage tickets" },
     { code: "RATINGS_REVIEW", nameAr: "مراجعة التقييمات", nameEn: "Review ratings" },
+    { code: "MEDIA_REVIEW", nameAr: "اعتماد الملفات", nameEn: "Review media files" },
+    { code: "PACKAGES_MANAGE", nameAr: "إدارة الباقات", nameEn: "Manage packages" },
+    { code: "GEO_MANAGE", nameAr: "إدارة المناطق والمدن", nameEn: "Manage regions and cities" },
+    { code: "LEGAL_MANAGE", nameAr: "إدارة الشروط والسياسات", nameEn: "Manage legal pages" },
+    { code: "CATALOG_MANAGE", nameAr: "إدارة الخدمات", nameEn: "Manage catalog services" },
   ];
 
   for (const permission of permissions) {
@@ -400,6 +405,10 @@ async function main() {
       "TICKETS_MANAGE",
       "RATINGS_REVIEW",
       "REPORTS_VIEW",
+      "MEDIA_REVIEW",
+      "PACKAGES_MANAGE",
+      "GEO_MANAGE",
+      "CATALOG_MANAGE",
     ],
     OPS_LEAD: [
       "PROVIDERS_APPROVE",
@@ -409,8 +418,13 @@ async function main() {
       "RATINGS_REVIEW",
       "REPORTS_VIEW",
       "USERS_MANAGE",
+      "MEDIA_REVIEW",
+      "PACKAGES_MANAGE",
+      "GEO_MANAGE",
+      "LEGAL_MANAGE",
+      "CATALOG_MANAGE",
     ],
-    FINANCE: ["PAYMENTS_REVIEW", "PAYMENTS_CONFIRM", "REPORTS_VIEW"],
+    FINANCE: ["PAYMENTS_REVIEW", "PAYMENTS_CONFIRM", "REPORTS_VIEW", "MEDIA_REVIEW"],
     ADMIN: permissionRows.map((row) => row.code),
   };
 
@@ -432,12 +446,59 @@ async function main() {
     }
   }
 
+  await seedStaff();
   await seedDemoProviders();
   await seedDemoCustomer();
 
   await seedLegalPages();
 
   console.log("Seed completed");
+}
+
+async function seedStaff() {
+  const mobile = process.env.STAFF_MOBILE || "0500000001";
+  const role = await prisma.role.findUnique({ where: { code: "ADMIN" } });
+  if (!role) {
+    return;
+  }
+  const existing = await prisma.user.findUnique({ where: { mobile } });
+  if (existing && existing.accountType !== "STAFF") {
+    console.warn(`Skip staff seed: ${mobile} already used by ${existing.accountType}`);
+    return;
+  }
+  const passwordHash = await bcrypt.hash(randomStaffSecret(), 10);
+  const count = await prisma.user.count({ where: { accountType: "STAFF" } });
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          status: "ACTIVE",
+          displayName: existing.displayName || "مشغل إداري",
+          mobileVerifiedAt: new Date(),
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          accountType: "STAFF",
+          mobile,
+          passwordHash,
+          status: "ACTIVE",
+          displayName: "مشغل إداري",
+          accountCode: `ST-${String(count + 1).padStart(6, "0")}`,
+          mobileVerifiedAt: new Date(),
+          termsAcceptedAt: new Date(),
+        },
+      });
+  await prisma.staffUser.upsert({
+    where: { userId: user.id },
+    update: { roleId: role.id, team: "OPS", level: 3 },
+    create: { userId: user.id, roleId: role.id, team: "OPS", level: 3 },
+  });
+  console.log(`Staff admin ready: ${mobile}`);
+}
+
+function randomStaffSecret() {
+  return `Staff${Math.random().toString(36).slice(2)}9`;
 }
 
 async function seedDemoProviders() {

@@ -33,8 +33,16 @@ import { ToastService } from '../core/toast.service';
           <p class="request-description">{{ selected.body }}</p>
         </div>
         <div class="card request-reply">
-          <h3>حالة الطلب</h3>
-          <p class="muted small">يتم الرد من فريق المنصة بعد المراجعة.</p>
+          <h3>رد المنصة</h3>
+          @if (selected.comments?.length) {
+            @for (comment of selected.comments; track comment.id) {
+              <p class="muted small" style="margin:0 0 8px">
+                <b>{{ comment.author.displayName }}:</b> {{ comment.body }}
+              </p>
+            }
+          } @else {
+            <p class="muted small">يتم الرد من فريق المنصة بعد المراجعة.</p>
+          }
         </div>
       </div>
     } @else {

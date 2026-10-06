@@ -26,6 +26,18 @@ import { ProviderSupportComponent } from './provider/provider-support.component'
 import { ProviderNotificationsComponent } from './provider/provider-notifications.component';
 import { ProviderPaymentStatusComponent } from './provider/provider-payment-status.component';
 import { ComingSoonComponent } from './shared/coming-soon.component';
+import { OpsLayoutComponent } from './ops/ops-layout.component';
+import { OpsDashboardComponent } from './ops/ops-dashboard.component';
+import { OpsMediaComponent } from './ops/ops-media.component';
+import { OpsAccountsComponent } from './ops/ops-accounts.component';
+import { OpsPackagesComponent } from './ops/ops-packages.component';
+import { OpsReviewsComponent } from './ops/ops-reviews.component';
+import { OpsGeoComponent } from './ops/ops-geo.component';
+import { OpsSettingsComponent } from './ops/ops-settings.component';
+import { OpsStaffComponent } from './ops/ops-staff.component';
+import { OpsLegalComponent } from './ops/ops-legal.component';
+import { OpsCatalogComponent } from './ops/ops-catalog.component';
+import { OpsTicketsComponent } from './ops/ops-tickets.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -90,6 +102,24 @@ export const routes: Routes = [
       { path: 'support', component: ProviderSupportComponent },
       { path: 'notifications', component: ProviderNotificationsComponent },
       { path: 'account', component: ProviderAccountComponent },
+    ],
+  },
+  {
+    path: 'ops',
+    component: OpsLayoutComponent,
+    canActivate: [authGuard, roleGuard('STAFF')],
+    children: [
+      { path: '', component: OpsDashboardComponent },
+      { path: 'media', component: OpsMediaComponent },
+      { path: 'accounts', component: OpsAccountsComponent },
+      { path: 'reviews', component: OpsReviewsComponent },
+      { path: 'packages', component: OpsPackagesComponent },
+      { path: 'geo', component: OpsGeoComponent },
+      { path: 'settings', component: OpsSettingsComponent },
+      { path: 'staff', component: OpsStaffComponent },
+      { path: 'legal', component: OpsLegalComponent },
+      { path: 'catalog', component: OpsCatalogComponent },
+      { path: 'tickets', component: OpsTicketsComponent },
     ],
   },
   { path: '**', redirectTo: 'login' },
