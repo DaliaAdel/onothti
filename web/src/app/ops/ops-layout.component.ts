@@ -40,31 +40,31 @@ export class OpsLayoutComponent implements OnInit {
       items.push({ icon: 'image', label: 'اعتماد الملفات', route: '/ops/media' });
     }
     if (can('PROVIDERS_APPROVE')) {
-      items.push({ icon: 'user', label: 'اعتماد الحسابات', route: '/ops/accounts' });
+      items.push({ icon: 'profile', label: 'اعتماد الحسابات', route: '/ops/accounts' });
     }
     if (can('RATINGS_REVIEW', 'TICKETS_MANAGE')) {
-      items.push({ icon: 'star', label: 'المراجعات', route: '/ops/reviews' });
+      items.push({ icon: 'ratings', label: 'المراجعات', route: '/ops/reviews' });
     }
     if (can('PACKAGES_MANAGE')) {
-      items.push({ icon: 'card', label: 'الباقات', route: '/ops/packages' });
+      items.push({ icon: 'package', label: 'الباقات', route: '/ops/packages' });
     }
     if (can('CATALOG_MANAGE')) {
-      items.push({ icon: 'bag', label: 'الخدمات', route: '/ops/catalog' });
+      items.push({ icon: 'services', label: 'الخدمات', route: '/ops/catalog' });
     }
     if (can('TICKETS_MANAGE')) {
-      items.push({ icon: 'chart', label: 'الطلبات', route: '/ops/tickets' });
+      items.push({ icon: 'support', label: 'الطلبات', route: '/ops/tickets' });
     }
     if (can('GEO_MANAGE')) {
-      items.push({ icon: 'pin', label: 'المناطق', route: '/ops/geo' });
+      items.push({ icon: 'location', label: 'المناطق', route: '/ops/geo' });
     }
     if (can('SETTINGS_MANAGE')) {
-      items.push({ icon: 'grid', label: 'الإعدادات', route: '/ops/settings' });
+      items.push({ icon: 'services', label: 'الإعدادات', route: '/ops/settings' });
     }
     if (can('LEGAL_MANAGE')) {
-      items.push({ icon: 'help', label: 'الشروط', route: '/ops/legal' });
+      items.push({ icon: 'about', label: 'الشروط', route: '/ops/legal' });
     }
     if (can('USERS_MANAGE')) {
-      items.push({ icon: 'brief', label: 'المستخدمون', route: '/ops/staff' });
+      items.push({ icon: 'profile', label: 'المستخدمون', route: '/ops/staff' });
     }
     return items;
   }

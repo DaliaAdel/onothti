@@ -1,8 +1,16 @@
 import { Component, OnInit, effect, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
-import { FALLBACK_SERVICES, type CatalogService, type ProviderCard } from '../core/models';
+import {
+  FALLBACK_SERVICES,
+  serviceIcon,
+  servicePhoto,
+  type CatalogRegion,
+  type CatalogService,
+  type ProviderCard,
+} from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
@@ -10,20 +18,41 @@ import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-customer-dashboard',
-  imports: [RouterLink, FavoriteBtnComponent, IconComponent],
+  imports: [FormsModule, RouterLink, FavoriteBtnComponent, IconComponent],
   template: `
-    <section class="hero">
-      <div class="hero-copy">
+    <section class="home-search card">
+      <div>
         <span class="eyebrow">{{ locale.t('c.hero.eyebrow') }}</span>
-        <h2>{{ locale.t('c.hero.title') }}</h2>
-        <p>{{ locale.t('c.hero.text') }}</p>
-        <div class="hero-actions">
-          <a class="btn primary" routerLink="/c/services">{{ locale.t('c.hero.services') }} <app-icon name="arrow" /></a>
-          <a class="btn ghost" routerLink="/c/account">{{ locale.t('c.hero.account') }}</a>
-        </div>
+        <h2>مرحباً{{ name ? '، ' + name : '' }}</h2>
+        <p>ابحثي بالخدمة والمنطقة والمدينة للوصول إلى الخبيرات القريبات منكِ.</p>
       </div>
-      <img class="hero-art" src="/hero.png" alt="" />
+      <form class="search-row home-search-row" (ngSubmit)="search()">
+        <label class="searchbox">
+          <app-icon name="search" />
+          <input [(ngModel)]="query" name="q" placeholder="ابحثي عن خبيرة أو خدمة..." />
+        </label>
+        <select class="select" name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
+          <option value="">كل المناطق</option>
+          @for (region of regions; track region.id) {
+            <option [value]="region.id">{{ locale.localizedName(region) }}</option>
+          }
+        </select>
+        <select class="select" name="city" [(ngModel)]="cityId" [disabled]="!regionId">
+          <option value="">كل المدن</option>
+          @for (city of cities; track city.id) {
+            <option [value]="city.id">{{ locale.localizedName(city) }}</option>
+          }
+        </select>
+        <button class="btn primary" type="submit">بحث</button>
+      </form>
     </section>
+
+    <div class="home-metrics">
+      <div><b>+1,200</b><span>خبيرة نشطة</span></div>
+      <div><b>+60</b><span>خدمة فرعية</span></div>
+      <div><b>15</b><span>مدينة مغطاة</span></div>
+      <div><b>4.9</b><span>متوسط التقييمات</span></div>
+    </div>
 
     <div class="section-head">
       <div>
@@ -34,9 +63,10 @@ import { IconComponent } from '../shared/icon.component';
     </div>
     <div class="grid four">
       @for (service of previewServices; track service.id) {
-        <a class="card hover service-card" [routerLink]="['/c/providers']" [queryParams]="{ serviceId: service.id }">
+        <a class="card hover service-card photo-service" [routerLink]="['/c/providers']" [queryParams]="serviceParams(service)">
           <div class="service-art">
-            <img src="/hero.png" alt="" />
+            <img class="service-cover" [src]="photoOf(service)" alt="" loading="lazy" decoding="async" />
+            <img class="service-mini-icon" [src]="iconOf(service)" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="service-body">
             <h3>{{ locale.localizedName(service) }}</h3>
@@ -64,7 +94,7 @@ import { IconComponent } from '../shared/icon.component';
             <div>
               <h3>{{ provider.displayName }}</h3>
               <p>{{ serviceLine(provider) }} · {{ locale.localizedName(provider.city, locale.t('c.country')) }}</p>
-              <div class="rating">★ {{ provider.ratingAvg ?? '—' }} · {{ locale.t('c.active') }}</div>
+              <div class="rating">★ {{ provider.ratingAvg ?? '—' }}@if (provider.ratingCount) { · {{ provider.ratingCount }} تقييمًا }</div>
             </div>
             <div class="provider-actions">
               <app-favorite-btn targetType="PROVIDER" [targetId]="provider.id" />
@@ -74,12 +104,26 @@ import { IconComponent } from '../shared/icon.component';
         }
       </div>
     }
+
+    <div class="section-head">
+      <div>
+        <h2>اختصارات سريعة</h2>
+        <p>وصلي لما تحتاجينه بخطوة واحدة</p>
+      </div>
+    </div>
+    <div class="grid four home-shortcuts">
+      <a class="card hover" routerLink="/c/favorites"><span class="shortcut-icon"><app-icon name="heart" /></span><b>المفضلة</b><span>الخبيرات والخدمات المحفوظة</span></a>
+      <a class="card hover" routerLink="/c/requests"><span class="shortcut-icon"><app-icon name="support" /></span><b>طلباتي</b><span>متابعة التذاكر والبلاغات</span></a>
+      <a class="card hover" routerLink="/c/notifications"><span class="shortcut-icon"><app-icon name="bell" /></span><b>الإشعارات</b><span>تنبيهات الحساب والتقييمات</span></a>
+      <a class="card hover" routerLink="/c/account"><span class="shortcut-icon"><app-icon name="profile" /></span><b>حسابي</b><span>تحديث الاسم والمدينة</span></a>
+    </div>
   `,
 })
 export class CustomerDashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  private readonly router = inject(Router);
   readonly locale = inject(LocaleService);
 
   constructor() {
@@ -89,14 +133,35 @@ export class CustomerDashboardComponent implements OnInit {
     });
   }
 
+  query = '';
+  regionId = '';
+  cityId = '';
+  regions: CatalogRegion[] = [];
   services: CatalogService[] = [];
   providers: ProviderCard[] = [];
 
+  get name(): string {
+    return this.session.user()?.displayName ?? '';
+  }
+
+  get cities() {
+    return this.regions.find((region) => region.id === this.regionId)?.cities ?? [];
+  }
+
   get previewServices(): CatalogService[] {
-    return this.services.slice(0, 4);
+    return this.services.slice(0, 8);
   }
 
   ngOnInit(): void {
+    this.cityId = this.session.user()?.city?.id ?? '';
+    this.api.regions().subscribe({
+      next: (regions) => {
+        this.regions = regions;
+        if (this.cityId && !this.regionId) {
+          this.regionId = regions.find((region) => region.cities.some((city) => city.id === this.cityId))?.id ?? '';
+        }
+      },
+    });
     this.api.services().subscribe({
       next: (services) => (this.services = services),
       error: () => {
@@ -115,6 +180,38 @@ export class CustomerDashboardComponent implements OnInit {
     this.api.search({ cityId, page: 1, pageSize: 4 }).subscribe({
       next: (res) => (this.providers = res.items),
     });
+  }
+
+  onRegionChange(): void {
+    if (!this.cities.some((city) => city.id === this.cityId)) {
+      this.cityId = '';
+    }
+  }
+
+  search(): void {
+    void this.router.navigate(['/c/providers'], {
+      queryParams: {
+        q: this.query.trim() || undefined,
+        regionId: this.regionId || undefined,
+        cityId: this.cityId || undefined,
+      },
+    });
+  }
+
+  serviceParams(service: CatalogService) {
+    return {
+      serviceId: service.id,
+      regionId: this.regionId || undefined,
+      cityId: this.cityId || undefined,
+    };
+  }
+
+  photoOf(service: CatalogService): string {
+    return servicePhoto(service);
+  }
+
+  iconOf(service: CatalogService): string {
+    return serviceIcon(service);
   }
 
   serviceDesc(service: CatalogService): string {

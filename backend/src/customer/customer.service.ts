@@ -1,11 +1,17 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { AccountType, ProfileChangeField } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
-import { CreateComplaintDto, FavoriteDto, UpdateCustomerProfileDto } from "./dto/customer.dto";
+import {
+  CreateComplaintDto,
+  CreateCustomerTicketDto,
+  FavoriteDto,
+  UpdateCustomerProfileDto,
+} from "./dto/customer.dto";
 import {
   assertUniqueDisplayName,
   assertUniqueEmail,
@@ -175,6 +181,48 @@ export class CustomerService {
     return this.prisma.complaint.findMany({
       where: { reporterId: userId },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async ticketTypes() {
+    return this.prisma.ticketType.findMany({
+      where: { audience: AccountType.CUSTOMER },
+      orderBy: { code: "asc" },
+    });
+  }
+
+  async listTickets(userId: string) {
+    await this.requireCustomer(userId);
+    return this.prisma.ticket.findMany({
+      where: { ownerId: userId },
+      include: {
+        type: true,
+        comments: {
+          include: { author: { select: { displayName: true, accountType: true } } },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async createTicket(userId: string, dto: CreateCustomerTicketDto) {
+    await this.requireCustomer(userId);
+    const type = await this.prisma.ticketType.findFirst({
+      where: { code: dto.typeCode, audience: AccountType.CUSTOMER },
+    });
+    if (!type) {
+      throw new BadRequestException("نوع التذكرة غير متاح");
+    }
+    const count = await this.prisma.ticket.count();
+    return this.prisma.ticket.create({
+      data: {
+        refNo: `CU-${String(count + 1).padStart(6, "0")}-${userId.slice(0, 4)}`,
+        typeId: type.id,
+        ownerId: userId,
+        body: dto.body.trim(),
+      },
+      include: { type: true },
     });
   }
 

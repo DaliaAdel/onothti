@@ -5,37 +5,63 @@ import { apiMessage } from '../core/phone';
 import type { OpsLegalPage } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-legal',
-  imports: [FormsModule],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>الشروط والسياسات</h2>
-        <p>نصوص الشروط والأحكام وسياسة الخصوصية للعميلة والخبيرة. التعديل يظهر فورًا في صفحات التسجيل.</p>
+        <p>اضغطي على الصفحة لتحرير النص الذي يظهر في التسجيل.</p>
       </div>
     </div>
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
     } @else {
-      <div class="grid two">
-        @for (item of pages; track item.id) {
-          <article class="card">
-            <p class="muted small">{{ codeLabel(item.code) }} · نسخة {{ item.version }}</p>
-            <div class="field" style="margin-top:10px">
-              <label>العنوان</label>
-              <input class="input" [(ngModel)]="item.titleAr" />
-            </div>
-            <div class="field">
-              <label>النص</label>
-              <textarea class="input" rows="10" [(ngModel)]="item.bodyAr"></textarea>
-            </div>
-            <button class="btn primary" type="button" (click)="save(item)">حفظ الصفحة</button>
-          </article>
-        }
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الصفحة</th>
+              <th>العنوان</th>
+              <th>النسخة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pages; track item.id) {
+              <tr [class.active]="selected?.id === item.id" (click)="selected = item">
+                <td><b>{{ codeLabel(item.code) }}</b></td>
+                <td>{{ item.titleAr }}</td>
+                <td>{{ item.version }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
+    <app-ops-drawer
+      [open]="!!selected"
+      [title]="selected ? codeLabel(selected.code) : ''"
+      [kicker]="selected ? 'نسخة ' + selected.version : ''"
+      (closed)="selected = null"
+    >
+      @if (selected; as item) {
+        <div class="field">
+          <label>العنوان</label>
+          <input class="input" [(ngModel)]="item.titleAr" />
+        </div>
+        <div class="field">
+          <label>النص</label>
+          <textarea class="input" rows="12" [(ngModel)]="item.bodyAr"></textarea>
+        </div>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="save(item)">حفظ الصفحة</button>
+        </div>
+      }
+    </app-ops-drawer>
   `,
 })
 export class OpsLegalComponent implements OnInit {
@@ -45,12 +71,14 @@ export class OpsLegalComponent implements OnInit {
 
   loading = true;
   pages: OpsLegalPage[] = [];
+  selected: OpsLegalPage | null = null;
 
   ngOnInit(): void {
     this.shell.set('الشروط والسياسات', 'نصوص العميلة والخبيرة');
     this.api.opsLegal().subscribe({
       next: (pages) => {
         this.pages = pages;
+        this.selected = keepSelected(this.pages, this.selected);
         this.loading = false;
       },
       error: (err) => {
@@ -79,8 +107,6 @@ export class OpsLegalComponent implements OnInit {
       .opsPatchLegal(item.id, {
         titleAr: item.titleAr,
         bodyAr: item.bodyAr,
-        titleEn: item.titleEn,
-        bodyEn: item.bodyEn,
       })
       .subscribe({
         next: (row) => {

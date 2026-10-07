@@ -5,15 +5,17 @@ import { apiMessage } from '../core/phone';
 import type { OpsCity, OpsCoverage, OpsRegion } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-geo',
-  imports: [FormsModule],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>المناطق والمدن</h2>
-        <p>أضيفي منطقة، ثم مدينة واحدة أو أكثر تابعة لها. الظهور للعميلة والخبيرة يعتمد على تفعيل المنطقة والمدينة معًا.</p>
+        <p>أضيفي منطقة، ثم اضغطي عليها لإدارة مدنها وأحيائها.</p>
       </div>
     </div>
 
@@ -45,9 +47,37 @@ import { ToastService } from '../core/toast.service';
     } @else if (!regions.length) {
       <p class="page-empty">لا توجد مناطق بعد.</p>
     } @else {
-      <div class="grid two">
-        @for (region of regions; track region.id) {
-          <article class="card">
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>المنطقة</th>
+              <th>الرمز</th>
+              <th>المدن</th>
+              <th>الترتيب</th>
+              <th>الظهور</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (region of regions; track region.id) {
+              <tr [class.active]="selected?.id === region.id" (click)="selected = region">
+                <td><b>{{ region.nameAr }}</b></td>
+                <td>{{ region.code }}</td>
+                <td>{{ region.cities.length }}</td>
+                <td>{{ region.sortOrder }}</td>
+                <td><span class="status {{ region.isVisible ? 'success' : 'error' }}">{{ region.isVisible ? 'ظاهرة' : 'مخفية' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-ops-drawer
+        [open]="!!selected"
+        [title]="selected?.nameAr || ''"
+        [kicker]="selected?.code || 'منطقة'"
+        (closed)="selected = null"
+      >
+        @if (selected; as region) {
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
               <h3 style="margin:0;color:var(--plum)">{{ region.nameAr }} · {{ region.code }}</h3>
               <span class="badge" [style.opacity]="region.isVisible ? '1' : '.45'">
@@ -142,9 +172,8 @@ import { ToastService } from '../core/toast.service';
             <button class="btn soft" style="margin-top:12px" type="button" (click)="createCity(region)">
               إضافة مدينة للمنطقة
             </button>
-          </article>
         }
-      </div>
+      </app-ops-drawer>
     }
   `,
 })
@@ -154,6 +183,7 @@ export class OpsGeoComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   regions: OpsRegion[] = [];
+  selected: OpsRegion | null = null;
   loading = true;
   regionDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
   cityDrafts: Record<string, { code: string; nameAr: string }> = {};
@@ -295,6 +325,7 @@ export class OpsGeoComponent implements OnInit {
     this.api.opsRegions().subscribe({
       next: (regions) => {
         this.regions = regions;
+        this.selected = keepSelected(this.regions, this.selected);
         for (const region of regions) {
           this.cityDrafts[region.id] ??= { code: '', nameAr: '' };
           for (const city of region.cities) {

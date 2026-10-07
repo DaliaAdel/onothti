@@ -4,7 +4,12 @@ import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import type { AuthUser } from "../auth/auth-user";
 import { CustomerService } from "./customer.service";
-import { CreateComplaintDto, FavoriteDto, UpdateCustomerProfileDto } from "./dto/customer.dto";
+import {
+  CreateComplaintDto,
+  CreateCustomerTicketDto,
+  FavoriteDto,
+  UpdateCustomerProfileDto,
+} from "./dto/customer.dto";
 
 @ApiTags("customer")
 @ApiBearerAuth()
@@ -41,6 +46,21 @@ export class CustomerController {
   @Get("recent-views")
   recentViews(@CurrentUser() user: AuthUser) {
     return this.customer.recentViews(user.sub);
+  }
+
+  @Get("ticket-types")
+  ticketTypes() {
+    return this.customer.ticketTypes();
+  }
+
+  @Get("tickets")
+  tickets(@CurrentUser() user: AuthUser) {
+    return this.customer.listTickets(user.sub);
+  }
+
+  @Post("tickets")
+  createTicket(@CurrentUser() user: AuthUser, @Body() dto: CreateCustomerTicketDto) {
+    return this.customer.createTicket(user.sub, dto);
   }
 
   @Get("complaints")

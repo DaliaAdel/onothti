@@ -30,12 +30,18 @@ export interface NavItem {
           }
         </nav>
         <div class="sidebar-foot">
-          <button class="logout" type="button" (click)="logout()">↪ تسجيل الخروج</button>
+          <button class="logout" type="button" (click)="logout()">
+            <span class="ico nav-icon"><app-icon name="logout" /></span>
+            تسجيل الخروج
+          </button>
         </div>
       </aside>
       <main class="main">
         <header class="topbar">
           <div class="crumb">
+            @if (home === '/c') {
+              <small>حساب العميلة</small>
+            }
             @if (home === '/p') {
               <small>حساب الخبيرة</small>
             }

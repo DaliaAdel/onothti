@@ -58,7 +58,7 @@ import { ToastService } from '../core/toast.service';
               @if (item.url && item.kind === 'VIDEO') {
                 <video [src]="mediaUrl(item.url)" controls preload="metadata"></video>
               } @else if (item.url) {
-                <img [src]="mediaUrl(item.url)" [alt]="statusLabel(item.approvalStatus)" />
+                <img [src]="mediaUrl(item.url)" [alt]="statusLabel(item.approvalStatus)" loading="lazy" decoding="async" />
               } @else {
                 <div class="album-cover"><span>{{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}</span></div>
               }

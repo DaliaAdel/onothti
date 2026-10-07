@@ -12,8 +12,8 @@ import { ShellService } from '../core/shell.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>مرحبًا{{ name ? '، ' + name : '' }}</h1>
-        <p>{{ live ? 'هذا ملخص أداء حسابك اليوم' : 'يمكنكِ تصفح حسابك الآن، وتُفتح أدوات النشر بعد تفعيل الباقة' }}</p>
+        <h1>{{ name || 'الرئيسية' }}</h1>
+        <p>{{ live ? 'هذا ملخص أداء ملفك الاحترافي' : 'يمكنكِ تصفح حسابك الآن، وتُفتح أدوات النشر بعد تفعيل الباقة' }}</p>
       </div>
     </div>
     @if (!live) {
@@ -24,15 +24,20 @@ import { ShellService } from '../core/shell.service';
     } @else if (packageName) {
       <div class="active-package">
         <div>
-          <span class="status success">الباقة مفعّلة</span>
+          <span class="status success">مفعّلة</span>
           <h3>{{ packageTitle }}</h3>
-          <p>يمكنكِ استخدام الخدمات والألبومات وجميع أدوات الحساب{{ endLabel }}.</p>
+          <p>متبقٍ {{ remainingDays }} يومًا على الاشتراك{{ endLabel }}.</p>
+        </div>
+        <div class="remaining-days dash-remaining">
+          <span>الأيام المتبقية</span>
+          <strong>{{ remainingDays }}</strong>
         </div>
         <a class="btn secondary" routerLink="/p/package">إدارة الاشتراك</a>
       </div>
     }
-    <div class="grid cols-4">
-      @for (metric of metrics; track metric.label) {
+    <div class="section-title"><h3>إحصاءات حسابك</h3></div>
+    <div class="grid cols-3">
+      @for (metric of accountMetrics; track metric.label) {
         <div class="card metric">
           <span class="muted small">{{ metric.label }}</span>
           <div class="value">{{ metric.value }}</div>
@@ -41,6 +46,16 @@ import { ShellService } from '../core/shell.service';
           } @else if (metric.trend) {
             <span class="delta">{{ metric.trend }}</span>
           }
+        </div>
+      }
+    </div>
+    <div class="section-title" style="margin-top:18px"><h3>فرص المنصة</h3></div>
+    <div class="grid cols-2">
+      @for (metric of platformMetrics; track metric.label) {
+        <div class="card metric">
+          <span class="muted small">{{ metric.label }}</span>
+          <div class="value">{{ metric.value }}</div>
+          <span class="delta">{{ metric.trend }}</span>
         </div>
       }
     </div>
@@ -95,7 +110,7 @@ export class ProviderDashboardComponent implements OnInit {
   views: ProviderViews | null = null;
 
   ngOnInit(): void {
-    this.shell.set('لوحة التحكم');
+    this.shell.set('الرئيسية');
     this.api.providerDashboard().subscribe({
       next: (data) => {
         this.data = data;
@@ -142,13 +157,24 @@ export class ProviderDashboardComponent implements OnInit {
     return ` حتى ${new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)}`;
   }
 
-  get metrics() {
+  get remainingDays(): number {
+    const end = this.data?.subscription?.endAt;
+    if (!end) {
+      return 0;
+    }
+    const date = new Date(end);
+    if (Number.isNaN(date.getTime())) {
+      return 0;
+    }
+    return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
+  }
+
+  get accountMetrics() {
     const stats = this.data?.stats;
     if (!this.live) {
       return [
         { label: 'مشاهدات الملف', value: '0', trend: 'بعد تفعيل الباقة' },
         { label: 'مرات التواصل', value: '0', trend: 'بعد تفعيل الباقة' },
-        { label: 'العميلات', value: '—', trend: 'إجمالي الحسابات المسجلة' },
         { label: 'التقييم', value: '—', trend: 'لا توجد تقييمات' },
       ];
     }
@@ -156,7 +182,6 @@ export class ProviderDashboardComponent implements OnInit {
     return [
       { label: 'مشاهدات الملف', value: this.formatCount(stats?.views30d ?? 0), trend: '' },
       { label: 'مرات التواصل', value: '0', trend: '' },
-      { label: 'العميلات', value: '—', trend: 'إجمالي الحسابات المسجلة' },
       {
         label: 'التقييم',
         value: rating != null ? String(rating) : '—',
@@ -164,6 +189,10 @@ export class ProviderDashboardComponent implements OnInit {
         stars: rating != null ? '★★★★★' : '',
       },
     ];
+  }
+
+  get platformMetrics() {
+    return [{ label: 'عميلات المنصة', value: '—', trend: 'إجمالي الحسابات المسجلة' }];
   }
 
   private formatCount(value: number): string {

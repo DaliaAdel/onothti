@@ -42,6 +42,17 @@ export class FavoriteDto {
   targetId!: string;
 }
 
+export class CreateCustomerTicketDto {
+  @ApiProperty({ example: "CU-01" })
+  @IsString()
+  typeCode!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(8)
+  body!: string;
+}
+
 export class CreateComplaintDto {
   @ApiProperty()
   @IsString()

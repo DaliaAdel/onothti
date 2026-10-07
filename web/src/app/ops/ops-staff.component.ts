@@ -6,10 +6,12 @@ import type { OpsBannedPhone, OpsPermission, OpsRole, OpsStaff } from '../core/m
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { keepSelected, newestFirst, opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-staff',
-  imports: [FormsModule],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="section-head">
       <div>
@@ -48,35 +50,58 @@ import { ToastService } from '../core/toast.service';
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
     } @else {
-      <div class="grid two">
-        @for (item of staff; track item.id) {
-          <article class="card">
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-              <h3 style="margin:0;color:var(--plum)">{{ item.displayName }}</h3>
-              <span class="badge" [style.opacity]="item.status === 'ACTIVE' ? '1' : '.45'">
-                {{ item.status === 'ACTIVE' ? 'نشطة' : 'موقوفة' }}
-              </span>
-            </div>
-            <p class="muted small">{{ item.accountCode }} · {{ item.mobile }} · {{ item.role?.nameAr }}</p>
-            <p class="muted small" style="margin-top:8px">{{ item.permissions.length }} صلاحية مرتبطة بالدور</p>
-            <div class="field" style="margin-top:12px">
-              <label>الدور</label>
-              <select class="input" [(ngModel)]="roleById[item.id]">
-                @for (role of roles; track role.id) {
-                  <option [value]="role.id">{{ role.nameAr }}</option>
-                }
-              </select>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-              <button class="btn primary" type="button" (click)="saveRole(item)">حفظ الدور</button>
-              <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
-                {{ item.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
-              </button>
-            </div>
-          </article>
-        }
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>الجوال</th>
+              <th>الرمز</th>
+              <th>الدور</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of staff; track item.id) {
+              <tr [class.active]="selectedStaff?.id === item.id" (click)="selectedStaff = item">
+                <td><b>{{ item.displayName }}</b></td>
+                <td dir="ltr">{{ item.mobile }}</td>
+                <td>{{ item.accountCode }}</td>
+                <td>{{ item.role?.nameAr || '—' }}</td>
+                <td><span class="status {{ item.status === 'ACTIVE' ? 'success' : 'error' }}">{{ item.status === 'ACTIVE' ? 'نشطة' : 'موقوفة' }}</span></td>
+                <td>{{ opsDate(item.createdAt) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
+    <app-ops-drawer
+      [open]="!!selectedStaff"
+      [title]="selectedStaff?.displayName || ''"
+      [kicker]="selectedStaff?.role?.nameAr || 'مستخدمة تشغيل'"
+      (closed)="selectedStaff = null"
+    >
+      @if (selectedStaff; as item) {
+        <p class="muted small">{{ item.accountCode }} · <span dir="ltr">{{ item.mobile }}</span></p>
+        <p class="muted small">{{ item.permissions.length }} صلاحية مرتبطة بالدور</p>
+        <div class="field">
+          <label>الدور</label>
+          <select class="input" [(ngModel)]="roleById[item.id]">
+            @for (role of roles; track role.id) {
+              <option [value]="role.id">{{ role.nameAr }}</option>
+            }
+          </select>
+        </div>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="saveRole(item)">حفظ الدور</button>
+          <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
+            {{ item.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
+          </button>
+        </div>
+      }
+    </app-ops-drawer>
 
     <div class="section-head">
       <div>
@@ -87,27 +112,49 @@ import { ToastService } from '../core/toast.service';
     @if (!catalog.length) {
       <p class="muted small">جاري تحميل الصلاحيات...</p>
     } @else {
-      <div class="grid two">
-        @for (role of roles; track role.id) {
-          <article class="card">
-            <h3 style="margin:0 0 12px;color:var(--plum)">{{ role.nameAr }}</h3>
-            @if (matrix[role.id]) {
-              <div class="filters" style="margin:0">
-                @for (perm of catalog; track perm.id) {
-                  <label class="chip" [class.active]="matrix[role.id][perm.code]">
-                    <input type="checkbox" [name]="role.id + '-' + perm.code" [(ngModel)]="matrix[role.id][perm.code]" />
-                    {{ perm.nameAr }}
-                  </label>
-                }
-              </div>
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الدور</th>
+              <th>الرمز</th>
+              <th>الصلاحيات</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (role of roles; track role.id) {
+              <tr [class.active]="selectedRoleRow?.id === role.id" (click)="selectedRoleRow = role">
+                <td><b>{{ role.nameAr }}</b></td>
+                <td>{{ role.code }}</td>
+                <td>{{ (role.permissions ?? []).length }}</td>
+              </tr>
             }
-            <button class="btn primary" style="margin-top:14px" type="button" (click)="savePermissions(role)">
-              حفظ صلاحيات الدور
-            </button>
-          </article>
-        }
+          </tbody>
+        </table>
       </div>
     }
+    <app-ops-drawer
+      [open]="!!selectedRoleRow"
+      [title]="selectedRoleRow?.nameAr || ''"
+      kicker="صلاحيات الدور"
+      (closed)="selectedRoleRow = null"
+    >
+      @if (selectedRoleRow; as role) {
+        @if (matrix[role.id]) {
+          <div class="filters" style="margin:0">
+            @for (perm of catalog; track perm.id) {
+              <label class="chip" [class.active]="matrix[role.id][perm.code]">
+                <input type="checkbox" [name]="role.id + '-' + perm.code" [(ngModel)]="matrix[role.id][perm.code]" />
+                {{ perm.nameAr }}
+              </label>
+            }
+          </div>
+        }
+        <button class="btn primary" style="margin-top:14px" type="button" (click)="savePermissions(role)">
+          حفظ صلاحيات الدور
+        </button>
+      }
+    </app-ops-drawer>
 
     <div class="section-head">
       <div>
@@ -129,16 +176,43 @@ import { ToastService } from '../core/toast.service';
       <button class="btn primary" style="margin-top:14px" type="button" (click)="ban()">حظر الرقم</button>
     </article>
     @if (banned.length) {
-      <div class="grid two">
-        @for (item of banned; track item.mobile) {
-          <article class="card">
-            <h3 style="margin:0 0 6px;color:var(--plum)" dir="ltr">{{ item.mobile }}</h3>
-            <p class="muted small">{{ item.reason }}</p>
-            <button class="btn ghost" style="margin-top:12px" type="button" (click)="unban(item.mobile)">رفع الحظر</button>
-          </article>
-        }
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الجوال</th>
+              <th>السبب</th>
+              <th>بواسطة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of banned; track item.mobile) {
+              <tr [class.active]="selectedBan?.mobile === item.mobile" (click)="selectedBan = item">
+                <td dir="ltr"><b>{{ item.mobile }}</b></td>
+                <td class="clip">{{ item.reason }}</td>
+                <td>{{ item.createdBy?.displayName || '—' }}</td>
+                <td>{{ opsDate(item.createdAt) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
+    <app-ops-drawer
+      [open]="!!selectedBan"
+      [title]="selectedBan?.mobile || ''"
+      kicker="رقم محظور"
+      (closed)="selectedBan = null"
+    >
+      @if (selectedBan; as item) {
+        <p class="muted small">{{ item.reason }}</p>
+        <p class="muted small">{{ opsDate(item.createdAt) }} · {{ item.createdBy?.displayName || '' }}</p>
+        <div class="ops-drawer-actions">
+          <button class="btn ghost" type="button" (click)="unban(item.mobile)">رفع الحظر</button>
+        </div>
+      }
+    </app-ops-drawer>
   `,
 })
 export class OpsStaffComponent implements OnInit {
@@ -147,8 +221,13 @@ export class OpsStaffComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly session = inject(SessionService);
 
+  readonly opsDate = opsDate;
+
   loading = true;
   staff: OpsStaff[] = [];
+  selectedStaff: OpsStaff | null = null;
+  selectedRoleRow: OpsRole | null = null;
+  selectedBan: OpsBannedPhone | null = null;
   roles: OpsRole[] = [];
   catalog: OpsPermission[] = [];
   roleById: Record<string, string> = {};
@@ -258,6 +337,7 @@ export class OpsStaffComponent implements OnInit {
     this.api.opsUnbanPhone(mobile).subscribe({
       next: () => {
         this.toast.show('تم رفع الحظر');
+        this.selectedBan = null;
         this.loadBanned();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الحظر')),
@@ -282,7 +362,8 @@ export class OpsStaffComponent implements OnInit {
     });
     this.api.opsStaff().subscribe({
       next: (rows) => {
-        this.staff = rows;
+        this.staff = newestFirst(rows);
+        this.selectedStaff = keepSelected(this.staff, this.selectedStaff);
         for (const row of rows) {
           this.roleById[row.id] = row.role?.id ?? '';
         }
@@ -298,7 +379,12 @@ export class OpsStaffComponent implements OnInit {
 
   private loadBanned(): void {
     this.api.opsBannedPhones().subscribe({
-      next: (rows) => (this.banned = rows),
+      next: (rows) => {
+        this.banned = newestFirst(rows);
+        this.selectedBan = this.selectedBan
+          ? this.banned.find((row) => row.mobile === this.selectedBan?.mobile) ?? null
+          : null;
+      },
       error: () => undefined,
     });
   }

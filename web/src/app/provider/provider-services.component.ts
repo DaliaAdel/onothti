@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
 import { apiMessage } from '../core/phone';
-import { isLiveSubscription, type CatalogService, type ProviderServiceRow, type ProviderSubscription } from '../core/models';
+import { isLiveSubscription, serviceIcon, type CatalogService, type ProviderServiceRow, type ProviderSubscription } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 
@@ -40,7 +40,7 @@ import { ToastService } from '../core/toast.service';
         <div class="add-service-grid">
           @for (service of catalog; track service.id) {
             <button class="add-service-card" type="button" [class.selected]="serviceId === service.id" (click)="pickMain(service.id)">
-              <img [src]="iconFor(service.code)" alt="" />
+              <img [src]="iconFor(service)" alt="" loading="lazy" decoding="async" />
               <span>{{ locale.localizedName(service) }}</span>
               <i>✓</i>
             </button>
@@ -218,9 +218,8 @@ export class ProviderServicesPageComponent implements OnInit {
     this.reload();
   }
 
-  iconFor(code: string): string {
-    const key = code === 'photographers' ? 'photography' : code;
-    return `/assets/icons/${key}.png`;
+  iconFor(service: CatalogService | string): string {
+    return serviceIcon(service);
   }
 
   pickMain(id: string): void {

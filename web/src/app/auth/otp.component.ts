@@ -13,7 +13,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (submit)="submit($event)">
-        <a class="auth-back" [routerLink]="backLink">← رجوع</a>
+        <a class="auth-back" [routerLink]="backLink" [queryParams]="backQuery">← رجوع</a>
         <span class="auth-kicker">التحقق من رقم الجوال</span>
         <h2>أدخلي رمز التحقق</h2>
         <p class="muted">أرسلنا رمزًا من 6 أرقام إلى <b dir="ltr">{{ phoneLabel }}</b></p>
@@ -84,6 +84,13 @@ export class OtpComponent implements OnInit, OnDestroy {
 
   get backLink(): string {
     return this.purpose === 'REGISTER' ? '/signup/phone' : '/login/phone';
+  }
+
+  get backQuery(): Record<string, string> {
+    if (this.purpose !== 'REGISTER') {
+      return {};
+    }
+    return { role: this.session.getDraft()?.accountType === 'CUSTOMER' ? 'customer' : 'provider' };
   }
 
   ngOnInit(): void {
@@ -157,6 +164,10 @@ export class OtpComponent implements OnInit, OnDestroy {
           mobile: this.mobile,
           otpCode: this.code,
           needsProfile: true,
+          accountType: draft?.accountType,
+          cityId: draft?.cityId,
+          cityIds: draft?.cityIds,
+          email: draft?.email,
         });
         this.toast.show(this.locale.t('auth.otp.success'));
         void this.router.navigateByUrl('/complete');

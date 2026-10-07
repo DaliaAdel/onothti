@@ -36,6 +36,7 @@ export interface SignupDraft {
   password?: string;
   accountType?: AccountType;
   cityId?: string;
+  cityIds?: string[];
   bio?: string;
   otpCode?: string;
   needsProfile?: boolean;
@@ -45,7 +46,80 @@ export interface CatalogCity {
   id: string;
   nameAr: string;
   nameEn: string;
-  region?: { nameAr: string; nameEn: string };
+  region?: { id?: string; nameAr: string; nameEn: string };
+}
+
+export interface CatalogRegion {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  cities: CatalogCity[];
+}
+
+const SERVICE_ASSET_BY_CODE: Record<string, string> = {
+  'MS-01': 'hair',
+  'MS-02': 'makeup',
+  'MS-03': 'microblading',
+  'MS-04': 'nails',
+  'MS-05': 'henna',
+  'MS-06': 'skincare',
+  'MS-07': 'bodycare',
+  'MS-08': 'dj',
+  'MS-09': 'events',
+  'MS-10': 'dresses',
+  'MS-11': 'photography',
+  'MS-12': 'model',
+  'MS-13': 'drinks',
+  'MS-14': 'piercing',
+  hair: 'hair',
+  makeup: 'makeup',
+  microblading: 'microblading',
+  nails: 'nails',
+  henna: 'henna',
+  skincare: 'skincare',
+  bodycare: 'bodycare',
+  dj: 'dj',
+  events: 'events',
+  dresses: 'dresses',
+  photographers: 'photography',
+  photography: 'photography',
+  model: 'model',
+  drinks: 'drinks',
+  piercing: 'piercing',
+};
+
+export function servicePhoto(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+  const key = serviceAssetKey(service);
+  if (key) {
+    return `/assets/service-photos/${key}.webp`;
+  }
+  return '/assets/photos/hero-makeup.png';
+}
+
+export function serviceIcon(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+  const key = serviceAssetKey(service) || 'makeup';
+  return `/assets/icons/${key}.png`;
+}
+
+function serviceAssetKey(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+  const code = (typeof service === 'string' ? service : service?.code ?? '').trim();
+  if (SERVICE_ASSET_BY_CODE[code]) {
+    return SERVICE_ASSET_BY_CODE[code];
+  }
+  const lower = code.toLowerCase();
+  if (SERVICE_ASSET_BY_CODE[lower]) {
+    return SERVICE_ASSET_BY_CODE[lower];
+  }
+  const nameEn = (typeof service === 'string' ? '' : service?.nameEn ?? '').toLowerCase();
+  const nameAr = typeof service === 'string' ? '' : service?.nameAr ?? '';
+  const fallback = FALLBACK_SERVICES.find(
+    (item) => item.code === lower || item.nameEn.toLowerCase() === nameEn || item.nameAr === nameAr,
+  );
+  if (fallback) {
+    return SERVICE_ASSET_BY_CODE[fallback.code] ?? fallback.code;
+  }
+  return lower;
 }
 
 export interface CatalogService {
@@ -132,6 +206,7 @@ export interface ProviderMe {
   whatsapp?: string | null;
   badge?: string | null;
   city?: NamedCity | null;
+  cities?: NamedCity[];
   avatarUrl?: string | null;
 }
 
@@ -305,6 +380,14 @@ export const PACKAGE_POLICIES: Record<string, { duration: string; limits: string
   },
 };
 
+export interface OpsInboxItem {
+  id: string;
+  kind: 'MEDIA' | 'RECEIPT' | 'PROVIDER' | 'CHANGE' | 'RATING' | 'COMPLAINT' | 'TICKET' | string;
+  title: string;
+  subtitle: string;
+  createdAt: string;
+}
+
 export interface OpsDashboard {
   pendingMedia: number;
   pendingReceipts: number;
@@ -316,6 +399,7 @@ export interface OpsDashboard {
   activeProviders: number;
   customers: number;
   expiringSubscriptions: number;
+  inbox?: OpsInboxItem[];
 }
 
 export interface OpsMediaItem {
@@ -476,6 +560,7 @@ export interface OpsStaff {
   mobile: string;
   accountCode: string;
   status: string;
+  createdAt?: string;
   team: string;
   level: number;
   role: { id: string; code: string; nameAr: string; nameEn: string } | null;

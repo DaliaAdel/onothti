@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
@@ -11,7 +12,7 @@ import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-profile',
-  imports: [FavoriteBtnComponent, IconComponent],
+  imports: [FormsModule, FavoriteBtnComponent, IconComponent],
   template: `
     @if (loading) {
       <p class="loading">جاري تحميل الملف...</p>
@@ -23,7 +24,7 @@ import { IconComponent } from '../shared/icon.component';
         <div class="profile-photo">{{ profile.displayName.slice(0, 1) }}</div>
         <div>
           <h2>{{ profile.displayName }}</h2>
-          <span class="badge">✓ {{ profile.badge || 'حساب نشط ومعتمد' }}</span>
+          <span class="badge">★ {{ profile.ratingAvg ?? '—' }}@if (profile.ratingCount) { · {{ profile.ratingCount }} تقييمًا }</span>
           <p style="color:var(--muted);font-size:10px;margin:8px 0 0">
             {{ serviceLine }} · {{ profile.city?.nameAr || 'المملكة' }}
           </p>
@@ -94,7 +95,7 @@ import { IconComponent } from '../shared/icon.component';
             @for (item of profile.portfolio; track item.id) {
               <div class="portfolio-item">
                 @if (item.url && item.kind !== 'VIDEO') {
-                  <img [src]="mediaUrl(item.url)" alt="" />
+                  <img [src]="mediaUrl(item.url)" alt="" loading="lazy" decoding="async" />
                 } @else {
                   {{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}
                 }
@@ -104,6 +105,16 @@ import { IconComponent } from '../shared/icon.component';
         }
       }
       @if (activeTab === 'ratings') {
+        <article class="card" style="margin-top:18px">
+          <h3 style="color:var(--plum)">أضيفي تقييمكِ</h3>
+          <div class="rating-stars">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <button type="button" [class.active]="stars >= star" (click)="stars = star">★</button>
+            }
+          </div>
+          <textarea class="input" style="margin-top:12px" [(ngModel)]="note" name="note" maxlength="100" placeholder="ملاحظة قصيرة (اختياري)"></textarea>
+          <button class="btn primary" style="margin-top:12px" type="button" [disabled]="ratingBusy || stars < 1" (click)="submitRating()">إرسال التقييم</button>
+        </article>
         @if (!profile.ratings?.length) {
           <p class="page-empty">لا توجد تقييمات معتمدة بعد.</p>
         } @else {
@@ -137,6 +148,9 @@ export class ProviderProfileComponent implements OnInit {
     { id: 'ratings' as const, label: 'التقييمات' },
   ];
   readonly mediaUrl = mediaUrl;
+  stars = 5;
+  note = '';
+  ratingBusy = false;
 
   get serviceLine(): string {
     return this.profile?.services?.[0]?.nameAr || 'خدمات تجميل';
@@ -159,6 +173,24 @@ export class ProviderProfileComponent implements OnInit {
       error: (err) => {
         this.error = apiMessage(err, 'الملف غير ظاهر');
         this.loading = false;
+      },
+    });
+  }
+
+  submitRating(): void {
+    if (!this.profile || this.stars < 1) {
+      return;
+    }
+    this.ratingBusy = true;
+    this.api.rate(this.profile.id, this.stars, this.note.trim() || undefined).subscribe({
+      next: () => {
+        this.ratingBusy = false;
+        this.note = '';
+        this.toast.show('تم إرسال التقييم للمراجعة');
+      },
+      error: (err) => {
+        this.ratingBusy = false;
+        this.toast.show(apiMessage(err, 'تعذر إرسال التقييم'));
       },
     });
   }

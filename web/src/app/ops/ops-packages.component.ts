@@ -5,135 +5,187 @@ import { apiMessage } from '../core/phone';
 import type { CatalogPackage, OpsCampaign } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-packages',
-  imports: [FormsModule],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
-        <p>تعديل الأسعار والمدد وحدود الخدمات والصور والفيديو</p>
+        <p>اضغطي على صف الباقة لتعديل الأسعار والحدود</p>
       </div>
     </div>
+    <article class="card form-card" style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة باقة</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>الرمز</label>
+          <input class="input" [(ngModel)]="draft.code" placeholder="GREEN" />
+        </div>
+        <div class="field">
+          <label>الاسم</label>
+          <input class="input" [(ngModel)]="draft.nameAr" />
+        </div>
+        <div class="field">
+          <label>المدة بالشهور</label>
+          <input class="input" type="number" [(ngModel)]="draft.durationMonths" />
+        </div>
+        <div class="field">
+          <label>السعر</label>
+          <input class="input" type="number" [(ngModel)]="draft.price" />
+        </div>
+        <div class="field">
+          <label>الترتيب</label>
+          <input class="input" type="number" [(ngModel)]="draft.rank" />
+        </div>
+      </div>
+      <button class="btn primary" style="margin-top:14px" type="button" (click)="create()">إضافة</button>
+    </article>
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
     } @else {
-      <div class="grid two">
-        @for (item of packages; track item.id) {
-          <article class="card">
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-              <h3 style="margin:0;color:var(--plum)">{{ item.nameAr }} · {{ item.code }}</h3>
-              <span class="badge" [style.opacity]="item.isActive ? '1' : '.45'">
-                {{ item.isActive ? 'مفعّلة' : 'متوقفة' }}
-              </span>
-            </div>
-            <div class="form-grid" style="margin-top:14px">
-              <div class="field">
-                <label>الاسم</label>
-                <input class="input" [(ngModel)]="item.nameAr" />
-              </div>
-              <div class="field">
-                <label>المدة بالشهور</label>
-                <input class="input" type="number" [(ngModel)]="item.durationMonths" />
-              </div>
-              <div class="field">
-                <label>السعر</label>
-                <input class="input" type="number" [(ngModel)]="item.price" />
-              </div>
-              <div class="field">
-                <label>ترتيب الظهور</label>
-                <input class="input" type="number" [(ngModel)]="item.rank" />
-              </div>
-              <div class="field">
-                <label>حد الخدمات</label>
-                <input class="input" type="number" [(ngModel)]="item.maxServices" />
-              </div>
-              <div class="field">
-                <label>حد الصور</label>
-                <input class="input" type="number" [(ngModel)]="item.maxPhotos" />
-              </div>
-              <div class="field">
-                <label>حد الفيديو</label>
-                <input class="input" type="number" [(ngModel)]="item.maxVideos" />
-              </div>
-              <div class="field">
-                <label>حد الألبومات</label>
-                <input class="input" type="number" [(ngModel)]="item.maxAlbums" />
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-              <button class="btn primary" type="button" (click)="save(item)">حفظ</button>
-              <button class="btn ghost" type="button" (click)="toggle(item)">
-                {{ item.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
-              </button>
-            </div>
-          </article>
-        }
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الباقة</th>
+              <th>الرمز</th>
+              <th>المدة</th>
+              <th>السعر</th>
+              <th>الترتيب</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of packages; track item.id) {
+              <tr [class.active]="selectedPackage?.id === item.id" (click)="selectedPackage = item">
+                <td><b>{{ item.nameAr }}</b></td>
+                <td>{{ item.code }}</td>
+                <td>{{ item.durationMonths }} شهر</td>
+                <td>{{ item.price }} ر.س</td>
+                <td>{{ item.rank }}</td>
+                <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'مفعّلة' : 'متوقفة' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-
-      <article class="card form-card" style="margin-top:22px">
-        <h3 style="margin:0 0 12px;color:var(--plum)">إضافة باقة</h3>
-        <div class="form-grid">
-          <div class="field">
-            <label>الرمز</label>
-            <input class="input" [(ngModel)]="draft.code" placeholder="GREEN" />
-          </div>
-          <div class="field">
-            <label>الاسم</label>
-            <input class="input" [(ngModel)]="draft.nameAr" />
-          </div>
-          <div class="field">
-            <label>المدة بالشهور</label>
-            <input class="input" type="number" [(ngModel)]="draft.durationMonths" />
-          </div>
-          <div class="field">
-            <label>السعر</label>
-            <input class="input" type="number" [(ngModel)]="draft.price" />
-          </div>
-          <div class="field">
-            <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="draft.rank" />
-          </div>
-        </div>
-        <button class="btn primary" style="margin-top:14px" type="button" (click)="create()">إضافة</button>
-      </article>
     }
 
     <div class="section-head">
       <div>
         <h2>الحملات المجانية</h2>
-        <p>تشغيل وإيقاف نافذة الباقة المجانية بدون إصدار جديد</p>
+        <p>اضغطي على الحملة لتعديل المدة وتشغيلها</p>
       </div>
     </div>
-    <div class="grid two">
-      @for (item of campaigns; track item.id) {
-        <article class="card">
-          <h3 style="margin:0 0 8px;color:var(--plum)">{{ item.nameAr }}</h3>
-          <p class="muted small">{{ toDate(item.startDate) }} → {{ toDate(item.endDate) }} · {{ item.benefitDays }} يوم استفادة</p>
-          <div class="form-grid" style="margin-top:12px">
-            <div class="field">
-              <label>البداية</label>
-              <input class="input" type="date" [(ngModel)]="campaignDates[item.id].startDate" />
-            </div>
-            <div class="field">
-              <label>النهاية</label>
-              <input class="input" type="date" [(ngModel)]="campaignDates[item.id].endDate" />
-            </div>
-            <div class="field">
-              <label>أيام الاستفادة</label>
-              <input class="input" type="number" [(ngModel)]="item.benefitDays" />
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:14px">
-            <button class="btn primary" type="button" (click)="saveCampaign(item)">حفظ</button>
-            <button class="btn ghost" type="button" (click)="toggleCampaign(item)">
-              {{ item.isActive ? 'إيقاف الحملة' : 'تشغيل الحملة' }}
-            </button>
-          </div>
-        </article>
-      }
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>الحملة</th>
+            <th>البداية</th>
+            <th>النهاية</th>
+            <th>أيام الاستفادة</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of campaigns; track item.id) {
+            <tr [class.active]="selectedCampaign?.id === item.id" (click)="selectedCampaign = item">
+              <td><b>{{ item.nameAr }}</b></td>
+              <td>{{ toDate(item.startDate) }}</td>
+              <td>{{ toDate(item.endDate) }}</td>
+              <td>{{ item.benefitDays }}</td>
+              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'شغالة' : 'متوقفة' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
+
+    <app-ops-drawer
+      [open]="!!selectedPackage"
+      [title]="selectedPackage?.nameAr || ''"
+      [kicker]="selectedPackage?.code || 'باقة'"
+      (closed)="selectedPackage = null"
+    >
+      @if (selectedPackage; as item) {
+        <div class="form-grid">
+          <div class="field">
+            <label>الاسم</label>
+            <input class="input" [(ngModel)]="item.nameAr" />
+          </div>
+          <div class="field">
+            <label>المدة بالشهور</label>
+            <input class="input" type="number" [(ngModel)]="item.durationMonths" />
+          </div>
+          <div class="field">
+            <label>السعر</label>
+            <input class="input" type="number" [(ngModel)]="item.price" />
+          </div>
+          <div class="field">
+            <label>ترتيب الظهور</label>
+            <input class="input" type="number" [(ngModel)]="item.rank" />
+          </div>
+          <div class="field">
+            <label>حد الخدمات</label>
+            <input class="input" type="number" [(ngModel)]="item.maxServices" />
+          </div>
+          <div class="field">
+            <label>حد الصور</label>
+            <input class="input" type="number" [(ngModel)]="item.maxPhotos" />
+          </div>
+          <div class="field">
+            <label>حد الفيديو</label>
+            <input class="input" type="number" [(ngModel)]="item.maxVideos" />
+          </div>
+          <div class="field">
+            <label>حد الألبومات</label>
+            <input class="input" type="number" [(ngModel)]="item.maxAlbums" />
+          </div>
+        </div>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="save(item)">حفظ</button>
+          <button class="btn ghost" type="button" (click)="toggle(item)">
+            {{ item.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
+          </button>
+        </div>
+      }
+    </app-ops-drawer>
+
+    <app-ops-drawer
+      [open]="!!selectedCampaign"
+      [title]="selectedCampaign?.nameAr || ''"
+      kicker="حملة مجانية"
+      (closed)="selectedCampaign = null"
+    >
+      @if (selectedCampaign; as item) {
+        <p class="muted small">{{ toDate(item.startDate) }} → {{ toDate(item.endDate) }}</p>
+        <div class="form-grid">
+          <div class="field">
+            <label>البداية</label>
+            <input class="input" type="date" [(ngModel)]="campaignDates[item.id].startDate" />
+          </div>
+          <div class="field">
+            <label>النهاية</label>
+            <input class="input" type="date" [(ngModel)]="campaignDates[item.id].endDate" />
+          </div>
+          <div class="field">
+            <label>أيام الاستفادة</label>
+            <input class="input" type="number" [(ngModel)]="item.benefitDays" />
+          </div>
+        </div>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="saveCampaign(item)">حفظ</button>
+          <button class="btn ghost" type="button" (click)="toggleCampaign(item)">
+            {{ item.isActive ? 'إيقاف الحملة' : 'تشغيل الحملة' }}
+          </button>
+        </div>
+      }
+    </app-ops-drawer>
   `,
 })
 export class OpsPackagesComponent implements OnInit {
@@ -143,6 +195,8 @@ export class OpsPackagesComponent implements OnInit {
 
   packages: CatalogPackage[] = [];
   campaigns: OpsCampaign[] = [];
+  selectedPackage: CatalogPackage | null = null;
+  selectedCampaign: OpsCampaign | null = null;
   campaignDates: Record<string, { startDate: string; endDate: string }> = {};
   loading = true;
   draft = { code: '', nameAr: '', durationMonths: 1, price: 0, rank: 5 };
@@ -244,6 +298,7 @@ export class OpsPackagesComponent implements OnInit {
     this.api.opsPackages().subscribe({
       next: (packages) => {
         this.packages = packages;
+        this.selectedPackage = keepSelected(this.packages, this.selectedPackage);
         this.loading = false;
       },
       error: (err) => {
@@ -254,6 +309,7 @@ export class OpsPackagesComponent implements OnInit {
     this.api.opsCampaigns().subscribe({
       next: (campaigns) => {
         this.campaigns = campaigns;
+        this.selectedCampaign = keepSelected(this.campaigns, this.selectedCampaign);
         for (const item of campaigns) {
           this.campaignDates[item.id] = {
             startDate: item.startDate.slice(0, 10),

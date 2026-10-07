@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
@@ -6,10 +5,12 @@ import { apiMessage } from '../core/phone';
 import type { OpsTicket } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
 @Component({
   selector: 'app-ops-tickets',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="filters">
       <button class="chip" type="button" [class.active]="status === ''" (click)="setStatus('')">الكل</button>
@@ -24,43 +25,71 @@ import { ToastService } from '../core/toast.service';
     } @else if (!items.length) {
       <p class="page-empty">لا توجد طلبات في هذا التبويب.</p>
     } @else {
-      <div class="grid two">
-        @for (item of items; track item.id) {
-          <article class="card">
-            <p style="margin:0 0 6px;font-weight:700;color:var(--plum)">
-              {{ item.type.nameAr }} · {{ item.refNo }}
-            </p>
-            <p class="muted small">
-              {{ item.owner.displayName }} · {{ item.owner.accountCode }} · {{ item.owner.mobile }} ·
-              {{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}
-            </p>
-            <p style="margin:10px 0;white-space:pre-wrap">{{ item.body }}</p>
-            @if (item.comments.length) {
-              <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
-                @for (comment of item.comments; track comment.id) {
-                  <p class="muted small" style="margin:0 0 8px">
-                    <b>{{ comment.author.displayName }}:</b> {{ comment.body }}
-                  </p>
-                }
-              </div>
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>النوع</th>
+              <th>المرسلة</th>
+              <th>الملخص</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items; track item.id) {
+              <tr [class.active]="selected?.id === item.id" (click)="selected = item">
+                <td><b>{{ item.refNo }}</b></td>
+                <td>{{ item.type.nameAr }}</td>
+                <td>{{ item.owner.displayName }}</td>
+                <td class="clip">{{ clip(item.body) }}</td>
+                <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
+                <td>{{ opsDate(item.createdAt) }}</td>
+              </tr>
             }
-            <textarea class="input" rows="2" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-              <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>
-              @if (item.status !== 'IN_PROGRESS') {
-                <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'IN_PROGRESS')">معالجة</button>
-              }
-              @if (item.status !== 'RESOLVED') {
-                <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'RESOLVED')">تم الحل</button>
-              }
-              @if (item.status !== 'CLOSED') {
-                <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">إغلاق</button>
-              }
-            </div>
-          </article>
-        }
+          </tbody>
+        </table>
       </div>
     }
+
+    <app-ops-drawer
+      [open]="!!selected"
+      [title]="selected?.refNo || ''"
+      [kicker]="selected?.type?.nameAr || 'طلب دعم'"
+      (closed)="selected = null"
+    >
+      @if (selected; as item) {
+        <p class="muted small">
+          {{ item.owner.displayName }} · {{ item.owner.accountCode }} ·
+          <span dir="ltr">{{ item.owner.mobile }}</span>
+        </p>
+        <p class="muted small">{{ opsDate(item.createdAt) }} · {{ statusAr(item.status) }}</p>
+        <p style="margin:14px 0;white-space:pre-wrap;line-height:1.8">{{ item.body }}</p>
+        @if (item.comments.length) {
+          <h4 style="margin:18px 0 8px;color:var(--plum)">الردود</h4>
+          @for (comment of item.comments; track comment.id) {
+            <p class="muted small" style="margin:0 0 8px">
+              <b>{{ comment.author.displayName }}:</b> {{ comment.body }}
+              <span> · {{ opsDate(comment.createdAt) }}</span>
+            </p>
+          }
+        }
+        <textarea class="input" rows="3" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>
+          @if (item.status !== 'IN_PROGRESS') {
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'IN_PROGRESS')">معالجة</button>
+          }
+          @if (item.status !== 'RESOLVED') {
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'RESOLVED')">تم الحل</button>
+          }
+          @if (item.status !== 'CLOSED') {
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">إغلاق</button>
+          }
+        </div>
+      }
+    </app-ops-drawer>
   `,
 })
 export class OpsTicketsComponent implements OnInit {
@@ -68,9 +97,14 @@ export class OpsTicketsComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
+  readonly opsDate = opsDate;
+  readonly statusTone = statusTone;
+  readonly clip = clip;
+
   loading = true;
   status = 'SENT';
   items: OpsTicket[] = [];
+  selected: OpsTicket | null = null;
   replies: Record<string, string> = {};
 
   ngOnInit(): void {
@@ -80,7 +114,18 @@ export class OpsTicketsComponent implements OnInit {
 
   setStatus(status: string): void {
     this.status = status;
+    this.selected = null;
     this.load();
+  }
+
+  statusAr(status: string): string {
+    const labels: Record<string, string> = {
+      SENT: 'جديدة',
+      IN_PROGRESS: 'قيد المعالجة',
+      RESOLVED: 'محلولة',
+      CLOSED: 'مغلقة',
+    };
+    return labels[status] ?? status;
   }
 
   reply(item: OpsTicket): void {
@@ -113,14 +158,18 @@ export class OpsTicketsComponent implements OnInit {
     this.items = this.items.map((item) => (item.id === row.id ? row : item));
     if (this.status && row.status !== this.status) {
       this.items = this.items.filter((item) => item.id !== row.id);
+      this.selected = null;
+      return;
     }
+    this.selected = keepSelected(this.items, row);
   }
 
   private load(): void {
     this.loading = true;
     this.api.opsTickets(this.status || undefined).subscribe({
       next: (items) => {
-        this.items = items;
+        this.items = newestFirst(items);
+        this.selected = keepSelected(this.items, this.selected);
         for (const item of items) {
           this.replies[item.id] ??= '';
         }

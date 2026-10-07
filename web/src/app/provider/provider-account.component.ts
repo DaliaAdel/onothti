@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
 import { apiMessage, displayPhone } from '../core/phone';
-import type { CatalogCity, ProviderMe } from '../core/models';
+import type { CatalogRegion, ProviderMe } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -27,13 +27,27 @@ import { ToastService } from '../core/toast.service';
             <input name="displayName" [(ngModel)]="displayName" (ngModelChange)="dirty = true" />
           </div>
           <div class="field">
-            <label>المدينة</label>
-            <select name="cityId" [(ngModel)]="cityId" (ngModelChange)="dirty = true">
-              <option value="">اختاري المدينة</option>
-              @for (city of cities; track city.id) {
-                <option [value]="city.id">{{ city.nameAr }}</option>
+            <label>المنطقة</label>
+            <select name="regionId" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
+              <option value="">اختاري المنطقة</option>
+              @for (region of regions; track region.id) {
+                <option [value]="region.id">{{ region.nameAr }}</option>
               }
             </select>
+          </div>
+        </div>
+        <div class="field city-multi">
+          <label>المدن</label>
+          <small class="city-hint">يمكنك اختيار أكثر من مدينة في نفس المنطقة</small>
+          <div class="chips">
+            @if (!regionId) {
+              <span class="muted small">اختاري المنطقة أولًا</span>
+            }
+            @for (city of cities; track city.id) {
+              <button class="chip" type="button" [class.active]="cityIds.includes(city.id)" (click)="toggleCity(city.id)">
+                {{ city.nameAr }}
+              </button>
+            }
           </div>
         </div>
         <div class="grid cols-2">
@@ -79,17 +93,25 @@ export class ProviderAccountComponent implements OnInit {
 
   profile: ProviderMe | null = null;
   displayName = '';
-  cityId = '';
+  regionId = '';
+  cityIds: string[] = [];
   email = '';
   bio = '';
   previewUrl = '';
-  cities: CatalogCity[] = [];
+  regions: CatalogRegion[] = [];
   loading = false;
   uploading = false;
   dirty = false;
 
+  get cities() {
+    return this.regions.find((region) => region.id === this.regionId)?.cities ?? [];
+  }
+
   get cityName(): string {
-    return this.cities.find((city) => city.id === this.cityId)?.nameAr || 'المدينة';
+    const names = this.cityIds
+      .map((id) => this.regions.flatMap((region) => region.cities).find((city) => city.id === id)?.nameAr)
+      .filter((name): name is string => Boolean(name));
+    return names.join(' · ') || 'المدينة';
   }
 
   get loginMobile(): string {
@@ -98,18 +120,50 @@ export class ProviderAccountComponent implements OnInit {
 
   ngOnInit(): void {
     this.shell.set('الملف الشخصي');
-    this.api.cities().subscribe({ next: (cities) => (this.cities = cities) });
+    this.api.regions().subscribe({
+      next: (regions) => {
+        this.regions = regions;
+        this.syncRegionFromCities();
+      },
+    });
     this.api.providerProfile().subscribe({
       next: (profile) => {
         this.profile = profile;
         this.displayName = profile.displayName;
-        this.cityId = profile.city?.id ?? '';
+        this.cityIds = (profile.cities?.length ? profile.cities : profile.city ? [profile.city] : []).map(
+          (city) => city.id,
+        );
         this.email = profile.email ?? '';
         this.bio = profile.bio ?? '';
         this.previewUrl = mediaUrl(profile.avatarUrl) || '';
         this.session.patchUser({ displayName: profile.displayName, city: profile.city });
+        this.syncRegionFromCities();
       },
     });
+  }
+
+  onRegionChange(): void {
+    const allowed = new Set(this.cities.map((city) => city.id));
+    this.cityIds = this.cityIds.filter((id) => allowed.has(id));
+    this.dirty = true;
+  }
+
+  toggleCity(id: string): void {
+    if (this.cityIds.includes(id)) {
+      this.cityIds = this.cityIds.filter((cityId) => cityId !== id);
+    } else {
+      this.cityIds = [...this.cityIds, id];
+    }
+    this.dirty = true;
+  }
+
+  private syncRegionFromCities(): void {
+    const selectedId = this.cityIds[0];
+    if (!selectedId || this.regionId || !this.regions.length) {
+      return;
+    }
+    this.regionId =
+      this.regions.find((region) => region.cities.some((city) => city.id === selectedId))?.id ?? '';
   }
 
   onPhoto(event: Event): void {
@@ -137,11 +191,16 @@ export class ProviderAccountComponent implements OnInit {
   }
 
   save(): void {
+    if (!this.cityIds.length) {
+      this.toast.show('اختاري مدينة واحدة على الأقل');
+      return;
+    }
     this.loading = true;
     this.api
       .updateProviderProfile({
         displayName: this.displayName.trim(),
-        cityId: this.cityId || undefined,
+        cityId: this.cityIds[0],
+        cityIds: this.cityIds,
         bio: this.bio,
       })
       .subscribe({

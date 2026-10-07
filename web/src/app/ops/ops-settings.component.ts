@@ -5,6 +5,8 @@ import { apiMessage } from '../core/phone';
 import type { OpsBankAccount, OpsWelcome } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { OpsDrawerComponent } from './ops-drawer.component';
+import { clip, keepSelected } from './ops-ui';
 
 const SETTING_META: { key: string; label: string; hint: string }[] = [
   { key: 'whatsapp_disclaimer', label: 'تنبيه واتساب', hint: 'يظهر عند التواصل خارج المنصة' },
@@ -18,7 +20,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
 
 @Component({
   selector: 'app-ops-settings',
-  imports: [FormsModule],
+  imports: [FormsModule, OpsDrawerComponent],
   template: `
     <div class="section-head">
       <div>
@@ -29,17 +31,38 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
     } @else {
-      <div class="grid two">
-        @for (item of settingRows; track item.key) {
-          <article class="card">
-            <h3 style="margin:0 0 6px;color:var(--plum)">{{ item.label }}</h3>
-            <p class="muted small">{{ item.hint }}</p>
-            <textarea class="input" rows="3" [(ngModel)]="values[item.key]"></textarea>
-            <button class="btn primary" style="margin-top:12px" type="button" (click)="saveSetting(item.key)">حفظ</button>
-          </article>
-        }
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الإعداد</th>
+              <th>القيمة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of settingRows; track item.key) {
+              <tr [class.active]="selectedSetting?.key === item.key" (click)="selectedSetting = item">
+                <td><b>{{ item.label }}</b></td>
+                <td class="clip">{{ clip(values[item.key]) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
+    <app-ops-drawer
+      [open]="!!selectedSetting"
+      [title]="selectedSetting?.label || ''"
+      [kicker]="selectedSetting?.hint || ''"
+      (closed)="selectedSetting = null"
+    >
+      @if (selectedSetting; as item) {
+        <textarea class="input" rows="4" [(ngModel)]="values[item.key]"></textarea>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="saveSetting(item.key)">حفظ</button>
+        </div>
+      }
+    </app-ops-drawer>
 
     <div class="section-head">
       <div>
@@ -47,22 +70,44 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
         <p>ترحيب وتحفيز للعميلة والخبيرة عند الدخول</p>
       </div>
     </div>
-    <div class="grid two">
-      @for (item of welcome; track item.id) {
-        <article class="card">
-          <p style="margin:0 0 8px;font-weight:700;color:var(--plum)">
-            {{ audienceLabel(item.audience) }} · {{ kindLabel(item.kind) }}
-          </p>
-          <textarea class="input" rows="4" [(ngModel)]="item.bodyAr"></textarea>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-            <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
-            <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
-              {{ item.isActive ? 'إيقاف' : 'تشغيل' }}
-            </button>
-          </div>
-        </article>
-      }
+    <div class="ops-table-wrap" style="margin-bottom:18px">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>الجمهور</th>
+            <th>النوع</th>
+            <th>النص</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of welcome; track item.id) {
+            <tr [class.active]="selectedWelcome?.id === item.id" (click)="selectedWelcome = item">
+              <td><b>{{ audienceLabel(item.audience) }}</b></td>
+              <td>{{ kindLabel(item.kind) }}</td>
+              <td class="clip">{{ clip(item.bodyAr) }}</td>
+              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'ظاهرة' : 'متوقفة' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
+    <app-ops-drawer
+      [open]="!!selectedWelcome"
+      [title]="selectedWelcome ? audienceLabel(selectedWelcome.audience) + ' · ' + kindLabel(selectedWelcome.kind) : ''"
+      kicker="رسالة ترحيب"
+      (closed)="selectedWelcome = null"
+    >
+      @if (selectedWelcome; as item) {
+        <textarea class="input" rows="5" [(ngModel)]="item.bodyAr"></textarea>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
+          <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
+            {{ item.isActive ? 'إيقاف' : 'تشغيل' }}
+          </button>
+        </div>
+      }
+    </app-ops-drawer>
 
     <article class="card form-card" style="margin-top:22px">
       <h3 style="margin:0 0 12px;color:var(--plum)">إضافة رسالة</h3>
@@ -96,8 +141,35 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
         <p>بيانات التحويل التي تراها الخبيرة عند الاشتراك.</p>
       </div>
     </div>
-    @for (item of banks; track item.id) {
-      <article class="card" style="margin-bottom:14px">
+    <div class="ops-table-wrap" style="margin-bottom:18px">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>البنك</th>
+            <th>الآيبان</th>
+            <th>المستفيد</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of banks; track item.id) {
+            <tr [class.active]="selectedBank?.id === item.id" (click)="selectedBank = item">
+              <td><b>{{ item.bankName }}</b></td>
+              <td dir="ltr">{{ item.iban }}</td>
+              <td>{{ item.accountName }}</td>
+              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'ظاهر' : 'متوقف' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-ops-drawer
+      [open]="!!selectedBank"
+      [title]="selectedBank?.bankName || ''"
+      kicker="حساب بنكي"
+      (closed)="selectedBank = null"
+    >
+      @if (selectedBank; as item) {
         <div class="form-grid">
           <div class="field">
             <label>البنك</label>
@@ -112,14 +184,14 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
             <input class="input" [(ngModel)]="item.accountName" />
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <div class="ops-drawer-actions">
           <button class="btn primary" type="button" (click)="saveBank(item)">حفظ</button>
           <button class="btn ghost" type="button" (click)="toggleBank(item)">
             {{ item.isActive ? 'إيقاف' : 'تفعيل' }}
           </button>
         </div>
-      </article>
-    }
+      }
+    </app-ops-drawer>
     <article class="card form-card" style="margin-bottom:22px">
       <h3 style="margin:0 0 12px;color:var(--plum)">إضافة حساب بنكي</h3>
       <div class="form-grid">
@@ -173,8 +245,13 @@ export class OpsSettingsComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
+  readonly clip = clip;
+
   loading = true;
   values: Record<string, string> = {};
+  selectedSetting: (typeof SETTING_META)[number] | null = null;
+  selectedWelcome: OpsWelcome | null = null;
+  selectedBank: OpsBankAccount | null = null;
   welcome: OpsWelcome[] = [];
   welcomeDraft = { audience: 'CUSTOMER', kind: 'WELCOME', bodyAr: '' };
   banks: OpsBankAccount[] = [];
@@ -302,7 +379,10 @@ export class OpsSettingsComponent implements OnInit {
       },
     });
     this.api.opsWelcome().subscribe({
-      next: (rows) => (this.welcome = rows),
+      next: (rows) => {
+        this.welcome = rows;
+        this.selectedWelcome = keepSelected(this.welcome, this.selectedWelcome);
+      },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الرسائل')),
     });
     this.loadBanks();
@@ -310,7 +390,10 @@ export class OpsSettingsComponent implements OnInit {
 
   private loadBanks(): void {
     this.api.opsBankAccounts().subscribe({
-      next: (rows) => (this.banks = rows),
+      next: (rows) => {
+        this.banks = rows;
+        this.selectedBank = keepSelected(this.banks, this.selectedBank);
+      },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الحساب البنكي')),
     });
   }

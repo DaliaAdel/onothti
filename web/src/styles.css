@@ -70,5 +70,54 @@ app-favorite-btn{display:inline-flex;line-height:0}
   .provider-actions{grid-column:1/-1}
   .profile-actions{width:100%}
   .profile-head .profile-actions .btn{width:auto;flex:1}
+  .home-search-row{flex-direction:column}
+  .home-metrics{grid-template-columns:1fr 1fr}
+}
+.home-search{padding:22px 24px;margin-bottom:18px}
+.home-search h2{font:700 28px 'Noto Naskh Arabic',serif;color:var(--plum);margin:8px 0 4px}
+.home-search p{margin:0 0 16px;color:var(--muted);font-size:12px}
+.home-search-row{display:flex;gap:10px;flex-wrap:wrap}
+.home-search-row .searchbox{flex:1;min-width:180px}
+.home-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 10px}
+.home-metrics div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center}
+.home-metrics b{display:block;color:var(--copper-dark);font-size:20px}
+.home-metrics span{font-size:10px;color:var(--muted)}
+.photo-service .service-art{padding:0;background:#f6ece7}
+.photo-service .service-art:before{display:none}
+.photo-service .service-art img,.photo-service .service-art .service-cover{width:100%;height:100%;object-fit:cover;border-radius:18px;filter:none}
+.service-mini-icon{position:absolute;z-index:1;right:10px;bottom:10px;width:42px;height:42px;object-fit:contain;background:rgba(255,255,255,.94);border-radius:12px;padding:4px;box-shadow:0 6px 16px rgba(80,45,31,.12)}
+.home-shortcuts a{text-decoration:none;display:grid;gap:8px}
+.home-shortcuts b{display:block;color:var(--plum);margin-bottom:2px}
+.home-shortcuts span{font-size:10px;color:var(--muted);line-height:1.7}
+.shortcut-icon{width:42px;height:42px;display:grid;place-items:center}
+.shortcut-icon .icon-img,.shortcut-icon .icon{width:32px;height:32px}
+.dash-remaining{text-align:center;min-width:110px}
+.dash-remaining span{font-size:9px;color:var(--muted)}
+.dash-remaining strong{display:block;font-size:32px;color:var(--primary);line-height:1.1}
+
+.ops-table-wrap{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:auto;box-shadow:var(--shadow-sm)}
+.ops-table{width:100%;border-collapse:collapse;min-width:640px}
+.ops-table th,.ops-table td{text-align:right;padding:13px 14px;border-bottom:1px solid rgba(234,222,217,.8);font-size:11px;white-space:nowrap}
+.ops-table th{color:var(--muted);font-weight:700;background:#fbf6f2;position:sticky;top:0;z-index:1}
+.ops-table tbody tr{cursor:pointer}
+.ops-table tbody tr:hover{background:#fbf0ea}
+.ops-table tbody tr.active{background:#f4e4db;box-shadow:inset -3px 0 0 var(--copper)}
+.ops-table td b{color:var(--plum);font-weight:800}
+.ops-table .clip{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ops-drawer-layer{position:fixed;inset:0;z-index:80;display:flex;justify-content:flex-start}
+.ops-drawer-backdrop{position:absolute;inset:0;border:0;background:rgba(46,32,25,.28);cursor:pointer}
+.ops-drawer{position:relative;width:min(480px,100%);height:100%;background:#fffdfb;box-shadow:20px 0 50px rgba(46,32,25,.18);display:flex;flex-direction:column;z-index:1;overflow:auto}
+.ops-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:22px 22px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fffdfb;z-index:2}
+.ops-drawer-head h3{margin:4px 0 0;color:var(--plum);font:700 22px 'Noto Naskh Arabic',serif}
+.ops-drawer-body{padding:18px 22px 32px}
+.ops-drawer-body .field{margin-top:12px}
+.ops-drawer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.ops-thumb{width:42px;height:42px;border-radius:10px;object-fit:cover;background:#f6ece7;display:block}
+.ops-inbox-kind{display:inline-block;font-size:9px;font-weight:800;padding:5px 9px;border-radius:99px;background:var(--pearl);color:var(--copper-dark)}
+.ops-skeleton{height:12px;border-radius:8px;background:linear-gradient(90deg,#f4ebe6 25%,#fff 50%,#f4ebe6 75%);background-size:200% 100%;animation:opsShimmer 1.1s linear infinite}
+@keyframes opsShimmer{to{background-position:-200% 0}}
+@media(max-width:780px){
+  .ops-drawer{width:100%}
+  .ops-table{min-width:520px}
 }
 

@@ -8,6 +8,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <div class="auth-box">
+        <a class="auth-back" routerLink="/">← الرئيسية</a>
         <span class="auth-kicker">مرحبًا بكِ</span>
         <h2>اختاري طريقة المتابعة</h2>
         <p class="muted">سجّلي الدخول إلى حسابك أو ابدئي إنشاء حساب جديد.</p>

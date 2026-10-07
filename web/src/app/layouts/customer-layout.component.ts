@@ -21,10 +21,12 @@ export class CustomerLayoutComponent implements OnInit {
 
   readonly items: (NavItem & { exact?: boolean })[] = [
     { icon: 'home', label: 'nav.home', route: '/c', exact: true },
-    { icon: 'search', label: 'nav.services', route: '/c/services' },
+    { icon: 'services', label: 'nav.services', route: '/c/services' },
+    { icon: 'expert', label: 'nav.experts', route: '/c/providers' },
     { icon: 'heart', label: 'nav.favorites', route: '/c/favorites' },
-    { icon: 'bag', label: 'nav.requests', route: '/c/requests' },
     { icon: 'bell', label: 'nav.notifications', route: '/c/notifications' },
-    { icon: 'user', label: 'nav.account', route: '/c/account' },
+    { icon: 'support', label: 'nav.requests', route: '/c/requests' },
+    { icon: 'profile', label: 'nav.account', route: '/c/account' },
+    { icon: 'about', label: 'nav.about', route: '/c/about' },
   ];
 }

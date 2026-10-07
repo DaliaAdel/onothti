@@ -124,7 +124,7 @@ export class OpsService {
           },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
   }
@@ -207,7 +207,7 @@ export class OpsService {
           select: { id: true, displayName: true, accountCode: true, mobile: true },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
   }
@@ -417,7 +417,7 @@ export class OpsService {
     return this.prisma.ticket.findMany({
       where: status ? { status } : undefined,
       include: this.ticketInclude,
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
   }
@@ -651,7 +651,7 @@ export class OpsService {
       include: {
         staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
     });
     return rows.filter((row) => row.staff).map((row) => this.toStaff(row));
   }
@@ -767,6 +767,7 @@ export class OpsService {
     mobile: string;
     accountCode: string;
     status: string;
+    createdAt?: Date;
     staff?: {
       team: string;
       level: number;
@@ -786,6 +787,7 @@ export class OpsService {
       mobile: user.mobile,
       accountCode: user.accountCode,
       status: user.status,
+      createdAt: user.createdAt,
       team: user.staff?.team ?? "OPS",
       level: user.staff?.level ?? 1,
       role: role
@@ -1016,6 +1018,12 @@ export class OpsService {
       activeProviders,
       customers,
       expiringSubscriptions,
+      mediaRows,
+      providerRows,
+      changeRows,
+      ratingRows,
+      complaintRows,
+      ticketRows,
     ] = await Promise.all([
       this.prisma.mediaFile.count({ where: { status: { in: ["PENDING", "NEED_CLEARER"] } } }),
       this.prisma.paymentProof.count({ where: { opsStatus: { in: ["PENDING", "NEED_CLEARER"] } } }),
@@ -1038,7 +1046,119 @@ export class OpsService {
       this.prisma.subscription.count({
         where: { status: "ACTIVE", endAt: { gte: now, lte: week } },
       }),
+      this.prisma.mediaFile.findMany({
+        where: { status: { in: ["PENDING", "NEED_CLEARER"] } },
+        select: {
+          id: true,
+          createdAt: true,
+          proofs: { select: { id: true } },
+          uploadedBy: { select: { displayName: true, accountCode: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      this.prisma.user.findMany({
+        where: {
+          accountType: AccountType.PROVIDER,
+          status: { in: [AccountStatus.INACTIVE, AccountStatus.PENDING_APPROVAL] },
+        },
+        select: { id: true, displayName: true, accountCode: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      this.prisma.profileChangeRequest.findMany({
+        where: { status: "PENDING" },
+        select: {
+          id: true,
+          field: true,
+          createdAt: true,
+          user: { select: { displayName: true, accountCode: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      this.prisma.rating.findMany({
+        where: { status: "PENDING" },
+        select: {
+          id: true,
+          stars: true,
+          createdAt: true,
+          customer: { select: { displayName: true } },
+          provider: { select: { displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      this.prisma.complaint.findMany({
+        where: { status: "OPEN" },
+        select: {
+          id: true,
+          reason: true,
+          createdAt: true,
+          reporter: { select: { displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      this.prisma.ticket.findMany({
+        where: { status: { in: ["SENT", "IN_PROGRESS"] } },
+        select: {
+          id: true,
+          refNo: true,
+          createdAt: true,
+          type: { select: { nameAr: true } },
+          owner: { select: { displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
     ]);
+    const inbox = [
+      ...mediaRows.map((row) => ({
+        id: row.id,
+        kind: row.proofs.length ? "RECEIPT" : "MEDIA",
+        title: row.uploadedBy.displayName,
+        subtitle: row.uploadedBy.accountCode,
+        createdAt: row.createdAt,
+      })),
+      ...providerRows.map((row) => ({
+        id: row.id,
+        kind: "PROVIDER",
+        title: row.displayName,
+        subtitle: row.accountCode,
+        createdAt: row.createdAt,
+      })),
+      ...changeRows.map((row) => ({
+        id: row.id,
+        kind: "CHANGE",
+        title: row.user.displayName,
+        subtitle: row.user.accountCode,
+        createdAt: row.createdAt,
+      })),
+      ...ratingRows.map((row) => ({
+        id: row.id,
+        kind: "RATING",
+        title: `${row.customer.displayName} → ${row.provider.displayName}`,
+        subtitle: `${row.stars} نجوم`,
+        createdAt: row.createdAt,
+      })),
+      ...complaintRows.map((row) => ({
+        id: row.id,
+        kind: "COMPLAINT",
+        title: row.reporter.displayName,
+        subtitle: row.reason.slice(0, 80),
+        createdAt: row.createdAt,
+      })),
+      ...ticketRows.map((row) => ({
+        id: row.id,
+        kind: "TICKET",
+        title: row.refNo,
+        subtitle: `${row.owner.displayName} · ${row.type.nameAr}`,
+        createdAt: row.createdAt,
+      })),
+    ]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 12);
     return {
       pendingMedia,
       pendingReceipts,
@@ -1050,6 +1170,7 @@ export class OpsService {
       activeProviders,
       customers,
       expiringSubscriptions,
+      inbox,
     };
   }
 
@@ -1086,7 +1207,7 @@ export class OpsService {
           },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
     return files.map((file) => this.toMediaItem(file));
@@ -1182,7 +1303,7 @@ export class OpsService {
           include: { package: true },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 200,
     });
     return users.map((user) => ({

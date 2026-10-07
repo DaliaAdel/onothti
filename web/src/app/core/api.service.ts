@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   CatalogCity,
   CatalogPackage,
+  CatalogRegion,
   CatalogService,
   FavoriteList,
   PaymentProof,
@@ -86,11 +87,12 @@ export class ApiService {
     accountType: 'CUSTOMER' | 'PROVIDER';
     displayName: string;
     cityId: string;
+    cityIds?: string[];
     email?: string;
+    acceptTerms: boolean;
   }) {
     return this.http.post<AuthResponse>(`${this.base}/auth/phone/complete`, {
       ...body,
-      acceptTerms: true,
       deviceId: this.deviceId(),
       channel: 'WEB',
     });
@@ -137,6 +139,10 @@ export class ApiService {
 
   cities() {
     return this.http.get<CatalogCity[]>(`${this.base}/catalog/cities`);
+  }
+
+  regions() {
+    return this.http.get<CatalogRegion[]>(`${this.base}/catalog/regions`);
   }
 
   services() {
@@ -196,7 +202,13 @@ export class ApiService {
     return this.http.get<ProviderMe>(`${this.base}/provider/profile`);
   }
 
-  updateProviderProfile(body: { displayName?: string; cityId?: string; bio?: string; whatsapp?: string }) {
+  updateProviderProfile(body: {
+    displayName?: string;
+    cityId?: string;
+    cityIds?: string[];
+    bio?: string;
+    whatsapp?: string;
+  }) {
     return this.http.patch<ProviderMe>(`${this.base}/provider/profile`, body);
   }
 
@@ -304,6 +316,18 @@ export class ApiService {
 
   createProviderTicket(body: { typeCode: string; body: string }) {
     return this.http.post<ProviderTicket>(`${this.base}/provider/tickets`, body);
+  }
+
+  customerTicketTypes() {
+    return this.http.get<TicketType[]>(`${this.base}/customer/ticket-types`);
+  }
+
+  customerTickets() {
+    return this.http.get<ProviderTicket[]>(`${this.base}/customer/tickets`);
+  }
+
+  createCustomerTicket(body: { typeCode: string; body: string }) {
+    return this.http.post<ProviderTicket>(`${this.base}/customer/tickets`, body);
   }
 
   notifications() {

@@ -1,8 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
+import type { AccountType } from '../core/models';
 import { apiMessage, isSaudiMobile, toLocalPhone, toMobile } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
@@ -44,6 +45,7 @@ export class LoginPhoneComponent {
   private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly locale = inject(LocaleService);
 
   phone = '';
@@ -69,6 +71,17 @@ export class LoginPhoneComponent {
     this.errorRaw = key ? '' : raw;
   }
 
+  private signupAccountType(): AccountType {
+    const role = this.route.snapshot.queryParamMap.get('role');
+    if (role === 'customer') {
+      return 'CUSTOMER';
+    }
+    if (role === 'provider') {
+      return 'PROVIDER';
+    }
+    return this.session.getDraft()?.accountType === 'CUSTOMER' ? 'CUSTOMER' : 'PROVIDER';
+  }
+
   onPhonePaste(event: ClipboardEvent): void {
     event.preventDefault();
     this.phone = toLocalPhone(event.clipboardData?.getData('text') ?? '');
@@ -87,7 +100,7 @@ export class LoginPhoneComponent {
       displayName: '',
       mobile,
       needsProfile: true,
-      accountType: this.isNew ? 'PROVIDER' : undefined,
+      accountType: this.isNew ? this.signupAccountType() : undefined,
     });
     this.api.startPhone(mobile).subscribe({
       next: () => {

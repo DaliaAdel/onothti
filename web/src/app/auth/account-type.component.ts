@@ -13,16 +13,16 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <h2>اختاري نوع الحساب</h2>
         <p class="muted">اختاري نوع الحساب المناسب لكِ لاستكمال التسجيل.</p>
         <div class="entry-options role-options">
-          <a class="entry-card" routerLink="/signup/phone">
+          <a class="entry-card" routerLink="/signup/phone" [queryParams]="{ role: 'provider' }">
             <span class="entry-icon">✦</span>
             <b>الخبيرة</b>
             <small>لعرض الخدمات والأعمال والاشتراك في الباقات</small>
           </a>
-          <button class="entry-card unavailable-role" type="button" disabled aria-disabled="true">
+          <a class="entry-card" routerLink="/signup/phone" [queryParams]="{ role: 'customer' }">
             <span class="entry-icon">♡</span>
             <b>العميلة</b>
             <small>للبحث عن الخدمات والخبيرات</small>
-          </button>
+          </a>
         </div>
       </div>
     </app-auth-layout>
