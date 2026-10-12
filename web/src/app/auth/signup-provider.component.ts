@@ -55,7 +55,8 @@ import { IconComponent } from '../shared/icon.component';
           </div>
           <div class="field full">
             <label>{{ locale.t('auth.bio') }}</label>
-            <textarea class="input" name="bio" [(ngModel)]="bio" [placeholder]="locale.t('auth.bioPlaceholder')"></textarea>
+            <textarea class="input" name="bio" [(ngModel)]="bio" [maxlength]="bioMax" [placeholder]="locale.t('auth.bioPlaceholder')"></textarea>
+            <small class="muted">{{ bio.length }} / {{ bioMax }}</small>
           </div>
         </div>
         @if (errorText) {
@@ -89,6 +90,7 @@ export class SignupProviderComponent implements OnInit {
   cityId = '';
   serviceId = '';
   bio = '';
+  bioMax = 1000;
   cities: CatalogCity[] = [];
   services: CatalogService[] = [];
   loading = false;
@@ -116,6 +118,11 @@ export class SignupProviderComponent implements OnInit {
       return;
     }
     this.displayName = draft.displayName;
+    this.api.platformSettings().subscribe({
+      next: (settings) => {
+        this.bioMax = settings.providerBioMax || 1000;
+      },
+    });
     this.api.cities().subscribe({ next: (cities) => (this.cities = cities) });
     this.api.services().subscribe({ next: (services) => (this.services = services) });
   }
@@ -124,6 +131,10 @@ export class SignupProviderComponent implements OnInit {
     const draft = this.session.getDraft();
     if (!draft) {
       void this.router.navigateByUrl('/signup');
+      return;
+    }
+    if (this.bio.length > this.bioMax) {
+      this.toast.show(`نبذة الخبيرة بحد أقصى ${this.bioMax} حرف`);
       return;
     }
     this.loading = true;

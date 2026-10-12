@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountStatus, AccountType, ProfileChangeField, Visibility } from "./enums";
+import { idleCutoffFor } from "./platform-settings";
 
 export function normalizeDisplayName(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -127,10 +128,8 @@ export async function liveCampaign(prisma: PrismaService) {
 }
 
 export async function refreshExpiredProviders(prisma: PrismaService) {
-  const idleDays = await prisma.getSettingInt("idle_after_days", 90);
   const now = new Date();
-  const idleCutoff = new Date(now);
-  idleCutoff.setDate(idleCutoff.getDate() - idleDays);
+  const idleCutoff = await idleCutoffFor(prisma, "provider");
 
   const expired = await prisma.subscription.findMany({
     where: {

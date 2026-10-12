@@ -26,6 +26,7 @@ import {
   pendingValue,
   queueProfileChange,
 } from "../common/account-rules";
+import { assertMaxChars } from "../common/platform-settings";
 import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, resolveCityIds, serializeCityIds } from "../common/geo";
 import { publicUploadUrl } from "../common/upload-url";
 
@@ -106,6 +107,7 @@ export class ProviderService {
       );
     }
     if (dto.bio !== undefined) {
+      await assertMaxChars(this.prisma, "provider_bio_max", dto.bio, "نبذة الخبيرة");
       await queueProfileChange(
         this.prisma,
         userId,

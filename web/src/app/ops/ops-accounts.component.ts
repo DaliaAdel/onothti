@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { CatalogPackage, OpsManagedAccount, OpsPendingProvider } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -189,7 +190,9 @@ type AccountTab = 'pending' | 'all';
           </div>
           <div class="ops-drawer-actions">
             <button class="btn primary" type="button" (click)="applyAccount(item)">حفظ الإجراء</button>
-            <button class="btn ghost" type="button" (click)="openNotify(item)">إرسال إشعار</button>
+            @if (canNotify(item)) {
+              <button class="btn ghost" type="button" (click)="openNotify(item)">إرسال إشعار</button>
+            }
           </div>
         }
       </app-ops-drawer>
@@ -220,6 +223,7 @@ export class OpsAccountsComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly session = inject(SessionService);
 
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;
@@ -308,7 +312,21 @@ export class OpsAccountsComponent implements OnInit {
       });
   }
 
+  canNotify(item: OpsManagedAccount): boolean {
+    if (item.accountType === 'PROVIDER') {
+      return this.session.hasPermission('NOTIFY_PROVIDER');
+    }
+    if (item.accountType === 'CUSTOMER') {
+      return this.session.hasPermission('NOTIFY_CUSTOMER');
+    }
+    return false;
+  }
+
   openNotify(item: OpsManagedAccount): void {
+    if (!this.canNotify(item)) {
+      this.toast.show('ليست لديكِ صلاحية إشعار هذا الحساب');
+      return;
+    }
     this.notifyTarget = item;
     this.notifyDraft = { titleAr: '', bodyAr: '' };
   }

@@ -112,7 +112,8 @@ import { IconComponent } from '../shared/icon.component';
               <button type="button" [class.active]="stars >= star" (click)="stars = star">★</button>
             }
           </div>
-          <textarea class="input" style="margin-top:12px" [(ngModel)]="note" name="note" maxlength="100" placeholder="ملاحظة قصيرة (اختياري)"></textarea>
+          <textarea class="input" style="margin-top:12px" [(ngModel)]="note" name="note" [maxlength]="noteMax" placeholder="ملاحظة قصيرة (اختياري)"></textarea>
+          <small class="muted">{{ note.length }} / {{ noteMax }}</small>
           <button class="btn primary" style="margin-top:12px" type="button" [disabled]="ratingBusy || stars < 1" (click)="submitRating()">إرسال التقييم</button>
         </article>
         @if (!profile.ratings?.length) {
@@ -150,6 +151,7 @@ export class ProviderProfileComponent implements OnInit {
   readonly mediaUrl = mediaUrl;
   stars = 5;
   note = '';
+  noteMax = 300;
   ratingBusy = false;
 
   get serviceLine(): string {
@@ -158,6 +160,11 @@ export class ProviderProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.shell.set('ملف الخبيرة', 'تفاصيل موثقة تساعدكِ على الاختيار بثقة');
+    this.api.platformSettings().subscribe({
+      next: (settings) => {
+        this.noteMax = settings.ratingNoteMax || 300;
+      },
+    });
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       this.loading = false;
@@ -179,6 +186,10 @@ export class ProviderProfileComponent implements OnInit {
 
   submitRating(): void {
     if (!this.profile || this.stars < 1) {
+      return;
+    }
+    if (this.note.length > this.noteMax) {
+      this.toast.show(`تقييم العميلة بحد أقصى ${this.noteMax} حرف`);
       return;
     }
     this.ratingBusy = true;

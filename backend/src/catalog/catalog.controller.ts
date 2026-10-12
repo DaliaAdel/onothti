@@ -1,7 +1,8 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../prisma/prisma.service";
 import { liveCampaign } from "../common/account-rules";
+import { idlePeriodFor, LIMIT_DEFAULTS, settingMaxChars } from "../common/platform-settings";
 
 @ApiTags("catalog")
 @Controller("catalog")
@@ -66,12 +67,27 @@ export class CatalogController {
 
   @Get("settings")
   async settings() {
-    const [extensionMonths, idleAfterDays, termsVersion, ratingNoteMax] = await Promise.all([
-      this.prisma.getSettingInt("package_extension_months", 1),
-      this.prisma.getSettingInt("idle_after_days", 90),
-      this.prisma.getSettingInt("terms_version", 1),
-      this.prisma.getSettingInt("rating_note_max", 100),
-    ]);
-    return { extensionMonths, idleAfterDays, termsVersion, ratingNoteMax };
+    const [extensionMonths, idleCustomer, idleProvider, termsVersion, ratingNoteMax, providerBioMax, customerBioMax] =
+      await Promise.all([
+        this.prisma.getSettingInt("package_extension_months", 1),
+        idlePeriodFor(this.prisma, "customer"),
+        idlePeriodFor(this.prisma, "provider"),
+        this.prisma.getSettingInt("terms_version", 1),
+        settingMaxChars(this.prisma, "rating_note_max", LIMIT_DEFAULTS.rating_note_max),
+        settingMaxChars(this.prisma, "provider_bio_max", LIMIT_DEFAULTS.provider_bio_max),
+        settingMaxChars(this.prisma, "customer_bio_max", LIMIT_DEFAULTS.customer_bio_max),
+      ]);
+    return {
+      extensionMonths,
+      idleAfterDays: idleProvider.amount,
+      idleCustomerAfter: idleCustomer.amount,
+      idleCustomerUnit: idleCustomer.unit,
+      idleProviderAfter: idleProvider.amount,
+      idleProviderUnit: idleProvider.unit,
+      termsVersion,
+      ratingNoteMax,
+      providerBioMax,
+      customerBioMax,
+    };
   }
 }

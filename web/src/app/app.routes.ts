@@ -69,6 +69,11 @@ export const routes: Routes = [
     data: { kind: 'policies' },
   },
   {
+    path: 'legal/privacy',
+    loadComponent: () => import('./auth/legal.component').then((m) => m.LegalComponent),
+    data: { kind: 'privacy' },
+  },
+  {
     path: 'c',
     loadComponent: () => import('./layouts/customer-layout.component').then((m) => m.CustomerLayoutComponent),
     canActivate: [authGuard, roleGuard('CUSTOMER')],
@@ -180,6 +185,7 @@ export const routes: Routes = [
       { path: 'packages', loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent) },
       { path: 'geo', loadComponent: () => import('./ops/ops-geo.component').then((m) => m.OpsGeoComponent) },
       { path: 'settings', loadComponent: () => import('./ops/ops-settings.component').then((m) => m.OpsSettingsComponent) },
+      { path: 'notices', loadComponent: () => import('./ops/ops-notices.component').then((m) => m.OpsNoticesComponent) },
       { path: 'staff', loadComponent: () => import('./ops/ops-staff.component').then((m) => m.OpsStaffComponent) },
       { path: 'legal', loadComponent: () => import('./ops/ops-legal.component').then((m) => m.OpsLegalComponent) },
       { path: 'catalog', loadComponent: () => import('./ops/ops-catalog.component').then((m) => m.OpsCatalogComponent) },

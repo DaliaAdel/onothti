@@ -105,6 +105,18 @@ app-favorite-btn{display:inline-flex;line-height:0}
 .ops-app .nav a.active{background:linear-gradient(135deg,#aa6043,#843e29);color:#fff;font-weight:700}
 .ops-app .nav a.active:after{display:none}
 .ops-app .nav a.active .nav-icon{background:rgba(255,255,255,.16);box-shadow:none}
+.nav-folder{display:grid;gap:2px}
+.nav-folder-toggle{min-height:47px;padding:0 13px;border:0;border-radius:14px;background:transparent;color:#74635e;display:flex;align-items:center;gap:12px;width:100%;text-align:inherit;font-size:13px}
+.nav-folder-toggle:hover{background:rgba(246,236,231,.7);color:var(--copper-dark)}
+.nav-folder.open>.nav-folder-toggle{background:rgba(246,236,231,.55);color:var(--plum);font-weight:700}
+.nav-folder-chev{margin-inline-start:auto;display:grid;place-items:center;transition:transform .2s var(--ease)}
+.nav-folder-chev .icon{width:16px;height:16px}
+.nav-folder-chev.open{transform:rotate(90deg)}
+.nav-sub{display:grid;gap:2px;padding:2px 0 6px 0;margin-inline-start:14px;border-inline-start:1px solid #ecd2c6}
+.nav-sub a{min-height:38px;font-size:12px;padding-inline-start:12px}
+.ops-app .nav-folder-toggle{min-height:42px;font-size:12px;padding:0 11px}
+.ops-app .nav-folder.open>.nav-folder-toggle{background:rgba(170,96,67,.1)}
+.ops-app .nav-sub a{min-height:38px;font-size:11px}
 a.avatar{text-decoration:none}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:8px}
 .stats.stats-6{grid-template-columns:repeat(3,1fr)}

@@ -61,6 +61,34 @@ export class UpsertWelcomeDto {
   isActive?: boolean;
 }
 
+export class PatchWelcomeDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  audience?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  kind?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(4)
+  bodyAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  bodyEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
 export class UpsertRegionDto {
   @ApiProperty({ example: "EAS" })
   @IsString()
@@ -509,7 +537,15 @@ export class PatchRolePermissionsDto {
   permissionCodes!: string[];
 }
 
-export class PatchLegalDto {
+export class CreateLegalDto {
+  @ApiProperty({ enum: ["CUSTOMER", "PROVIDER", "STAFF"] })
+  @IsIn(["CUSTOMER", "PROVIDER", "STAFF"])
+  audience!: "CUSTOMER" | "PROVIDER" | "STAFF";
+
+  @ApiProperty({ enum: ["TERMS", "POLICIES", "PRIVACY", "OTHER"] })
+  @IsIn(["TERMS", "POLICIES", "PRIVACY", "OTHER"])
+  kind!: "TERMS" | "POLICIES" | "PRIVACY" | "OTHER";
+
   @ApiProperty()
   @IsString()
   @MinLength(2)
@@ -529,6 +565,50 @@ export class PatchLegalDto {
   @IsOptional()
   @IsString()
   bodyEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class PatchLegalDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  titleAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(4)
+  bodyAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  titleEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  bodyEn?: string;
+
+  @ApiPropertyOptional({ enum: ["CUSTOMER", "PROVIDER", "STAFF"] })
+  @IsOptional()
+  @IsIn(["CUSTOMER", "PROVIDER", "STAFF"])
+  audience?: "CUSTOMER" | "PROVIDER" | "STAFF";
+
+  @ApiPropertyOptional({ enum: ["TERMS", "POLICIES", "PRIVACY", "OTHER"] })
+  @IsOptional()
+  @IsIn(["TERMS", "POLICIES", "PRIVACY", "OTHER"])
+  kind?: "TERMS" | "POLICIES" | "PRIVACY" | "OTHER";
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class UpsertServiceDto {

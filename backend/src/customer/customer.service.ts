@@ -19,6 +19,7 @@ import {
   pendingValue,
   queueProfileChange,
 } from "../common/account-rules";
+import { assertMaxChars } from "../common/platform-settings";
 import { orderedCitiesFromRows, replaceCustomerCities, resolveCityIds } from "../common/geo";
 
 @Injectable()
@@ -39,6 +40,7 @@ export class CustomerService {
       email: pendingValue(pending, ProfileChangeField.EMAIL) ?? user.email,
       accountCode: user.accountCode,
       status: user.status,
+      bio: pendingValue(pending, ProfileChangeField.BIO) ?? user.customerProfile?.bio ?? null,
       city: geo.city,
       cities: geo.cities,
       region: geo.region,
@@ -75,6 +77,16 @@ export class CustomerService {
         ProfileChangeField.EMAIL,
         user.email,
         email ?? "",
+      );
+    }
+    if (dto.bio !== undefined) {
+      await assertMaxChars(this.prisma, "customer_bio_max", dto.bio, "نبذة العميلة");
+      await queueProfileChange(
+        this.prisma,
+        userId,
+        ProfileChangeField.BIO,
+        user.customerProfile?.bio,
+        dto.bio,
       );
     }
     return this.getProfile(userId);

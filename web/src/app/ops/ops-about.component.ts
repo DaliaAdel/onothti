@@ -15,11 +15,11 @@ import { ShellService } from '../core/shell.service';
     <article class="card" style="text-align:center;padding:32px 22px">
       <img src="/assets/logo.png" alt="أنوثتي" style="width:92px;height:auto;margin-bottom:12px" />
       <h2 style="margin:0 0 8px">منصة الأنوثة والجمال</h2>
-      <p class="muted">تربط العميلات بالخبيرات وتسهّل إدارة الحسابات والاعتمادات من لوحة التشغيل.</p>
+      <p class="muted">تربط العميلات بالخبيرات وتسهّل إدارة الحسابات والاعتمادات من لوحة  المعلومات.</p>
       <span class="status success">الإصدار 1.0.0</span>
       <div class="hero-actions" style="margin-top:18px;justify-content:center">
-        <a class="btn ghost" routerLink="/legal/policies" [queryParams]="{ audience: 'CUSTOMER' }">سياسة الخصوصية</a>
-        <a class="btn ghost" routerLink="/legal/terms" [queryParams]="{ audience: 'CUSTOMER' }">شروط وأحكام المنصة</a>
+        <a class="btn ghost" routerLink="/legal/policies" [queryParams]="{ audience: 'STAFF' }">سياسة الخصوصية</a>
+        <a class="btn ghost" routerLink="/legal/terms" [queryParams]="{ audience: 'STAFF' }">شروط وأحكام المنصة</a>
       </div>
       <p class="muted small" style="margin-top:16px">تواصل معنا: <b dir="ltr">info&#64;onothti.com</b></p>
     </article>

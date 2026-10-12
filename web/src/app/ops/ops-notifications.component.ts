@@ -69,7 +69,7 @@ export class OpsNotificationsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('التنبيهات', 'تنبيهات لوحة التشغيل');
+    this.shell.set('التنبيهات', 'تنبيهات لوحة  المعلومات');
     this.reload();
   }
 

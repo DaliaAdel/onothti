@@ -2,22 +2,54 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import type { OpsBankAccount, OpsManagedAccount, OpsWelcome } from '../core/models';
+import type { OpsBankAccount, OpsWelcome } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
 import { clip, keepSelected } from './ops-ui';
 
-const SETTING_META: { key: string; label: string; hint: string }[] = [
-  { key: 'whatsapp_disclaimer', label: 'تنبيه واتساب', hint: 'يظهر عند التواصل خارج المنصة' },
-  { key: 'whatsapp_disclaimer_en', label: 'تنبيه واتساب بالإنجليزي', hint: 'النص الإنجليزي لنفس التنبيه' },
-  { key: 'otp_ttl_seconds', label: 'مدة رمز التحقق (ثوانٍ)', hint: 'الرمز ينتهي بعد هذا العدد' },
-  { key: 'rating_note_max', label: 'حد حروف ملاحظة التقييم', hint: 'الحد الأقصى لتعليق التقييم' },
-  { key: 'package_extension_months', label: 'أشهر تمديد الباقة', hint: 'عند تأكيد إيصال التجديد' },
-  { key: 'idle_after_days', label: 'أيام الخمول', hint: 'بعدها يعتبر الحساب غير نشط في الظهور' },
-  { key: 'terms_version', label: 'نسخة الشروط', hint: 'ارفع الرقم عند تحديث الشروط' },
+type SettingKind = 'text' | 'number' | 'idle';
+type IdleUnit = 'day' | 'month' | 'year';
+
+const SETTING_META: { key: string; label: string; hint: string; kind: SettingKind }[] = [
+  { key: 'whatsapp_disclaimer', label: 'تنبيه واتساب', hint: 'يظهر عند التواصل خارج المنصة', kind: 'text' },
+  { key: 'whatsapp_disclaimer_en', label: 'تنبيه واتساب بالإنجليزي', hint: 'النص الإنجليزي لنفس التنبيه', kind: 'text' },
+  { key: 'otp_ttl_seconds', label: 'مدة رمز التحقق (ثوانٍ)', hint: 'الرمز ينتهي بعد هذا العدد', kind: 'number' },
+  {
+    key: 'idle_customer',
+    label: 'فترة خمول العميلة',
+    hint: 'بعدها يُعد حساب العميلة غير نشط دون نشاط. حددي المدة واختاري يوم أو شهر أو سنة',
+    kind: 'idle',
+  },
+  {
+    key: 'idle_provider',
+    label: 'فترة خمول الخبيرة',
+    hint: 'بعد انتهاء الباقة، المدة قبل إخفاء الظهور. حددي المدة واختاري يوم أو شهر أو سنة',
+    kind: 'idle',
+  },
+  { key: 'provider_bio_max', label: 'حد حروف نبذة الخبيرة', hint: 'الحد الأقصى لنص «نبذة عن» في ملف الخبيرة', kind: 'number' },
+  { key: 'customer_bio_max', label: 'حد حروف نبذة العميلة', hint: 'الحد الأقصى لنص «نبذة عن» في حساب العميلة', kind: 'number' },
+  { key: 'rating_note_max', label: 'حد حروف تقييم العميلة', hint: 'الحد الأقصى لتعليق التقييم الذي تكتبه العميلة', kind: 'number' },
+  { key: 'terms_version', label: 'نسخة الشروط', hint: 'ارفع الرقم عند تحديث الشروط', kind: 'number' },
 ];
+
+function parseIdle(value: string, fallback = 90): { amount: number; unit: IdleUnit } {
+  const [amountPart, unitPart] = (value || '').trim().split(/\s+/);
+  const amount = Number(amountPart);
+  const unit = unitPart === 'month' || unitPart === 'year' ? unitPart : 'day';
+  return { amount: Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : fallback, unit };
+}
+
+function unitLabel(unit: IdleUnit): string {
+  if (unit === 'month') {
+    return 'شهر';
+  }
+  if (unit === 'year') {
+    return 'سنة';
+  }
+  return 'يوم';
+}
 
 @Component({
   selector: 'app-ops-settings',
@@ -44,7 +76,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
             @for (item of settingRows; track item.key) {
               <tr [class.active]="selectedSetting?.key === item.key" (click)="selectedSetting = item">
                 <td><b>{{ item.label }}</b></td>
-                <td class="clip">{{ clip(values[item.key]) }}</td>
+                <td class="clip">{{ displayValue(item) }}</td>
               </tr>
             }
           </tbody>
@@ -58,9 +90,28 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
       (closed)="selectedSetting = null"
     >
       @if (selectedSetting; as item) {
-        <textarea class="input" rows="4" [(ngModel)]="values[item.key]"></textarea>
+        @if (item.kind === 'idle') {
+          <div class="form-grid">
+            <div class="field">
+              <label>المدة</label>
+              <input class="input" type="number" min="1" [(ngModel)]="idleAfter[item.key]" />
+            </div>
+            <div class="field">
+              <label>الوحدة</label>
+              <select class="input" [(ngModel)]="idleUnit[item.key]">
+                <option value="day">يوم</option>
+                <option value="month">شهر</option>
+                <option value="year">سنة</option>
+              </select>
+            </div>
+          </div>
+        } @else if (item.kind === 'number') {
+          <input class="input" type="number" min="1" [(ngModel)]="values[item.key]" />
+        } @else {
+          <textarea class="input" rows="4" [(ngModel)]="values[item.key]"></textarea>
+        }
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveSetting(item.key)">حفظ</button>
+          <button class="btn primary" type="button" (click)="saveSetting(item)">حفظ</button>
         </div>
       }
     </app-ops-drawer>
@@ -101,11 +152,11 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
       (closed)="selectedWelcome = null"
     >
       @if (selectedWelcome; as item) {
-        <textarea class="input" rows="5" [(ngModel)]="item.bodyAr"></textarea>
+        <textarea class="input" rows="5" maxlength="400" [(ngModel)]="item.bodyAr"></textarea>
         <div class="ops-drawer-actions">
           <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
           <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
-            {{ item.isActive ? 'إيقاف' : 'تشغيل' }}
+            {{ item.isActive ? 'إخفاء' : 'إظهار' }}
           </button>
         </div>
       }
@@ -211,68 +262,6 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createBank()">إضافة الحساب</button>
     </app-ops-modal>
-
-    <div class="section-head">
-      <div>
-        <h2>إشعار جماعي</h2>
-        <p>يصل إلى حسابات العميلات أو الخبيرات النشطة.</p>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost" type="button" (click)="openDirect()">+ إشعار لحساب</button>
-        <button class="btn primary" type="button" (click)="addingBroadcast = true">+ إرسال جماعي</button>
-      </div>
-    </div>
-    <app-ops-modal [open]="addingDirect" title="إشعار لحساب واحد" kicker="بحث بالجوال أو الرمز" (closed)="addingDirect = false">
-      <div class="field">
-        <label>بحث</label>
-        <input class="input" [(ngModel)]="directQ" placeholder="الاسم أو الجوال أو الرمز" (keyup.enter)="searchDirect()" />
-      </div>
-      <button class="btn ghost" style="margin:10px 0 14px" type="button" (click)="searchDirect()">بحث</button>
-      @if (directHits.length) {
-        <div class="filters" style="margin:0 0 14px">
-          @for (item of directHits; track item.id) {
-            <button class="chip" type="button" [class.active]="directTarget?.id === item.id" (click)="directTarget = item">
-              {{ item.displayName }} · {{ item.accountCode }}
-            </button>
-          }
-        </div>
-      }
-      @if (directTarget) {
-        <p class="muted small">المحددة: {{ directTarget.displayName }} · <span dir="ltr">{{ directTarget.mobile }}</span></p>
-      }
-      <div class="form-grid">
-        <div class="field">
-          <label>العنوان</label>
-          <input class="input" [(ngModel)]="direct.titleAr" />
-        </div>
-        <div class="field full">
-          <label>النص</label>
-          <textarea class="input" rows="3" [(ngModel)]="direct.bodyAr"></textarea>
-        </div>
-      </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendDirect()">إرسال الإشعار</button>
-    </app-ops-modal>
-    <app-ops-modal [open]="addingBroadcast" title="إشعار جماعي" kicker="إرسال للمنصة" (closed)="addingBroadcast = false">
-      <div class="form-grid">
-        <div class="field">
-          <label>الجمهور</label>
-          <select class="input" [(ngModel)]="broadcast.audience">
-            <option value="CUSTOMER">العميلات</option>
-            <option value="PROVIDER">الخبيرات</option>
-            <option value="ALL">الكل</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>العنوان</label>
-          <input class="input" [(ngModel)]="broadcast.titleAr" />
-        </div>
-        <div class="field full">
-          <label>النص</label>
-          <textarea class="input" rows="3" [(ngModel)]="broadcast.bodyAr"></textarea>
-        </div>
-      </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendBroadcast()">إرسال الإشعار</button>
-    </app-ops-modal>
   `,
 })
 export class OpsSettingsComponent implements OnInit {
@@ -284,6 +273,8 @@ export class OpsSettingsComponent implements OnInit {
 
   loading = true;
   values: Record<string, string> = {};
+  idleAfter: Record<string, number> = {};
+  idleUnit: Record<string, IdleUnit> = {};
   selectedSetting: (typeof SETTING_META)[number] | null = null;
   selectedWelcome: OpsWelcome | null = null;
   selectedBank: OpsBankAccount | null = null;
@@ -291,15 +282,8 @@ export class OpsSettingsComponent implements OnInit {
   welcomeDraft = { audience: 'CUSTOMER', kind: 'WELCOME', bodyAr: '' };
   banks: OpsBankAccount[] = [];
   bankDraft = { bankName: '', iban: '', accountName: '' };
-  broadcast = { audience: 'CUSTOMER' as 'CUSTOMER' | 'PROVIDER' | 'ALL', titleAr: '', bodyAr: '' };
   addingWelcome = false;
   addingBank = false;
-  addingBroadcast = false;
-  addingDirect = false;
-  directQ = '';
-  directHits: OpsManagedAccount[] = [];
-  directTarget: OpsManagedAccount | null = null;
-  direct = { titleAr: '', bodyAr: '' };
   readonly settingRows = SETTING_META;
 
   ngOnInit(): void {
@@ -321,25 +305,59 @@ export class OpsSettingsComponent implements OnInit {
     return value === 'MOTIVATIONAL' ? 'تحفيز' : 'ترحيب';
   }
 
-  saveSetting(key: string): void {
-    this.api.opsPatchSetting(key, this.values[key] ?? '').subscribe({
+  displayValue(item: (typeof SETTING_META)[number]): string {
+    if (item.kind === 'idle') {
+      return `${this.idleAfter[item.key] ?? 90} ${unitLabel(this.idleUnit[item.key] ?? 'day')}`;
+    }
+    return this.clip(this.values[item.key]);
+  }
+
+  saveSetting(item: (typeof SETTING_META)[number]): void {
+    let value = this.values[item.key] ?? '';
+    if (item.kind === 'idle') {
+      const amount = Number(this.idleAfter[item.key]);
+      if (!Number.isFinite(amount) || amount < 1) {
+        this.toast.show('أدخلي مدة أكبر من صفر');
+        return;
+      }
+      const unit = this.idleUnit[item.key] ?? 'day';
+      value = `${Math.floor(amount)} ${unit}`;
+      this.values[item.key] = value;
+    } else if (item.kind === 'number') {
+      const amount = Number(value);
+      if (!Number.isFinite(amount) || amount < 1) {
+        this.toast.show('أدخلي رقمًا أكبر من صفر');
+        return;
+      }
+      value = String(Math.floor(amount));
+      this.values[item.key] = value;
+    }
+    this.api.opsPatchSetting(item.key, value).subscribe({
       next: () => this.toast.show('تم حفظ الإعداد'),
       error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الإعداد')),
     });
   }
 
   saveWelcome(item: OpsWelcome): void {
-    this.api.opsPatchWelcome(item.id, item).subscribe({
-      next: () => this.toast.show('تم حفظ الرسالة'),
+    const bodyAr = item.bodyAr.trim();
+    if (bodyAr.length < 4) {
+      this.toast.show('أدخلي نص الرسالة');
+      return;
+    }
+    this.api.opsPatchWelcome(item.id, { bodyAr }).subscribe({
+      next: (row) => {
+        item.bodyAr = row.bodyAr;
+        this.toast.show('تم حفظ الرسالة');
+      },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الرسالة')),
     });
   }
 
   toggleWelcome(item: OpsWelcome): void {
-    this.api.opsPatchWelcome(item.id, { ...item, isActive: !item.isActive }).subscribe({
+    this.api.opsPatchWelcome(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         item.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'الرسالة ظاهرة' : 'تم إيقاف الرسالة');
+        this.toast.show(row.isActive ? 'تم إظهار الرسالة' : 'تم إخفاء الرسالة');
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الرسالة')),
     });
@@ -394,72 +412,25 @@ export class OpsSettingsComponent implements OnInit {
     });
   }
 
-  openDirect(): void {
-    this.addingDirect = true;
-    this.directQ = '';
-    this.directHits = [];
-    this.directTarget = null;
-    this.direct = { titleAr: '', bodyAr: '' };
-  }
-
-  searchDirect(): void {
-    const q = this.directQ.trim();
-    if (q.length < 2) {
-      this.toast.show('أدخلي الاسم أو الجوال أو الرمز');
-      return;
-    }
-    this.api.opsAccounts({ q }).subscribe({
-      next: (rows) => {
-        this.directHits = rows.slice(0, 8);
-        this.directTarget = this.directHits.length === 1 ? this.directHits[0] : null;
-        if (!this.directHits.length) {
-          this.toast.show('لا يوجد حساب مطابق');
-        }
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر البحث عن الحساب')),
-    });
-  }
-
-  sendDirect(): void {
-    if (!this.directTarget) {
-      this.toast.show('اختاري الحساب بعد البحث');
-      return;
-    }
-    if (this.direct.titleAr.trim().length < 2 || this.direct.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي عنوان الإشعار ونصه');
-      return;
-    }
-    this.api.opsNotifyAccount(this.directTarget.id, this.direct).subscribe({
-      next: () => {
-        this.toast.show(`تم إرسال الإشعار إلى ${this.directTarget?.displayName}`);
-        this.addingDirect = false;
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
-    });
-  }
-
-  sendBroadcast(): void {
-    if (this.broadcast.titleAr.trim().length < 2 || this.broadcast.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي عنوان الإشعار ونصه');
-      return;
-    }
-    this.api.opsBroadcast(this.broadcast).subscribe({
-      next: (res) => {
-        this.toast.show(`تم إرسال الإشعار إلى ${res.sent} حسابًا`);
-        this.broadcast = { audience: this.broadcast.audience, titleAr: '', bodyAr: '' };
-        this.addingBroadcast = false;
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
-    });
-  }
-
   private load(): void {
     this.loading = true;
     this.api.opsSettings().subscribe({
       next: (rows) => {
         const map = Object.fromEntries(rows.map((row) => [row.key, row.value]));
         for (const item of SETTING_META) {
-          this.values[item.key] = map[item.key] ?? '';
+          if (item.kind === 'idle') {
+            const fallback = item.key === 'idle_provider' ? `${map['idle_after_days'] || 90} day` : '90 day';
+            const parsed = parseIdle(map[item.key] || fallback);
+            this.idleAfter[item.key] = parsed.amount;
+            this.idleUnit[item.key] = parsed.unit;
+            this.values[item.key] = `${parsed.amount} ${parsed.unit}`;
+          } else if (item.key === 'provider_bio_max') {
+            this.values[item.key] = map[item.key] ?? '1000';
+          } else if (item.key === 'customer_bio_max' || item.key === 'rating_note_max') {
+            this.values[item.key] = map[item.key] ?? '300';
+          } else {
+            this.values[item.key] = map[item.key] ?? '';
+          }
         }
         this.loading = false;
       },

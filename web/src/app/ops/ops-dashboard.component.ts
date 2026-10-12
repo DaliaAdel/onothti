@@ -137,6 +137,9 @@ import { opsDate } from './ops-ui';
           @if (session.user()?.permissions?.includes('SETTINGS_MANAGE')) {
             <a class="btn ghost" routerLink="/ops/settings">الإعدادات</a>
           }
+          @if (session.hasAnyPermission('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+            <a class="btn ghost" routerLink="/ops/notices">إشعارات المنصة</a>
+          }
           @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
             <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>
           }
@@ -170,7 +173,7 @@ export class OpsDashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('لوحة التشغيل', 'مهام الاعتماد والمراجعة');
+    this.shell.set('لوحة  المعلومات', 'مهام الاعتماد والمراجعة');
     this.api.opsDashboard().subscribe({
       next: (dash) => {
         this.dash = dash;

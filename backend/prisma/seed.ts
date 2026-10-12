@@ -29,6 +29,11 @@ async function main() {
     { code: "PAYMENTS_CONFIRM", nameAr: "تأكيد المالية", nameEn: "Confirm finance" },
     { code: "USERS_MANAGE", nameAr: "إدارة المستخدمين", nameEn: "Manage users" },
     { code: "SETTINGS_MANAGE", nameAr: "إدارة الإعدادات", nameEn: "Manage settings" },
+    { code: "BROADCAST_ALL", nameAr: "إشعار جماعي خبيرة وعميلة", nameEn: "Broadcast to providers and customers" },
+    { code: "BROADCAST_PROVIDER", nameAr: "إشعار جماعي خبيرة فقط", nameEn: "Broadcast to providers only" },
+    { code: "BROADCAST_CUSTOMER", nameAr: "إشعار جماعي عميلة فقط", nameEn: "Broadcast to customers only" },
+    { code: "NOTIFY_PROVIDER", nameAr: "إشعار فردي خبيرة", nameEn: "Notify a provider" },
+    { code: "NOTIFY_CUSTOMER", nameAr: "إشعار فردي عميلة", nameEn: "Notify a customer" },
     { code: "REPORTS_VIEW", nameAr: "عرض التقارير", nameEn: "View reports" },
     { code: "TICKETS_MANAGE", nameAr: "إدارة الطلبات", nameEn: "Manage tickets" },
     { code: "RATINGS_REVIEW", nameAr: "مراجعة التقييمات", nameEn: "Review ratings" },
@@ -305,8 +310,12 @@ async function main() {
   const extraSettings = [
     { key: "package_extension_months", value: "1" },
     { key: "idle_after_days", value: "90" },
+    { key: "idle_customer", value: "90 day" },
+    { key: "idle_provider", value: "90 day" },
     { key: "terms_version", value: "1" },
-    { key: "rating_note_max", value: "100" },
+    { key: "rating_note_max", value: "300" },
+    { key: "provider_bio_max", value: "1000" },
+    { key: "customer_bio_max", value: "300" },
   ];
   for (const item of extraSettings) {
     await prisma.setting.upsert({
@@ -775,9 +784,51 @@ async function seedLegalPages() {
         "You may request to hide your profile or cancel your account through support, subject to subscription status.",
       ].join("\n\n"),
     },
+    {
+      code: "TERMS_STAFF",
+      titleAr: "الشروط والأحكام — موظفو المنصة",
+      titleEn: "Terms — Platform staff",
+      bodyAr: [
+        "استخدام لوحة التشغيل يخضع لهذه الشروط وصلاحيات الدور المعين لكِ.",
+        "لا تشاركي بيانات الدخول أو رمز التحقق، والحساب شخصي غير قابل للنقل.",
+        "الاطلاع على بيانات العميلات والخبيرات للتشغيل والدعم فقط، وليس للاستخدام خارج المنصة.",
+        "أي إجراء على الحسابات أو المحتوى يُسجّل في سجل التدقيق.",
+      ].join("\n\n"),
+      bodyEn: [
+        "Use of the operations console is subject to these terms and the permissions of your assigned role.",
+        "Do not share login details or verification codes. The account is personal and non-transferable.",
+        "Customer and provider data may be accessed for operations and support only, not outside the platform.",
+        "Actions on accounts or content are recorded in the audit log.",
+      ].join("\n\n"),
+    },
+    {
+      code: "POLICIES_STAFF",
+      titleAr: "السياسات — موظفو المنصة",
+      titleEn: "Policies — Platform staff",
+      bodyAr: [
+        "بيانات التشغيل والحسابات سرية، ولا تُنسخ أو تُشارك خارج مهام الدور.",
+        "صلاحياتكِ تحدد الصفحات والإجراءات المتاحة. لا تطلبي تجاوز الصلاحية من زميلة.",
+        "المحتوى والمرفقات تُراجع وفق السياسات المعتمدة، ويُوثّق القرار عند الرفض أو الإخفاء.",
+      ].join("\n\n"),
+      bodyEn: [
+        "Operations and account data are confidential and must not be copied or shared outside role duties.",
+        "Your permissions define available pages and actions. Do not ask a colleague to bypass a permission.",
+        "Content and attachments are reviewed under approved policies, and decisions are recorded when rejecting or hiding.",
+      ].join("\n\n"),
+    },
   ];
 
   for (const page of pages) {
+    const audience = page.code.endsWith("_PROVIDER")
+      ? "PROVIDER"
+      : page.code.endsWith("_STAFF")
+        ? "STAFF"
+        : "CUSTOMER";
+    const kind = page.code.startsWith("POLICIES")
+      ? "POLICIES"
+      : page.code.startsWith("PRIVACY")
+        ? "PRIVACY"
+        : "TERMS";
     await prisma.legalPage.upsert({
       where: { code: page.code },
       update: {
@@ -785,10 +836,15 @@ async function seedLegalPages() {
         titleEn: page.titleEn,
         bodyAr: page.bodyAr,
         bodyEn: page.bodyEn,
+        audience,
+        kind,
         version: 1,
       },
       create: {
         code: page.code,
+        audience,
+        kind,
+        isActive: true,
         titleAr: page.titleAr,
         titleEn: page.titleEn,
         bodyAr: page.bodyAr,

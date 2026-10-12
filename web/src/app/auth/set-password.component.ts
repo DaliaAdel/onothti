@@ -17,7 +17,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <a class="auth-back" routerLink="/otp" [queryParams]="{ purpose: 'LOGIN' }">← رجوع</a>
         <span class="auth-kicker">حساب التشغيل الجديد</span>
         <h2>عيّني كلمة المرور</h2>
-        <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> اختاري كلمة مرور جديدة لدخول لوحة التشغيل في المرات القادمة.</p>
+        <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> اختاري كلمة مرور جديدة لدخول لوحة  المعلومات في المرات القادمة.</p>
         <div class="field">
           <label>{{ locale.t('auth.password') }}</label>
           <input

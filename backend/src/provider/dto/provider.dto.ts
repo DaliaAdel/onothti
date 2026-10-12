@@ -25,6 +25,7 @@ export class UpdateProviderProfileDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   bio?: string;
 
   @ApiPropertyOptional({ example: "0501234567" })

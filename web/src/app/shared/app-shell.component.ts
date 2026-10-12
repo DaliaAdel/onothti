@@ -11,7 +11,9 @@ import { IconComponent } from './icon.component';
 export interface NavItem {
   icon: string;
   label: string;
-  route: string;
+  route?: string;
+  exact?: boolean;
+  children?: NavItem[];
 }
 
 @Component({
@@ -28,11 +30,35 @@ export interface NavItem {
           </div>
         }
         <nav class="nav">
-          @for (item of items; track item.route) {
-            <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.exact ?? false }">
-              <span class="ico nav-icon"><app-icon [name]="item.icon" /></span>
-              <span>{{ locale.t(item.label) }}</span>
-            </a>
+          @for (item of items; track item.route || item.label) {
+            @if (item.children?.length) {
+              <div class="nav-folder" [class.open]="isFolderOpen(item)">
+                <button class="nav-folder-toggle" type="button" (click)="toggleFolder(item)">
+                  <span class="ico nav-icon"><app-icon [name]="item.icon" /></span>
+                  <span>{{ locale.t(item.label) }}</span>
+                  <span class="nav-folder-chev" [class.open]="isFolderOpen(item)"><app-icon name="chev" /></span>
+                </button>
+                @if (isFolderOpen(item)) {
+                  <div class="nav-sub">
+                    @for (child of item.children; track child.route) {
+                      <a
+                        [routerLink]="child.route"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: child.exact ?? false }"
+                      >
+                        <span class="ico nav-icon"><app-icon [name]="child.icon" /></span>
+                        <span>{{ locale.t(child.label) }}</span>
+                      </a>
+                    }
+                  </div>
+                }
+              </div>
+            } @else if (item.route) {
+              <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.exact ?? false }">
+                <span class="ico nav-icon"><app-icon [name]="item.icon" /></span>
+                <span>{{ locale.t(item.label) }}</span>
+              </a>
+            }
           }
         </nav>
         <div class="sidebar-foot">
@@ -90,7 +116,8 @@ export class AppShellComponent implements OnInit {
   readonly shell = inject(ShellService);
   readonly locale = inject(LocaleService);
 
-  @Input({ required: true }) items: (NavItem & { exact?: boolean })[] = [];
+  @Input({ required: true }) items: NavItem[] = [];
+  private readonly openedFolders = new Set<string>();
   @Input() home = '/c';
   @Input() profileRoute = '/c/account';
   @Input() notifyRoute = '/c/notifications';
@@ -113,6 +140,25 @@ export class AppShellComponent implements OnInit {
 
   get roleLabel(): string {
     return this.session.user()?.roleNameAr || 'حساب تشغيلي';
+  }
+
+  isFolderOpen(item: NavItem): boolean {
+    return this.openedFolders.has(item.label) || this.isFolderActive(item);
+  }
+
+  isFolderActive(item: NavItem): boolean {
+    const url = this.router.url.split('?')[0];
+    return (item.children ?? []).some(
+      (child) => !!child.route && (url === child.route || url.startsWith(`${child.route}/`)),
+    );
+  }
+
+  toggleFolder(item: NavItem): void {
+    if (this.openedFolders.has(item.label)) {
+      this.openedFolders.delete(item.label);
+    } else {
+      this.openedFolders.add(item.label);
+    }
   }
 
   ngOnInit(): void {

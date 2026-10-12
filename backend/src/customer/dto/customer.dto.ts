@@ -30,6 +30,12 @@ export class UpdateCustomerProfileDto {
   @IsOptional()
   @IsEmail({}, { message: "البريد الإلكتروني غير صحيح" })
   email?: string;
+
+  @ApiPropertyOptional({ description: "نبذة عن العميلة" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  bio?: string;
 }
 
 export class FavoriteDto {

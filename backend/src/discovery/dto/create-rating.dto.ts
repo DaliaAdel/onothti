@@ -11,6 +11,6 @@ export class CreateRatingDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(500)
   note?: string;
 }

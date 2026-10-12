@@ -44,6 +44,11 @@ import { ToastService } from '../core/toast.service';
           <label>رمز الحساب</label>
           <input class="input" [value]="accountCode" disabled />
         </div>
+        <div class="field full">
+          <label>نبذة عنكِ</label>
+          <textarea class="input" name="bio" rows="4" [(ngModel)]="bio" [maxlength]="bioMax" placeholder="اكتبي نبذة قصيرة عنكِ"></textarea>
+          <small class="muted">{{ bio.length }} / {{ bioMax }}</small>
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:22px">
         <button class="btn primary" type="submit" [disabled]="loading">حفظ التغييرات</button>
@@ -62,6 +67,8 @@ export class CustomerAccountComponent implements OnInit {
   cityId = '';
   mobile = '';
   accountCode = '';
+  bio = '';
+  bioMax = 300;
   regions: CatalogRegion[] = [];
   loading = false;
 
@@ -71,6 +78,11 @@ export class CustomerAccountComponent implements OnInit {
 
   ngOnInit(): void {
     this.shell.set('حسابي', 'حدّثي المعلومات الأساسية لحساب العميلة');
+    this.api.platformSettings().subscribe({
+      next: (settings) => {
+        this.bioMax = settings.customerBioMax || 300;
+      },
+    });
     this.api.regions().subscribe({
       next: (regions) => {
         this.regions = regions;
@@ -84,6 +96,7 @@ export class CustomerAccountComponent implements OnInit {
         this.displayName = profile.displayName;
         this.mobile = profile.mobile ?? '';
         this.accountCode = profile.accountCode;
+        this.bio = profile.bio ?? '';
         this.cityId = profile.city?.id ?? '';
         if (this.regions.length && this.cityId) {
           this.regionId = this.regions.find((region) => region.cities.some((city) => city.id === this.cityId))?.id ?? '';
@@ -100,8 +113,12 @@ export class CustomerAccountComponent implements OnInit {
   }
 
   save(): void {
+    if (this.bio.length > this.bioMax) {
+      this.toast.show(`نبذة العميلة بحد أقصى ${this.bioMax} حرف`);
+      return;
+    }
     this.loading = true;
-    this.api.updateCustomerProfile({ displayName: this.displayName, cityId: this.cityId || undefined }).subscribe({
+    this.api.updateCustomerProfile({ displayName: this.displayName, cityId: this.cityId || undefined, bio: this.bio }).subscribe({
       next: (profile) => {
         this.session.patchUser(profile);
         this.loading = false;

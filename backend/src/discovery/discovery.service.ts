@@ -14,6 +14,7 @@ import {
   providerSearchWhere,
   refreshExpiredProviders,
 } from "../common/account-rules";
+import { assertMaxChars } from "../common/platform-settings";
 import { notifyContact, notifyProfileView } from "../common/notify";
 
 @Injectable()
@@ -412,9 +413,7 @@ export class DiscoveryService {
       throw new ForbiddenException("التقييم غير متاح لهذه الباقة");
     }
 
-    if ((note ?? "").length > 100) {
-      throw new BadRequestException("ملاحظة التقييم بحد أقصى 100 حرف");
-    }
+    await assertMaxChars(this.prisma, "rating_note_max", note, "تقييم العميلة");
     const viewed = await this.prisma.recentView.findFirst({
       where: { customerUserId, providerUserId: providerId },
     });

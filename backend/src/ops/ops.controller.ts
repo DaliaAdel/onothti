@@ -21,10 +21,12 @@ import {
   UpsertPackageDto,
   UpsertRegionDto,
   UpsertWelcomeDto,
+  PatchWelcomeDto,
   ReviewRatingDto,
   PatchComplaintDto,
   PatchRolePermissionsDto,
   PatchLegalDto,
+  CreateLegalDto,
   UpsertServiceDto,
   PatchServiceDto,
   UpsertSubServiceDto,
@@ -182,7 +184,7 @@ export class OpsController {
 
   @Patch("welcome-messages/:id")
   @RequirePermission(StaffPermission.SETTINGS_MANAGE)
-  patchWelcome(@Param("id") id: string, @Body() dto: UpsertWelcomeDto) {
+  patchWelcome(@Param("id") id: string, @Body() dto: PatchWelcomeDto) {
     return this.ops.patchWelcome(id, dto);
   }
 
@@ -262,6 +264,12 @@ export class OpsController {
   @RequirePermission(StaffPermission.LEGAL_MANAGE)
   legalPages() {
     return this.ops.legalPages();
+  }
+
+  @Post("legal")
+  @RequirePermission(StaffPermission.LEGAL_MANAGE)
+  createLegal(@Body() dto: CreateLegalDto) {
+    return this.ops.createLegal(dto);
   }
 
   @Patch("legal/:id")
@@ -377,7 +385,12 @@ export class OpsController {
   }
 
   @Get("accounts")
-  @RequirePermission(StaffPermission.CUSTOMERS_REVIEW, StaffPermission.PROVIDERS_APPROVE)
+  @RequirePermission(
+    StaffPermission.CUSTOMERS_REVIEW,
+    StaffPermission.PROVIDERS_APPROVE,
+    StaffPermission.NOTIFY_PROVIDER,
+    StaffPermission.NOTIFY_CUSTOMER,
+  )
   accounts(
     @Query("q") q?: string,
     @Query("accountType") accountType?: string,
@@ -393,19 +406,19 @@ export class OpsController {
   }
 
   @Post("accounts/:id/notify")
-  @RequirePermission(
-    StaffPermission.CUSTOMERS_REVIEW,
-    StaffPermission.PROVIDERS_APPROVE,
-    StaffPermission.SETTINGS_MANAGE,
-  )
+  @RequirePermission(StaffPermission.NOTIFY_PROVIDER, StaffPermission.NOTIFY_CUSTOMER)
   notifyAccount(@Param("id") id: string, @Body() dto: NotifyAccountDto, @CurrentUser() user: AuthUser) {
-    return this.ops.notifyAccount(id, dto, user.sub);
+    return this.ops.notifyAccount(id, dto, user.sub, user.permissions ?? []);
   }
 
   @Post("broadcast")
-  @RequirePermission(StaffPermission.SETTINGS_MANAGE)
-  broadcast(@Body() dto: BroadcastDto) {
-    return this.ops.broadcast(dto);
+  @RequirePermission(
+    StaffPermission.BROADCAST_ALL,
+    StaffPermission.BROADCAST_PROVIDER,
+    StaffPermission.BROADCAST_CUSTOMER,
+  )
+  broadcast(@Body() dto: BroadcastDto, @CurrentUser() user: AuthUser) {
+    return this.ops.broadcast(dto, user.permissions ?? []);
   }
 
   @Get("regions")

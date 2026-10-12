@@ -48,6 +48,7 @@ import type {
   OpsManagedAccount,
   OpsAuditEvent,
   OpsTeamActivityRow,
+  PlatformSettings,
 } from './models';
 
 import { SessionService } from './session.service';
@@ -182,6 +183,10 @@ export class ApiService {
     return this.http.get<CatalogPackage[]>(`${this.base}/catalog/packages`);
   }
 
+  platformSettings() {
+    return this.http.get<PlatformSettings>(`${this.base}/catalog/settings`);
+  }
+
   search(query: Record<string, string | number | undefined>) {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(query)) {
@@ -211,7 +216,7 @@ export class ApiService {
     return this.http.get<SessionUser>(`${this.base}/customer/profile`);
   }
 
-  updateCustomerProfile(body: { displayName?: string; cityId?: string }) {
+  updateCustomerProfile(body: { displayName?: string; cityId?: string; bio?: string }) {
     return this.http.patch<SessionUser>(`${this.base}/customer/profile`, body);
   }
 
@@ -371,17 +376,24 @@ export class ApiService {
     return this.http.post<{ ok: boolean }>(`${this.base}/notifications/read-all`, {});
   }
 
-  terms(audience: 'CUSTOMER' | 'PROVIDER') {
+  terms(audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF') {
     return this.http.get<{ titleAr?: string; bodyAr?: string; contentAr?: string }>(
       `${this.base}/legal/terms`,
       { params: { audience } },
     );
   }
 
-  policies(audience: 'CUSTOMER' | 'PROVIDER') {
+  policies(audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF') {
     return this.http.get<{ titleAr?: string; bodyAr?: string; contentAr?: string }>(
       `${this.base}/legal/policies`,
       { params: { audience } },
+    );
+  }
+
+  legalPage(kind: 'TERMS' | 'POLICIES' | 'PRIVACY' | 'OTHER', audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF') {
+    return this.http.get<{ titleAr?: string; bodyAr?: string; contentAr?: string }>(
+      `${this.base}/legal/page`,
+      { params: { kind, audience } },
     );
   }
 
@@ -572,7 +584,22 @@ export class ApiService {
     return this.http.get<OpsLegalPage[]>(`${this.base}/ops/legal`);
   }
 
-  opsPatchLegal(id: string, body: { titleAr: string; bodyAr: string; titleEn?: string; bodyEn?: string }) {
+  opsCreateLegal(body: {
+    audience: OpsLegalPage['audience'];
+    kind: OpsLegalPage['kind'];
+    titleAr: string;
+    bodyAr: string;
+    titleEn?: string;
+    bodyEn?: string;
+    isActive?: boolean;
+  }) {
+    return this.http.post<OpsLegalPage>(`${this.base}/ops/legal`, body);
+  }
+
+  opsPatchLegal(
+    id: string,
+    body: Partial<Pick<OpsLegalPage, 'titleAr' | 'bodyAr' | 'titleEn' | 'bodyEn' | 'audience' | 'kind' | 'isActive'>>,
+  ) {
     return this.http.patch<OpsLegalPage>(`${this.base}/ops/legal/${id}`, body);
   }
 

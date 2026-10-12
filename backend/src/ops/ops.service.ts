@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileChangeField, Visibility, AccountStatus, AccountType, StaffPermission } from "../common/enums";
@@ -11,6 +11,7 @@ import {
   UpdateSettingDto,
   UpsertRegionDto,
   UpsertWelcomeDto,
+  PatchWelcomeDto,
   ReviewMediaDto,
   ReviewProviderDto,
   UpsertPackageDto,
@@ -23,6 +24,7 @@ import {
   PatchMeDto,
   PatchRolePermissionsDto,
   PatchLegalDto,
+  CreateLegalDto,
   UpsertServiceDto,
   PatchServiceDto,
   UpsertSubServiceDto,
@@ -95,7 +97,7 @@ export class OpsService {
     });
   }
 
-  async patchWelcome(id: string, dto: UpsertWelcomeDto) {
+  async patchWelcome(id: string, dto: PatchWelcomeDto) {
     const row = await this.prisma.welcomeMessage.findUnique({ where: { id } });
     if (!row) {
       throw new NotFoundException("الرسالة غير موجودة");
@@ -103,11 +105,11 @@ export class OpsService {
     return this.prisma.welcomeMessage.update({
       where: { id },
       data: {
-        audience: dto.audience,
-        kind: dto.kind,
-        bodyAr: dto.bodyAr,
-        bodyEn: dto.bodyEn ?? row.bodyEn,
-        isActive: dto.isActive ?? row.isActive,
+        ...(dto.audience !== undefined ? { audience: dto.audience } : {}),
+        ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
+        ...(dto.bodyAr !== undefined ? { bodyAr: dto.bodyAr } : {}),
+        ...(dto.bodyEn !== undefined ? { bodyEn: dto.bodyEn } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
     });
   }
@@ -134,7 +136,7 @@ export class OpsService {
   async reviewChange(id: string, approve: boolean) {
     const change = await this.prisma.profileChangeRequest.findUnique({
       where: { id },
-      include: { user: { include: { providerProfile: true } } },
+      include: { user: { include: { providerProfile: true, customerProfile: true } } },
     });
     if (!change) {
       throw new NotFoundException("طلب التعديل غير موجود");
@@ -435,7 +437,26 @@ export class OpsService {
   }
 
   legalPages() {
-    return this.prisma.legalPage.findMany({ orderBy: { code: "asc" } });
+    return this.prisma.legalPage.findMany({ orderBy: [{ audience: "asc" }, { kind: "asc" }, { titleAr: "asc" }] });
+  }
+
+  async createLegal(dto: CreateLegalDto) {
+    const page = await this.prisma.legalPage.create({
+      data: {
+        code: await this.nextLegalCode(dto.kind, dto.audience),
+        audience: dto.audience,
+        kind: dto.kind,
+        titleAr: dto.titleAr.trim(),
+        bodyAr: dto.bodyAr.trim(),
+        titleEn: dto.titleEn?.trim() ?? "",
+        bodyEn: dto.bodyEn?.trim() ?? "",
+        isActive: dto.isActive ?? true,
+      },
+    });
+    if (page.kind === "TERMS" && page.isActive) {
+      await this.bumpTermsVersion();
+    }
+    return page;
   }
 
   async patchLegal(id: string, dto: PatchLegalDto) {
@@ -443,25 +464,52 @@ export class OpsService {
     if (!page) {
       throw new NotFoundException("الصفحة غير موجودة");
     }
+    if (
+      dto.titleAr === undefined &&
+      dto.bodyAr === undefined &&
+      dto.titleEn === undefined &&
+      dto.bodyEn === undefined &&
+      dto.audience === undefined &&
+      dto.kind === undefined &&
+      dto.isActive === undefined
+    ) {
+      throw new BadRequestException("لا يوجد تغيير للحفظ");
+    }
     const updated = await this.prisma.legalPage.update({
       where: { id },
       data: {
-        titleAr: dto.titleAr.trim(),
-        bodyAr: dto.bodyAr.trim(),
+        ...(dto.titleAr !== undefined ? { titleAr: dto.titleAr.trim() } : {}),
+        ...(dto.bodyAr !== undefined ? { bodyAr: dto.bodyAr.trim() } : {}),
         ...(dto.titleEn !== undefined ? { titleEn: dto.titleEn.trim() } : {}),
         ...(dto.bodyEn !== undefined ? { bodyEn: dto.bodyEn.trim() } : {}),
+        ...(dto.audience !== undefined ? { audience: dto.audience } : {}),
+        ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         version: page.version + 1,
       },
     });
-    if (page.code.startsWith("TERMS_")) {
-      const current = await this.prisma.getSettingInt("terms_version", 1);
-      await this.prisma.setting.upsert({
-        where: { key: "terms_version" },
-        update: { value: String(current + 1) },
-        create: { key: "terms_version", value: String(current + 1) },
-      });
+    if (updated.kind === "TERMS") {
+      await this.bumpTermsVersion();
     }
     return updated;
+  }
+
+  private async nextLegalCode(kind: string, audience: string) {
+    const base = `${kind}_${audience}`;
+    const taken = await this.prisma.legalPage.findUnique({ where: { code: base } });
+    if (!taken) {
+      return base;
+    }
+    return `${base}_${randomBytes(2).toString("hex")}`;
+  }
+
+  private async bumpTermsVersion() {
+    const current = await this.prisma.getSettingInt("terms_version", 1);
+    await this.prisma.setting.upsert({
+      where: { key: "terms_version" },
+      update: { value: String(current + 1) },
+      create: { key: "terms_version", value: String(current + 1) },
+    });
   }
 
   catalog() {
@@ -844,10 +892,21 @@ export class OpsService {
     return rows[0] ?? { id, status: nextStatus ?? user.status, package: assignedPackage };
   }
 
-  async notifyAccount(id: string, dto: NotifyAccountDto, actorId: string) {
+  async notifyAccount(id: string, dto: NotifyAccountDto, actorId: string, permissions: string[] = []) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user || user.accountType === AccountType.STAFF || user.status === AccountStatus.DELETED) {
       throw new NotFoundException("الحساب غير موجود");
+    }
+    const needed =
+      user.accountType === AccountType.PROVIDER
+        ? StaffPermission.NOTIFY_PROVIDER
+        : StaffPermission.NOTIFY_CUSTOMER;
+    if (!permissions.includes(needed)) {
+      throw new ForbiddenException(
+        user.accountType === AccountType.PROVIDER
+          ? "ليست لديكِ صلاحية إشعار فردي للخبيرة"
+          : "ليست لديكِ صلاحية إشعار فردي للعميلة",
+      );
     }
     const titleAr = dto.titleAr.trim();
     const bodyAr = dto.bodyAr.trim();
@@ -870,7 +929,16 @@ export class OpsService {
     return { sent: 1, displayName: user.displayName, accountCode: user.accountCode };
   }
 
-  async broadcast(dto: BroadcastDto) {
+  async broadcast(dto: BroadcastDto, permissions: string[] = []) {
+    const needed =
+      dto.audience === "ALL"
+        ? StaffPermission.BROADCAST_ALL
+        : dto.audience === AccountType.PROVIDER
+          ? StaffPermission.BROADCAST_PROVIDER
+          : StaffPermission.BROADCAST_CUSTOMER;
+    if (!permissions.includes(needed)) {
+      throw new ForbiddenException("ليست لديكِ صلاحية الإرسال لهذا الجمهور");
+    }
     const users = await this.prisma.user.findMany({
       where: {
         accountType:
@@ -1956,6 +2024,7 @@ export class OpsService {
     user: {
       accountType: string;
       providerProfile: { userId: string } | null;
+      customerProfile: { userId: string } | null;
     };
   }) {
     if (change.field === ProfileChangeField.DISPLAY_NAME) {
@@ -1984,14 +2053,21 @@ export class OpsService {
       });
       return;
     }
-    if (!change.user.providerProfile) {
+    if (change.field === ProfileChangeField.BIO) {
+      if (change.user.providerProfile) {
+        await this.prisma.providerProfile.update({
+          where: { userId: change.userId },
+          data: { bio: change.newValue },
+        });
+      } else if (change.user.customerProfile) {
+        await this.prisma.customerProfile.update({
+          where: { userId: change.userId },
+          data: { bio: change.newValue },
+        });
+      }
       return;
     }
-    if (change.field === ProfileChangeField.BIO) {
-      await this.prisma.providerProfile.update({
-        where: { userId: change.userId },
-        data: { bio: change.newValue },
-      });
+    if (!change.user.providerProfile) {
       return;
     }
     if (change.field === ProfileChangeField.WHATSAPP) {

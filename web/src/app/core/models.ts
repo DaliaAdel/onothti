@@ -10,6 +10,7 @@ export interface SessionUser {
   mobile?: string;
   email?: string;
   city?: { id: string; nameAr: string; nameEn: string } | null;
+  bio?: string | null;
   roleCode?: string | null;
   roleNameAr?: string | null;
   permissions?: string[];
@@ -52,6 +53,19 @@ export interface CatalogCity {
   nameAr: string;
   nameEn: string;
   region?: { id?: string; nameAr: string; nameEn: string };
+}
+
+export interface PlatformSettings {
+  extensionMonths: number;
+  idleAfterDays: number;
+  idleCustomerAfter: number;
+  idleCustomerUnit: 'day' | 'month' | 'year';
+  idleProviderAfter: number;
+  idleProviderUnit: 'day' | 'month' | 'year';
+  termsVersion: number;
+  ratingNoteMax: number;
+  providerBioMax: number;
+  customerBioMax: number;
 }
 
 export interface CatalogRegion {
@@ -553,14 +567,20 @@ export interface OpsPermission {
   nameEn?: string;
 }
 
+export type LegalAudience = 'CUSTOMER' | 'PROVIDER' | 'STAFF';
+export type LegalKind = 'TERMS' | 'POLICIES' | 'PRIVACY' | 'OTHER';
+
 export interface OpsLegalPage {
   id: string;
   code: string;
+  audience: LegalAudience;
+  kind: LegalKind;
   titleAr: string;
   titleEn: string;
   bodyAr: string;
   bodyEn: string;
   version: number;
+  isActive: boolean;
 }
 
 export interface OpsStaff {

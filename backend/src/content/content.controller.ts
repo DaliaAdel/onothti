@@ -1,7 +1,7 @@
 import { Controller, Get, NotFoundException, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../prisma/prisma.service";
-import { LegalAudienceDto } from "./dto/legal-query.dto";
+import { LegalAudienceDto, WelcomeAudienceDto } from "./dto/legal-query.dto";
 
 @ApiTags("content")
 @Controller()
@@ -10,12 +10,22 @@ export class ContentController {
 
   @Get("legal/terms")
   terms(@Query() query: LegalAudienceDto) {
-    return this.legalPage(`TERMS_${query.audience}`, query.audience);
+    return this.legalPage("TERMS", query.audience);
   }
 
   @Get("legal/policies")
   policies(@Query() query: LegalAudienceDto) {
-    return this.legalPage(`POLICIES_${query.audience}`, query.audience);
+    return this.legalPage("POLICIES", query.audience);
+  }
+
+  @Get("legal/privacy")
+  privacy(@Query() query: LegalAudienceDto) {
+    return this.legalPage("PRIVACY", query.audience);
+  }
+
+  @Get("legal/page")
+  page(@Query() query: LegalAudienceDto) {
+    return this.legalPage(query.kind ?? "TERMS", query.audience);
   }
 
   @Get("settings/about")
@@ -30,7 +40,7 @@ export class ContentController {
   }
 
   @Get("content/welcome")
-  async welcome(@Query() query: LegalAudienceDto) {
+  async welcome(@Query() query: WelcomeAudienceDto) {
     const rows = await this.prisma.welcomeMessage.findMany({
       where: {
         isActive: true,
@@ -50,8 +60,11 @@ export class ContentController {
     };
   }
 
-  private async legalPage(code: string, audience: "CUSTOMER" | "PROVIDER") {
-    const page = await this.prisma.legalPage.findUnique({ where: { code } });
+  private async legalPage(kind: string, audience: "CUSTOMER" | "PROVIDER" | "STAFF") {
+    const page = await this.prisma.legalPage.findFirst({
+      where: { kind, audience, isActive: true },
+      orderBy: { version: "desc" },
+    });
     if (!page) {
       throw new NotFoundException("الصفحة غير موجودة");
     }

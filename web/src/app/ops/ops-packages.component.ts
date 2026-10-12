@@ -23,7 +23,7 @@ import { keepSelected } from './ops-ui';
     <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
-          <label>الرمز</label>
+          <label>الكود</label>
           <input class="input" [(ngModel)]="draft.code" placeholder="GREEN" />
         </div>
         <div class="field">

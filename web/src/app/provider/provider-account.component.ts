@@ -63,7 +63,8 @@ import { ToastService } from '../core/toast.service';
         </div>
         <div class="field">
           <label>النبذة الاحترافية</label>
-          <textarea name="bio" [(ngModel)]="bio" (ngModelChange)="dirty = true"></textarea>
+          <textarea name="bio" [(ngModel)]="bio" [maxlength]="bioMax" (ngModelChange)="dirty = true"></textarea>
+          <small class="muted">{{ bio.length }} / {{ bioMax }}</small>
         </div>
       </form>
       <div class="card empty">
@@ -97,6 +98,7 @@ export class ProviderAccountComponent implements OnInit {
   cityIds: string[] = [];
   email = '';
   bio = '';
+  bioMax = 1000;
   previewUrl = '';
   regions: CatalogRegion[] = [];
   loading = false;
@@ -120,6 +122,11 @@ export class ProviderAccountComponent implements OnInit {
 
   ngOnInit(): void {
     this.shell.set('الملف الشخصي');
+    this.api.platformSettings().subscribe({
+      next: (settings) => {
+        this.bioMax = settings.providerBioMax || 1000;
+      },
+    });
     this.api.regions().subscribe({
       next: (regions) => {
         this.regions = regions;
@@ -193,6 +200,10 @@ export class ProviderAccountComponent implements OnInit {
   save(): void {
     if (!this.cityIds.length) {
       this.toast.show('اختاري مدينة واحدة على الأقل');
+      return;
+    }
+    if (this.bio.length > this.bioMax) {
+      this.toast.show(`نبذة الخبيرة بحد أقصى ${this.bioMax} حرف`);
       return;
     }
     this.loading = true;

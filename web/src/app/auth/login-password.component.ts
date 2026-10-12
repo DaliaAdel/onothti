@@ -37,7 +37,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">دخول لوحة التشغيل</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">دخول لوحة  المعلومات</button>
       </form>
     </app-auth-layout>
   `,
