@@ -466,7 +466,9 @@ async function seedStaff() {
     console.warn(`Skip staff seed: ${mobile} already used by ${existing.accountType}`);
     return;
   }
-  const passwordHash = await bcrypt.hash(randomStaffSecret(), 10);
+  const staffPassword = process.env.STAFF_PASSWORD?.trim();
+  const knownPassword = staffPassword && staffPassword.length >= 8 ? staffPassword : null;
+  const passwordHash = await bcrypt.hash(knownPassword ?? randomStaffSecret(), 10);
   const count = await prisma.user.count({ where: { accountType: "STAFF" } });
   const user = existing
     ? await prisma.user.update({
@@ -474,7 +476,9 @@ async function seedStaff() {
         data: {
           status: "ACTIVE",
           displayName: existing.displayName || "مشغل إداري",
-          mobileVerifiedAt: new Date(),
+          ...(knownPassword
+            ? { passwordHash, mustChangePassword: false, mobileVerifiedAt: new Date() }
+            : {}),
         },
       })
     : await prisma.user.create({
@@ -482,10 +486,10 @@ async function seedStaff() {
           accountType: "STAFF",
           mobile,
           passwordHash,
+          mustChangePassword: !knownPassword,
           status: "ACTIVE",
           displayName: "مشغل إداري",
           accountCode: `ST-${String(count + 1).padStart(6, "0")}`,
-          mobileVerifiedAt: new Date(),
           termsAcceptedAt: new Date(),
         },
       });

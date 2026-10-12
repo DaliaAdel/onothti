@@ -1,23 +1,31 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsTicket } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { SessionService } from '../core/session.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
 @Component({
   selector: 'app-ops-tickets',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="filters">
-      <button class="chip" type="button" [class.active]="status === ''" (click)="setStatus('')">الكل</button>
+      <button class="chip" type="button" [class.active]="status === '' && !escalatedOnly" (click)="setStatus('')">الكل</button>
       <button class="chip" type="button" [class.active]="status === 'SENT'" (click)="setStatus('SENT')">جديدة</button>
       <button class="chip" type="button" [class.active]="status === 'IN_PROGRESS'" (click)="setStatus('IN_PROGRESS')">قيد المعالجة</button>
       <button class="chip" type="button" [class.active]="status === 'RESOLVED'" (click)="setStatus('RESOLVED')">محلولة</button>
       <button class="chip" type="button" [class.active]="status === 'CLOSED'" (click)="setStatus('CLOSED')">مغلقة</button>
+      <button class="chip" type="button" [class.active]="escalatedOnly" (click)="setEscalated()">مصعّدة</button>
+      <button class="chip" type="button" [class.active]="mineOnly" (click)="setMine()">طلباتي</button>
+      <button class="chip" type="button" [class.active]="queue === 'OPS'" (click)="setQueue('OPS')">التشغيل</button>
+      <button class="chip" type="button" [class.active]="queue === 'FINANCE'" (click)="setQueue('FINANCE')">المالية</button>
+      <button class="chip" type="button" [class.active]="queue === 'ADMIN'" (click)="setQueue('ADMIN')">الإدارة</button>
     </div>
 
     @if (loading) {
@@ -34,6 +42,8 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
               <th>المرسلة</th>
               <th>الملخص</th>
               <th>الحالة</th>
+              <th>الفريق</th>
+              <th>المسندة</th>
               <th>التاريخ</th>
             </tr>
           </thead>
@@ -45,6 +55,8 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                 <td>{{ item.owner.displayName }}</td>
                 <td class="clip">{{ clip(item.body) }}</td>
                 <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
+                <td>{{ queueLabel(item.queue) }}</td>
+                <td>{{ item.assignee?.displayName || '—' }}</td>
                 <td>{{ opsDate(item.createdAt) }}</td>
               </tr>
             }
@@ -64,7 +76,12 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
           {{ item.owner.displayName }} · {{ item.owner.accountCode }} ·
           <span dir="ltr">{{ item.owner.mobile }}</span>
         </p>
-        <p class="muted small">{{ opsDate(item.createdAt) }} · {{ statusAr(item.status) }}</p>
+        <p class="muted small">
+          {{ opsDate(item.createdAt) }} · {{ statusAr(item.status) }} · {{ queueLabel(item.queue) }}
+          @if (item.assignee) {
+            · مسندة إلى {{ item.assignee.displayName }}
+          }
+        </p>
         <p style="margin:14px 0;white-space:pre-wrap;line-height:1.8">{{ item.body }}</p>
         @if (item.comments.length) {
           <h4 style="margin:18px 0 8px;color:var(--plum)">الردود</h4>
@@ -87,35 +104,111 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
           @if (item.status !== 'CLOSED') {
             <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">إغلاق</button>
           }
+          @if (item.assignee?.id !== meId) {
+            <button class="btn ghost" type="button" (click)="claim(item)">هذه لي</button>
+          }
+          <button class="btn ghost" type="button" (click)="openRoute(item)">توجيه الطلب</button>
         </div>
       }
     </app-ops-drawer>
+    <app-ops-modal
+      [open]="!!routeTarget"
+      title="توجيه الطلب"
+      [kicker]="routeTarget?.refNo || ''"
+      (closed)="routeTarget = null"
+    >
+      <div class="field">
+        <label>التوجيه</label>
+        <select class="input" [(ngModel)]="routeDraft.queue">
+          <option value="OPS">إعادة إلى فريق التشغيل</option>
+          <option value="FINANCE">تصعيد إلى الفريق المالي</option>
+          <option value="ADMIN">تصعيد إلى الإدارة</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ملاحظة الإدارة</label>
+        <textarea class="input" rows="4" [(ngModel)]="routeDraft.note" placeholder="اكتبي الملاحظة أو القرار"></textarea>
+      </div>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">حفظ وتوجيه الطلب</button>
+    </app-ops-modal>
   `,
 })
 export class OpsTicketsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly session = inject(SessionService);
 
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;
   readonly clip = clip;
+  readonly meId = this.session.user()?.id ?? '';
 
   loading = true;
   status = 'SENT';
+  escalatedOnly = false;
+  mineOnly = false;
+  queue = '';
   items: OpsTicket[] = [];
   selected: OpsTicket | null = null;
   replies: Record<string, string> = {};
+  routeTarget: OpsTicket | null = null;
+  routeDraft = { queue: 'ADMIN' as 'OPS' | 'FINANCE' | 'ADMIN', note: '' };
 
   ngOnInit(): void {
-    this.shell.set('طلبات الدعم', 'الرد على تذاكر الخبيرات وإغلاقها');
+    this.shell.set('الطلبات المصعّدة والدعم', 'الرد أو التصعيد وإغلاق الطلب');
+    if (this.route.snapshot.queryParamMap.get('priority') === '1') {
+      this.escalatedOnly = true;
+      this.status = '';
+    }
     this.load();
   }
 
   setStatus(status: string): void {
     this.status = status;
+    this.escalatedOnly = false;
+    this.mineOnly = false;
+    this.queue = '';
     this.selected = null;
     this.load();
+  }
+
+  setEscalated(): void {
+    this.status = '';
+    this.escalatedOnly = true;
+    this.mineOnly = false;
+    this.queue = '';
+    this.selected = null;
+    this.load();
+  }
+
+  setMine(): void {
+    this.status = '';
+    this.escalatedOnly = false;
+    this.mineOnly = true;
+    this.queue = '';
+    this.selected = null;
+    this.load();
+  }
+
+  setQueue(queue: string): void {
+    this.status = '';
+    this.escalatedOnly = false;
+    this.mineOnly = false;
+    this.queue = queue;
+    this.selected = null;
+    this.load();
+  }
+
+  queueLabel(queue?: string): string {
+    if (queue === 'FINANCE') {
+      return 'المالية';
+    }
+    if (queue === 'ADMIN') {
+      return 'الإدارة';
+    }
+    return 'التشغيل';
   }
 
   statusAr(status: string): string {
@@ -145,7 +238,7 @@ export class OpsTicketsComponent implements OnInit {
   }
 
   setTicketStatus(item: OpsTicket, status: 'SENT' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'): void {
-    this.api.opsPatchTicket(item.id, status).subscribe({
+    this.api.opsPatchTicket(item.id, { status }).subscribe({
       next: (row) => {
         this.replace(row);
         this.toast.show('تم تحديث حالة الطلب');
@@ -154,9 +247,54 @@ export class OpsTicketsComponent implements OnInit {
     });
   }
 
+  claim(item: OpsTicket): void {
+    this.api.opsPatchTicket(item.id, { claim: true }).subscribe({
+      next: (row) => {
+        this.replace(row);
+        this.toast.show('تم إسناد الطلب إليكِ');
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إسناد الطلب')),
+    });
+  }
+
+  openRoute(item: OpsTicket): void {
+    this.routeTarget = item;
+    this.routeDraft = { queue: (item.queue as 'OPS' | 'FINANCE' | 'ADMIN') || 'ADMIN', note: '' };
+  }
+
+  submitRoute(): void {
+    const item = this.routeTarget;
+    if (!item) {
+      return;
+    }
+    if (this.routeDraft.note.trim().length < 2) {
+      this.toast.show('أدخلي ملاحظة التوجيه');
+      return;
+    }
+    this.api
+      .opsPatchTicket(item.id, {
+        queue: this.routeDraft.queue,
+        note: this.routeDraft.note,
+        status: item.status === 'SENT' ? 'IN_PROGRESS' : undefined,
+      })
+      .subscribe({
+        next: (row) => {
+          this.replace(row);
+          this.routeTarget = null;
+          this.toast.show('تم توجيه الطلب');
+        },
+        error: (err) => this.toast.show(apiMessage(err, 'تعذر توجيه الطلب')),
+      });
+  }
+
   private replace(row: OpsTicket): void {
     this.items = this.items.map((item) => (item.id === row.id ? row : item));
-    if (this.status && row.status !== this.status) {
+    if (
+      (this.status && row.status !== this.status) ||
+      (this.queue && row.queue !== this.queue) ||
+      (this.mineOnly && row.assignee?.id !== this.meId) ||
+      (this.escalatedOnly && row.priority !== 1)
+    ) {
       this.items = this.items.filter((item) => item.id !== row.id);
       this.selected = null;
       return;
@@ -166,7 +304,12 @@ export class OpsTicketsComponent implements OnInit {
 
   private load(): void {
     this.loading = true;
-    this.api.opsTickets(this.status || undefined).subscribe({
+    this.api.opsTickets({
+      status: this.status || undefined,
+      priority: this.escalatedOnly ? 1 : undefined,
+      queue: this.queue || undefined,
+      mine: this.mineOnly || undefined,
+    }).subscribe({
       next: (items) => {
         this.items = newestFirst(items);
         this.selected = keepSelected(this.items, this.selected);

@@ -6,20 +6,21 @@ import type { CatalogPackage, OpsCampaign } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-packages',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
         <p>اضغطي على صف الباقة لتعديل الأسعار والحدود</p>
       </div>
+      <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
     </div>
-    <article class="card form-card" style="margin-bottom:18px">
-      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة باقة</h3>
+    <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
           <label>الرمز</label>
@@ -42,8 +43,8 @@ import { keepSelected } from './ops-ui';
           <input class="input" type="number" [(ngModel)]="draft.rank" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="create()">إضافة</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
+    </app-ops-modal>
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
     } @else {
@@ -186,6 +187,35 @@ import { keepSelected } from './ops-ui';
         </div>
       }
     </app-ops-drawer>
+
+    <div class="section-head">
+      <div>
+        <h2>مصفوفة انتقال حالات الحساب</h2>
+        <p>مرجع سريع للحالات والمسؤول عن كل انتقال.</p>
+      </div>
+    </div>
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>من</th>
+            <th>إلى</th>
+            <th>سبب الانتقال</th>
+            <th>المسؤول</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of stateMatrix; track row.from + row.to) {
+            <tr>
+              <td>{{ row.from }}</td>
+              <td>{{ row.to }}</td>
+              <td>{{ row.reason }}</td>
+              <td>{{ row.owner }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   `,
 })
 export class OpsPackagesComponent implements OnInit {
@@ -200,6 +230,17 @@ export class OpsPackagesComponent implements OnInit {
   campaignDates: Record<string, { startDate: string; endDate: string }> = {};
   loading = true;
   draft = { code: '', nameAr: '', durationMonths: 1, price: 0, rank: 5 };
+  adding = false;
+  readonly stateMatrix = [
+    { from: 'قيد الإنشاء', to: 'غير نشط', reason: 'إنشاء الحساب وانتظار رمز التفعيل', owner: 'صاحبة الحساب والنظام' },
+    { from: 'غير نشط', to: 'نشط', reason: 'نجاح إدخال رمز التحقق', owner: 'النظام' },
+    { from: 'نشط وملفه قيد المراجعة', to: 'نشط وملفه معتمد', reason: 'اعتماد بيانات الملف والصور', owner: 'التشغيل' },
+    { from: 'خبيرة نشطة', to: 'مقيد (خامل)', reason: 'انتهاء الباقة دون تجديد', owner: 'النظام' },
+    { from: 'مقيد (خامل)', to: 'نشط وباقته سارية', reason: 'اعتماد التجديد أو الترقية', owner: 'التشغيل والمالية' },
+    { from: 'أي حساب', to: 'موقوف', reason: 'مخالفة مثبتة', owner: 'صاحب الصلاحية' },
+    { from: 'موقوف', to: 'نشط أو مقيد', reason: 'إزالة سبب الإيقاف', owner: 'صاحب الصلاحية' },
+    { from: 'نشط', to: 'مقيد الصلاحيات', reason: 'مخالفة دون انتهاء الاشتراك', owner: 'التشغيل أو الإدارة' },
+  ];
 
   ngOnInit(): void {
     this.shell.set('الباقات والحملات', 'إدارة الاشتراكات والحملة المجانية');
@@ -251,6 +292,7 @@ export class OpsPackagesComponent implements OnInit {
         next: () => {
           this.toast.show('تمت إضافة الباقة');
           this.draft = { code: '', nameAr: '', durationMonths: 1, price: 0, rank: 5 };
+          this.adding = false;
           this.load();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),

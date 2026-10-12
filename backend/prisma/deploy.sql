@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `mobile` VARCHAR(10) NOT NULL,
     `email` VARCHAR(255) NULL,
     `passwordHash` VARCHAR(255) NOT NULL,
+    `mustChangePassword` BOOLEAN NOT NULL DEFAULT false,
     `status` VARCHAR(30) NOT NULL DEFAULT 'INACTIVE',
     `displayName` VARCHAR(120) NOT NULL,
     `accountCode` VARCHAR(20) NOT NULL,

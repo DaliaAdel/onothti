@@ -167,6 +167,34 @@ export class ForgotPasswordDto {
   mobile!: string;
 }
 
+export class SetStaffPasswordDto {
+  @ApiProperty({ example: "0501234567" })
+  @Matches(/^05[0-9]{8}$/)
+  mobile!: string;
+
+  @ApiProperty({ example: "123456" })
+  @IsString()
+  @MinLength(4)
+  code!: string;
+
+  @ApiProperty({ example: "Secret1234" })
+  @IsString()
+  @MinLength(8, { message: "كلمة المرور لا تقل عن 8 أحرف" })
+  newPassword!: string;
+}
+
+export class ChangeStaffPasswordDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(8)
+  currentPassword!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(8, { message: "كلمة المرور لا تقل عن 8 أحرف" })
+  newPassword!: string;
+}
+
 export class LogoutDto {
   @ApiPropertyOptional()
   @IsOptional()

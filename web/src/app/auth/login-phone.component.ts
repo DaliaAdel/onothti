@@ -17,7 +17,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <a class="auth-back" [routerLink]="backLink">← رجوع</a>
         <span class="auth-kicker">{{ isNew ? 'إنشاء حساب جديد' : 'لدي حساب' }}</span>
         <h2>رقم الهاتف</h2>
-        <p class="muted">أدخلي رقم الهاتف وسنرسل لكِ رمز تحقق OTP.</p>
+        <p class="muted">{{ isNew ? 'أدخلي رقم الهاتف وسنرسل لكِ رمز تحقق OTP.' : 'أدخلي رقم الجوال للمتابعة. حساب التشغيل يطلب كلمة المرور بعد التحقق.' }}</p>
         <div class="field">
           <label>رقم الجوال</label>
           <input
@@ -36,7 +36,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">إرسال رمز التحقق</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ isNew ? 'إرسال رمز التحقق' : 'متابعة' }}</button>
       </form>
     </app-auth-layout>
   `,
@@ -103,7 +103,18 @@ export class LoginPhoneComponent {
       accountType: this.isNew ? this.signupAccountType() : undefined,
     });
     this.api.startPhone(mobile).subscribe({
-      next: () => {
+      next: (res) => {
+        if (res.passwordRequired) {
+          void this.router.navigateByUrl('/login/password');
+          return;
+        }
+        this.session.saveDraft({
+          displayName: '',
+          mobile,
+          needsProfile: true,
+          accountType: this.isNew ? this.signupAccountType() : undefined,
+          mustSetPassword: res.mustSetPassword,
+        });
         void this.router.navigate(['/otp'], {
           queryParams: { purpose: this.isNew ? 'REGISTER' : 'LOGIN' },
         });

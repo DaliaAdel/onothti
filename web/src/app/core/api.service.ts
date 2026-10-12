@@ -46,6 +46,8 @@ import type {
   OpsBannedPhone,
   OpsCoverage,
   OpsManagedAccount,
+  OpsAuditEvent,
+  OpsTeamActivityRow,
 } from './models';
 
 import { SessionService } from './session.service';
@@ -62,6 +64,33 @@ export class ApiService {
 
   login(mobile: string, password: string) {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`, { mobile, password });
+  }
+
+  setStaffPassword(mobile: string, code: string, newPassword: string) {
+    return this.http.post<AuthResponse>(`${this.base}/auth/staff/set-password`, {
+      mobile,
+      code,
+      newPassword,
+    });
+  }
+
+  changeStaffPassword(currentPassword: string, newPassword: string) {
+    return this.http.post<{ ok: boolean }>(`${this.base}/auth/staff/change-password`, {
+      currentPassword,
+      newPassword,
+    });
+  }
+
+  forgotPassword(mobile: string) {
+    return this.http.post<{ otpExpiresIn: number }>(`${this.base}/auth/forgot-password`, { mobile });
+  }
+
+  resetPassword(mobile: string, code: string, newPassword: string) {
+    return this.http.post<{ ok: boolean }>(`${this.base}/auth/reset-password`, {
+      mobile,
+      code,
+      newPassword,
+    });
   }
 
   startPhone(mobile: string) {
@@ -468,6 +497,24 @@ export class ApiService {
     return this.http.get<OpsStaff>(`${this.base}/ops/me`);
   }
 
+  opsPatchMe(body: { displayName?: string }) {
+    return this.http.patch<OpsStaff>(`${this.base}/ops/me`, body);
+  }
+
+  opsEvents(query: { q?: string; action?: string; from?: string; to?: string } = {}) {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value) {
+        params = params.set(key, value);
+      }
+    }
+    return this.http.get<OpsAuditEvent[]>(`${this.base}/ops/events`, { params });
+  }
+
+  opsTeamActivity() {
+    return this.http.get<{ date: string; rows: OpsTeamActivityRow[] }>(`${this.base}/ops/team-activity`);
+  }
+
   opsSettings() {
     return this.http.get<OpsSetting[]>(`${this.base}/ops/settings`);
   }
@@ -500,7 +547,16 @@ export class ApiService {
     return this.http.post<OpsStaff>(`${this.base}/ops/staff`, body);
   }
 
-  opsPatchStaff(id: string, body: { displayName?: string; roleId?: string; status?: 'ACTIVE' | 'SUSPENDED'; team?: string }) {
+  opsPatchStaff(
+    id: string,
+    body: {
+      displayName?: string;
+      roleId?: string;
+      status?: 'ACTIVE' | 'SUSPENDED';
+      team?: string;
+      resetPassword?: boolean;
+    },
+  ) {
     return this.http.patch<OpsStaff>(`${this.base}/ops/staff/${id}`, body);
   }
 
@@ -540,16 +596,34 @@ export class ApiService {
     return this.http.patch<OpsSubService>(`${this.base}/ops/sub-services/${id}`, body);
   }
 
-  opsTickets(status?: string) {
+  opsTickets(query: { status?: string; priority?: number | string; queue?: string; mine?: boolean } = {}) {
     let params = new HttpParams();
-    if (status) {
-      params = params.set('status', status);
+    if (query.status) {
+      params = params.set('status', query.status);
+    }
+    if (query.priority != null && query.priority !== '') {
+      params = params.set('priority', String(query.priority));
+    }
+    if (query.queue) {
+      params = params.set('queue', query.queue);
+    }
+    if (query.mine) {
+      params = params.set('mine', '1');
     }
     return this.http.get<OpsTicket[]>(`${this.base}/ops/tickets`, { params });
   }
 
-  opsPatchTicket(id: string, status: 'SENT' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED') {
-    return this.http.patch<OpsTicket>(`${this.base}/ops/tickets/${id}`, { status });
+  opsPatchTicket(
+    id: string,
+    body: {
+      status?: 'SENT' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+      priority?: number;
+      queue?: 'OPS' | 'FINANCE' | 'ADMIN';
+      claim?: boolean;
+      note?: string;
+    },
+  ) {
+    return this.http.patch<OpsTicket>(`${this.base}/ops/tickets/${id}`, body);
   }
 
   opsCommentTicket(id: string, body: string) {
@@ -598,8 +672,15 @@ export class ApiService {
     return this.http.get<OpsManagedAccount[]>(`${this.base}/ops/accounts`, { params });
   }
 
-  opsPatchAccount(id: string, body: { status: string; reason?: string; visibility?: string }) {
+  opsPatchAccount(id: string, body: { status?: string; packageId?: string; reason: string; visibility?: string }) {
     return this.http.patch<OpsManagedAccount>(`${this.base}/ops/accounts/${id}`, body);
+  }
+
+  opsNotifyAccount(id: string, body: { titleAr: string; bodyAr: string }) {
+    return this.http.post<{ sent: number; displayName: string; accountCode: string }>(
+      `${this.base}/ops/accounts/${id}/notify`,
+      body,
+    );
   }
 
   opsBroadcast(body: { audience: 'CUSTOMER' | 'PROVIDER' | 'ALL'; titleAr: string; bodyAr: string }) {

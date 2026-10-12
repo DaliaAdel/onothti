@@ -2,10 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import type { OpsBankAccount, OpsWelcome } from '../core/models';
+import type { OpsBankAccount, OpsManagedAccount, OpsWelcome } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { clip, keepSelected } from './ops-ui';
 
 const SETTING_META: { key: string; label: string; hint: string }[] = [
@@ -20,7 +21,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
 
 @Component({
   selector: 'app-ops-settings',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="section-head">
       <div>
@@ -69,6 +70,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
         <h2>رسائل الترحيب</h2>
         <p>ترحيب وتحفيز للعميلة والخبيرة عند الدخول</p>
       </div>
+      <button class="btn primary" type="button" (click)="addingWelcome = true">+ إضافة رسالة</button>
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
@@ -109,8 +111,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
       }
     </app-ops-drawer>
 
-    <article class="card form-card" style="margin-top:22px">
-      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة رسالة</h3>
+    <app-ops-modal [open]="addingWelcome" title="إضافة رسالة" kicker="ترحيب وتحفيز" (closed)="addingWelcome = false">
       <div class="form-grid">
         <div class="field">
           <label>الجمهور</label>
@@ -132,14 +133,15 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
           <textarea class="input" rows="3" [(ngModel)]="welcomeDraft.bodyAr"></textarea>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="createWelcome()">إضافة</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createWelcome()">إضافة الرسالة</button>
+    </app-ops-modal>
 
     <div class="section-head">
       <div>
         <h2>الحساب البنكي للمنصة</h2>
         <p>بيانات التحويل التي تراها الخبيرة عند الاشتراك.</p>
       </div>
+      <button class="btn primary" type="button" (click)="addingBank = true">+ إضافة حساب</button>
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
@@ -192,8 +194,7 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
         </div>
       }
     </app-ops-drawer>
-    <article class="card form-card" style="margin-bottom:22px">
-      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة حساب بنكي</h3>
+    <app-ops-modal [open]="addingBank" title="إضافة حساب بنكي" kicker="تحويل الاشتراك" (closed)="addingBank = false">
       <div class="form-grid">
         <div class="field">
           <label>البنك</label>
@@ -208,16 +209,50 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
           <input class="input" [(ngModel)]="bankDraft.accountName" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="createBank()">إضافة</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createBank()">إضافة الحساب</button>
+    </app-ops-modal>
 
     <div class="section-head">
       <div>
         <h2>إشعار جماعي</h2>
         <p>يصل إلى حسابات العميلات أو الخبيرات النشطة.</p>
       </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" type="button" (click)="openDirect()">+ إشعار لحساب</button>
+        <button class="btn primary" type="button" (click)="addingBroadcast = true">+ إرسال جماعي</button>
+      </div>
     </div>
-    <article class="card form-card">
+    <app-ops-modal [open]="addingDirect" title="إشعار لحساب واحد" kicker="بحث بالجوال أو الرمز" (closed)="addingDirect = false">
+      <div class="field">
+        <label>بحث</label>
+        <input class="input" [(ngModel)]="directQ" placeholder="الاسم أو الجوال أو الرمز" (keyup.enter)="searchDirect()" />
+      </div>
+      <button class="btn ghost" style="margin:10px 0 14px" type="button" (click)="searchDirect()">بحث</button>
+      @if (directHits.length) {
+        <div class="filters" style="margin:0 0 14px">
+          @for (item of directHits; track item.id) {
+            <button class="chip" type="button" [class.active]="directTarget?.id === item.id" (click)="directTarget = item">
+              {{ item.displayName }} · {{ item.accountCode }}
+            </button>
+          }
+        </div>
+      }
+      @if (directTarget) {
+        <p class="muted small">المحددة: {{ directTarget.displayName }} · <span dir="ltr">{{ directTarget.mobile }}</span></p>
+      }
+      <div class="form-grid">
+        <div class="field">
+          <label>العنوان</label>
+          <input class="input" [(ngModel)]="direct.titleAr" />
+        </div>
+        <div class="field full">
+          <label>النص</label>
+          <textarea class="input" rows="3" [(ngModel)]="direct.bodyAr"></textarea>
+        </div>
+      </div>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendDirect()">إرسال الإشعار</button>
+    </app-ops-modal>
+    <app-ops-modal [open]="addingBroadcast" title="إشعار جماعي" kicker="إرسال للمنصة" (closed)="addingBroadcast = false">
       <div class="form-grid">
         <div class="field">
           <label>الجمهور</label>
@@ -236,8 +271,8 @@ const SETTING_META: { key: string; label: string; hint: string }[] = [
           <textarea class="input" rows="3" [(ngModel)]="broadcast.bodyAr"></textarea>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="sendBroadcast()">إرسال الإشعار</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendBroadcast()">إرسال الإشعار</button>
+    </app-ops-modal>
   `,
 })
 export class OpsSettingsComponent implements OnInit {
@@ -257,6 +292,14 @@ export class OpsSettingsComponent implements OnInit {
   banks: OpsBankAccount[] = [];
   bankDraft = { bankName: '', iban: '', accountName: '' };
   broadcast = { audience: 'CUSTOMER' as 'CUSTOMER' | 'PROVIDER' | 'ALL', titleAr: '', bodyAr: '' };
+  addingWelcome = false;
+  addingBank = false;
+  addingBroadcast = false;
+  addingDirect = false;
+  directQ = '';
+  directHits: OpsManagedAccount[] = [];
+  directTarget: OpsManagedAccount | null = null;
+  direct = { titleAr: '', bodyAr: '' };
   readonly settingRows = SETTING_META;
 
   ngOnInit(): void {
@@ -311,6 +354,7 @@ export class OpsSettingsComponent implements OnInit {
       next: () => {
         this.toast.show('تمت إضافة الرسالة');
         this.welcomeDraft = { audience: 'CUSTOMER', kind: 'WELCOME', bodyAr: '' };
+        this.addingWelcome = false;
         this.load();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الرسالة')),
@@ -343,9 +387,54 @@ export class OpsSettingsComponent implements OnInit {
       next: () => {
         this.toast.show('تمت إضافة الحساب البنكي');
         this.bankDraft = { bankName: '', iban: '', accountName: '' };
+        this.addingBank = false;
         this.loadBanks();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الحساب البنكي')),
+    });
+  }
+
+  openDirect(): void {
+    this.addingDirect = true;
+    this.directQ = '';
+    this.directHits = [];
+    this.directTarget = null;
+    this.direct = { titleAr: '', bodyAr: '' };
+  }
+
+  searchDirect(): void {
+    const q = this.directQ.trim();
+    if (q.length < 2) {
+      this.toast.show('أدخلي الاسم أو الجوال أو الرمز');
+      return;
+    }
+    this.api.opsAccounts({ q }).subscribe({
+      next: (rows) => {
+        this.directHits = rows.slice(0, 8);
+        this.directTarget = this.directHits.length === 1 ? this.directHits[0] : null;
+        if (!this.directHits.length) {
+          this.toast.show('لا يوجد حساب مطابق');
+        }
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر البحث عن الحساب')),
+    });
+  }
+
+  sendDirect(): void {
+    if (!this.directTarget) {
+      this.toast.show('اختاري الحساب بعد البحث');
+      return;
+    }
+    if (this.direct.titleAr.trim().length < 2 || this.direct.bodyAr.trim().length < 4) {
+      this.toast.show('أدخلي عنوان الإشعار ونصه');
+      return;
+    }
+    this.api.opsNotifyAccount(this.directTarget.id, this.direct).subscribe({
+      next: () => {
+        this.toast.show(`تم إرسال الإشعار إلى ${this.directTarget?.displayName}`);
+        this.addingDirect = false;
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
     });
   }
 
@@ -358,6 +447,7 @@ export class OpsSettingsComponent implements OnInit {
       next: (res) => {
         this.toast.show(`تم إرسال الإشعار إلى ${res.sent} حسابًا`);
         this.broadcast = { audience: this.broadcast.audience, titleAr: '', bodyAr: '' };
+        this.addingBroadcast = false;
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
     });

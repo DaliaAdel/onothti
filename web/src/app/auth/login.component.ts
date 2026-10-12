@@ -16,7 +16,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
           <a class="entry-card" routerLink="/login/phone">
             <span class="entry-icon">✓</span>
             <b>لدي حساب</b>
-            <small>الدخول برقم الجوال ورمز التحقق</small>
+            <small>الدخول برقم الجوال ثم رمز التحقق أو كلمة المرور</small>
           </a>
           <a class="entry-card" routerLink="/signup">
             <span class="entry-icon">＋</span>

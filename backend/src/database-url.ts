@@ -30,8 +30,9 @@ export function createMariaAdapter() {
     database: process.env.MYSQL_DATABASE,
     charset: "utf8mb4",
     collation: "utf8mb4_unicode_ci",
-    connectionLimit: 5,
-    connectTimeout: 8,
+    connectionLimit: 10,
+    acquireTimeout: 20000,
+    connectTimeout: 10000,
     allowPublicKeyRetrieval: true,
     ssl: process.env.MYSQL_SSL === "true" ? { rejectUnauthorized: false } : undefined,
   });

@@ -20,6 +20,26 @@ export const routes: Routes = [
     canActivate: [guestGuard],
   },
   {
+    path: 'login/password',
+    loadComponent: () => import('./auth/login-password.component').then((m) => m.LoginPasswordComponent),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'login/set-password',
+    loadComponent: () => import('./auth/set-password.component').then((m) => m.SetPasswordComponent),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'login/forgot',
+    loadComponent: () => import('./auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'login/reset-password',
+    loadComponent: () => import('./auth/reset-password.component').then((m) => m.ResetPasswordComponent),
+    canActivate: [guestGuard],
+  },
+  {
     path: 'complete',
     loadComponent: () => import('./auth/account-complete.component').then((m) => m.AccountCompleteComponent),
     canActivate: [guestGuard],
@@ -164,6 +184,11 @@ export const routes: Routes = [
       { path: 'legal', loadComponent: () => import('./ops/ops-legal.component').then((m) => m.OpsLegalComponent) },
       { path: 'catalog', loadComponent: () => import('./ops/ops-catalog.component').then((m) => m.OpsCatalogComponent) },
       { path: 'tickets', loadComponent: () => import('./ops/ops-tickets.component').then((m) => m.OpsTicketsComponent) },
+      { path: 'events', loadComponent: () => import('./ops/ops-events.component').then((m) => m.OpsEventsComponent) },
+      { path: 'activity', loadComponent: () => import('./ops/ops-activity.component').then((m) => m.OpsActivityComponent) },
+      { path: 'notifications', loadComponent: () => import('./ops/ops-notifications.component').then((m) => m.OpsNotificationsComponent) },
+      { path: 'profile', loadComponent: () => import('./ops/ops-profile.component').then((m) => m.OpsProfileComponent) },
+      { path: 'about', loadComponent: () => import('./ops/ops-about.component').then((m) => m.OpsAboutComponent) },
     ],
   },
   { path: '**', redirectTo: '' },

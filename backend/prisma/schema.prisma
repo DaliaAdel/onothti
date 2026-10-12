@@ -14,6 +14,7 @@ model User {
   mobile          String         @unique @db.VarChar(10)
   email           String?        @unique @db.VarChar(255)
   passwordHash    String         @db.VarChar(255)
+  mustChangePassword Boolean     @default(false)
   status          String         @default("INACTIVE") @db.VarChar(30)
   displayName     String         @db.VarChar(120)
   accountCode     String         @unique @db.VarChar(20)
@@ -557,6 +558,7 @@ model Ticket {
   ownerId    String       @db.Char(36)
   assigneeId String?      @db.Char(36)
   status     String       @default("SENT") @db.VarChar(20)
+  queue      String       @default("OPS") @db.VarChar(20)
   priority   Int          @default(3)
   body       String       @db.LongText
   createdAt  DateTime     @default(now()) @db.DateTime(0)

@@ -487,6 +487,19 @@ export class PatchStaffDto {
   @IsOptional()
   @IsString()
   team?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  resetPassword?: boolean;
+}
+
+export class PatchMeDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  displayName?: string;
 }
 
 export class PatchRolePermissionsDto {
@@ -725,9 +738,33 @@ export class CreateBannedPhoneDto {
 }
 
 export class PatchTicketDto {
-  @ApiProperty({ enum: ["SENT", "IN_PROGRESS", "RESOLVED", "CLOSED"] })
+  @ApiPropertyOptional({ enum: ["SENT", "IN_PROGRESS", "RESOLVED", "CLOSED"] })
+  @IsOptional()
   @IsIn(["SENT", "IN_PROGRESS", "RESOLVED", "CLOSED"])
-  status!: "SENT" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  status?: "SENT" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+
+  @ApiPropertyOptional({ description: "1 = مصعّد" })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  priority?: number;
+
+  @ApiPropertyOptional({ enum: ["OPS", "FINANCE", "ADMIN"] })
+  @IsOptional()
+  @IsIn(["OPS", "FINANCE", "ADMIN"])
+  queue?: "OPS" | "FINANCE" | "ADMIN";
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  claim?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  note?: string;
 }
 
 export class CreateTicketCommentDto {
@@ -738,19 +775,38 @@ export class CreateTicketCommentDto {
 }
 
 export class PatchAccountDto {
-  @ApiProperty({ enum: ["ACTIVE", "RESTRICTED", "SUSPENDED", "CANCELLED", "DELETED"] })
+  @ApiPropertyOptional({ enum: ["ACTIVE", "RESTRICTED", "SUSPENDED", "CANCELLED", "DELETED"] })
+  @IsOptional()
   @IsIn(["ACTIVE", "RESTRICTED", "SUSPENDED", "CANCELLED", "DELETED"])
-  status!: "ACTIVE" | "RESTRICTED" | "SUSPENDED" | "CANCELLED" | "DELETED";
+  status?: "ACTIVE" | "RESTRICTED" | "SUSPENDED" | "CANCELLED" | "DELETED";
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => (value === "" ? undefined : value))
   @IsString()
-  reason?: string;
+  packageId?: string;
+
+  @ApiProperty({ description: "سبب الإجراء ويُحفظ في سجل الأحداث" })
+  @IsString()
+  @MinLength(4)
+  reason!: string;
 
   @ApiPropertyOptional({ enum: ["PUBLIC", "LIMITED", "HIDDEN"] })
   @IsOptional()
   @IsIn(["PUBLIC", "LIMITED", "HIDDEN"])
   visibility?: "PUBLIC" | "LIMITED" | "HIDDEN";
+}
+
+export class NotifyAccountDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(2)
+  titleAr!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(4)
+  bodyAr!: string;
 }
 
 export class BroadcastDto {

@@ -198,6 +198,9 @@ const ar = {
   'auth.otp.expired': 'انتهت صلاحية الرمز',
   'auth.otp.missing': 'لا يوجد رمز تحقق',
   'auth.otp.locked': 'تم إيقاف المحاولة لمدة 30 دقيقة',
+  'auth.staff.setFirst': 'يجب تأكيد الجوال وتعيين كلمة مرور أولاً',
+  'auth.staff.passwordSaved': 'تم حفظ كلمة المرور. يمكنكِ الدخول بها في المرات القادمة',
+  'auth.staff.alreadySet': 'كلمة المرور معيّنة بالفعل، سجّلي الدخول بها',
 } as const;
 
 const en: Record<keyof typeof ar, string> = {
@@ -396,6 +399,9 @@ const en: Record<keyof typeof ar, string> = {
   'auth.otp.expired': 'The code has expired',
   'auth.otp.missing': 'There is no verification code',
   'auth.otp.locked': 'Attempts are paused for 30 minutes',
+  'auth.staff.setFirst': 'Verify the mobile number and set a password first',
+  'auth.staff.passwordSaved': 'Password saved. Use it the next time you sign in',
+  'auth.staff.alreadySet': 'A password is already set. Sign in with it',
 };
 
 const messages: Record<AppLang, Record<string, string>> = { ar, en };
@@ -426,6 +432,8 @@ export class LocaleService {
       'انتهت صلاحية الرمز': 'auth.otp.expired',
       'لا يوجد رمز تحقق': 'auth.otp.missing',
       'تم إيقاف المحاولة لمدة 30 دقيقة': 'auth.otp.locked',
+      'يجب تأكيد الجوال وتعيين كلمة مرور أولاً': 'auth.staff.setFirst',
+      'كلمة المرور معيّنة بالفعل، سجّلي الدخول بها': 'auth.staff.alreadySet',
       'المدينة غير متاحة': 'auth.complete.cityRequired',
       'اختاري مدينة واحدة على الأقل': 'auth.complete.cityRequired',
       'إحدى المدن غير متاحة': 'auth.complete.cityRequired',

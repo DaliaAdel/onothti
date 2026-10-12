@@ -6,21 +6,22 @@ import type { OpsCity, OpsCoverage, OpsRegion } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-geo',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>المناطق والمدن</h2>
         <p>أضيفي منطقة، ثم اضغطي عليها لإدارة مدنها وأحيائها.</p>
       </div>
+      <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
     </div>
 
-    <article class="card form-card" style="margin-bottom:22px">
-      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة منطقة</h3>
+    <app-ops-modal [open]="adding" title="إضافة منطقة" kicker="التغطية الجغرافية" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
           <label>الرمز</label>
@@ -39,8 +40,8 @@ import { keepSelected } from './ops-ui';
           <input class="input" type="number" [(ngModel)]="regionDraft.sortOrder" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="createRegion()">إضافة المنطقة</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">إضافة المنطقة</button>
+    </app-ops-modal>
 
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
@@ -186,6 +187,7 @@ export class OpsGeoComponent implements OnInit {
   selected: OpsRegion | null = null;
   loading = true;
   regionDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
+  adding = false;
   cityDrafts: Record<string, { code: string; nameAr: string }> = {};
   coverageDrafts: Record<string, { code: string; nameAr: string }> = {};
 
@@ -211,6 +213,7 @@ export class OpsGeoComponent implements OnInit {
         next: () => {
           this.toast.show('تمت إضافة المنطقة');
           this.regionDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
+          this.adding = false;
           this.load();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة المنطقة')),

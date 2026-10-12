@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
@@ -18,9 +18,15 @@ export interface NavItem {
   selector: 'app-shell',
   imports: [BrandComponent, IconComponent, RouterLink, RouterLinkActive],
   template: `
-    <div class="app">
+    <div class="app" [class.ops-app]="home === '/ops'">
       <aside class="sidebar">
         <app-brand [link]="home" />
+        @if (home === '/ops') {
+          <div class="role-card">
+            <b>{{ name }}</b>
+            <span>{{ roleLabel }}</span>
+          </div>
+        }
         <nav class="nav">
           @for (item of items; track item.route) {
             <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.exact ?? false }">
@@ -51,18 +57,22 @@ export interface NavItem {
             <b>{{ shell.title() }}</b>
           </div>
           <div class="top-actions">
-            <a class="city" [routerLink]="profileRoute">
-              <span class="ico"><app-icon name="pin" /></span>
-              {{ cityLabel }}
-            </a>
+            @if (home === '/ops') {
+              <a class="city" [routerLink]="profileRoute">{{ roleLabel }}</a>
+            } @else {
+              <a class="city" [routerLink]="profileRoute">
+                <span class="ico"><app-icon name="pin" /></span>
+                {{ cityLabel }}
+              </a>
+            }
             <div class="lang-switch" role="group" aria-label="Language">
               <button type="button" [class.active]="locale.lang() === 'ar'" (click)="locale.set('ar')">عربي</button>
               <button type="button" [class.active]="locale.lang() === 'en'" (click)="locale.set('en')">EN</button>
             </div>
-            <a class="icon-btn" [routerLink]="notifyRoute">
+            <a class="icon-btn" [class.has-dot]="unread > 0" [routerLink]="notifyRoute">
               <span class="ico"><app-icon name="bell" /></span>
             </a>
-            <div class="avatar">{{ initial }}</div>
+            <a class="avatar" [routerLink]="profileRoute">{{ initial }}</a>
           </div>
         </header>
         <section class="content">
@@ -72,7 +82,7 @@ export interface NavItem {
     </div>
   `,
 })
-export class AppShellComponent {
+export class AppShellComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
@@ -93,10 +103,24 @@ export class AppShellComponent {
     return this.name.slice(0, 1);
   }
 
+  unread = 0;
+
   get cityLabel(): string {
     return this.session.user()?.city
       ? this.locale.localizedName(this.session.user()!.city)
       : 'المدينة';
+  }
+
+  get roleLabel(): string {
+    return this.session.user()?.roleNameAr || 'حساب تشغيلي';
+  }
+
+  ngOnInit(): void {
+    this.api.notifications().subscribe({
+      next: (items) => {
+        this.unread = items.filter((item) => !item.readAt).length;
+      },
+    });
   }
 
   logout(): void {

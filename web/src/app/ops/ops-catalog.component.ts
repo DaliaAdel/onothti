@@ -6,21 +6,22 @@ import type { OpsCatalogService, OpsSubService } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-catalog',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>الخدمات والخدمات الفرعية</h2>
         <p>اضغطي على الخدمة لتعديلها وإدارة خدماتها الفرعية</p>
       </div>
+      <button class="btn primary" type="button" (click)="adding = true">+ إضافة خدمة</button>
     </div>
 
-    <article class="card form-card" style="margin-bottom:22px">
-      <h3 style="margin:0 0 12px;color:var(--plum)">إضافة خدمة رئيسية</h3>
+    <app-ops-modal [open]="adding" title="إضافة خدمة رئيسية" kicker="كتالوج المنصة" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
           <label>الرمز</label>
@@ -39,8 +40,8 @@ import { keepSelected } from './ops-ui';
           <input class="input" type="number" [(ngModel)]="serviceDraft.sortOrder" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="createService()">إضافة الخدمة</button>
-    </article>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createService()">إضافة الخدمة</button>
+    </app-ops-modal>
 
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
@@ -146,6 +147,7 @@ export class OpsCatalogComponent implements OnInit {
   selected: OpsCatalogService | null = null;
   serviceDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
   subDrafts: Record<string, { code: string; nameAr: string }> = {};
+  adding = false;
 
   ngOnInit(): void {
     this.shell.set('الخدمات', 'الخدمات الرئيسية والفرعية الظاهرة في المنصة');
@@ -169,6 +171,7 @@ export class OpsCatalogComponent implements OnInit {
         next: () => {
           this.toast.show('تمت إضافة الخدمة');
           this.serviceDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
+          this.adding = false;
           this.load();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الخدمة')),

@@ -14,6 +14,8 @@ import {
   PhoneStartDto,
   PhoneVerifyDto,
   PhoneCompleteDto,
+  SetStaffPasswordDto,
+  ChangeStaffPasswordDto,
   LogoutDto,
 } from "./dto/auth.dto";
 
@@ -65,6 +67,18 @@ export class AuthController {
   @Post("reset-password")
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
+  }
+
+  @Post("staff/set-password")
+  setStaffPassword(@Body() dto: SetStaffPasswordDto) {
+    return this.auth.setStaffPassword(dto);
+  }
+
+  @Post("staff/change-password")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  changeStaffPassword(@CurrentUser() user: AuthUser, @Body() dto: ChangeStaffPasswordDto) {
+    return this.auth.changeStaffPassword(user.sub, dto);
   }
 
   @Get("me")

@@ -1,18 +1,20 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import type { OpsManagedAccount, OpsPendingProvider } from '../core/models';
+import type { CatalogPackage, OpsManagedAccount, OpsPendingProvider } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
+import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
 type AccountTab = 'pending' | 'all';
 
 @Component({
   selector: 'app-ops-accounts',
-  imports: [FormsModule, OpsDrawerComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="filters">
       <button class="chip" type="button" [class.active]="tab === 'pending'" (click)="setTab('pending')">
@@ -123,6 +125,7 @@ type AccountTab = 'pending' | 'all';
                 <th>الرمز</th>
                 <th>الجوال</th>
                 <th>المدينة</th>
+                <th>الباقة</th>
                 <th>الحالة</th>
                 <th>التاريخ</th>
               </tr>
@@ -135,6 +138,7 @@ type AccountTab = 'pending' | 'all';
                   <td>{{ item.accountCode }}</td>
                   <td dir="ltr">{{ item.mobile }}</td>
                   <td>{{ item.customerProfile?.city?.nameAr || item.providerProfile?.city?.nameAr || '—' }}</td>
+                  <td>{{ item.package?.nameAr || '—' }}</td>
                   <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
                   <td>{{ opsDate(item.createdAt) }}</td>
                 </tr>
@@ -165,15 +169,49 @@ type AccountTab = 'pending' | 'all';
               <option value="DELETED">حذف</option>
             </select>
           </div>
+          @if (item.accountType === 'PROVIDER') {
+            <div class="field">
+              <label>باقة الخبيرة</label>
+              <select class="input" [(ngModel)]="nextPackage[item.id]">
+                <option value="">بدون تغيير</option>
+                @for (pkg of packages; track pkg.id) {
+                  <option [value]="pkg.id">{{ pkg.nameAr }}</option>
+                }
+              </select>
+            </div>
+            @if (item.package) {
+              <p class="muted small">الحالية: {{ item.package.nameAr }}@if (item.subscriptionEndAt) { · حتى {{ opsDate(item.subscriptionEndAt) }} }</p>
+            }
+          }
           <div class="field">
-            <label>سبب اختياري</label>
-            <input class="input" [(ngModel)]="reasons[item.id]" />
+            <label>سبب التعديل</label>
+            <textarea class="input" rows="3" [(ngModel)]="reasons[item.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
           </div>
           <div class="ops-drawer-actions">
-            <button class="btn primary" type="button" (click)="applyStatus(item)">تطبيق الحالة</button>
+            <button class="btn primary" type="button" (click)="applyAccount(item)">حفظ الإجراء</button>
+            <button class="btn ghost" type="button" (click)="openNotify(item)">إرسال إشعار</button>
           </div>
         }
       </app-ops-drawer>
+      <app-ops-modal
+        [open]="!!notifyTarget"
+        title="إشعار فردي"
+        [kicker]="notifyTarget ? notifyTarget.displayName : ''"
+        (closed)="notifyTarget = null"
+      >
+        @if (notifyTarget) {
+          <p class="muted small">{{ notifyTarget.accountCode }} · <span dir="ltr">{{ notifyTarget.mobile }}</span></p>
+        }
+        <div class="field">
+          <label>العنوان</label>
+          <input class="input" [(ngModel)]="notifyDraft.titleAr" />
+        </div>
+        <div class="field">
+          <label>النص</label>
+          <textarea class="input" rows="3" [(ngModel)]="notifyDraft.bodyAr"></textarea>
+        </div>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendNotify()">إرسال الإشعار</button>
+      </app-ops-modal>
     }
   `,
 })
@@ -181,6 +219,7 @@ export class OpsAccountsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;
@@ -194,11 +233,23 @@ export class OpsAccountsComponent implements OnInit {
   q = '';
   accountType = '';
   status = '';
+  packages: CatalogPackage[] = [];
   nextStatus: Record<string, string> = {};
+  nextPackage: Record<string, string> = {};
   reasons: Record<string, string> = {};
+  notifyTarget: OpsManagedAccount | null = null;
+  notifyDraft = { titleAr: '', bodyAr: '' };
 
   ngOnInit(): void {
-    this.shell.set('الحسابات', 'اعتماد الخبيرات وإدارة حالات العميلة والخبيرة');
+    this.shell.set('حسابات العميلات والخبيرات', 'اعتماد الخبيرات وإدارة الحالة والباقة');
+    this.api.packages().subscribe({
+      next: (rows) => (this.packages = rows),
+      error: () => undefined,
+    });
+    if (this.route.snapshot.queryParamMap.get('tab') === 'all') {
+      this.setTab('all');
+      return;
+    }
     this.loadPending();
   }
 
@@ -216,6 +267,7 @@ export class OpsAccountsComponent implements OnInit {
   openAccount(item: OpsManagedAccount): void {
     this.selectedAccount = item;
     this.nextStatus[item.id] ??= item.status === 'PENDING_APPROVAL' ? 'ACTIVE' : item.status;
+    this.nextPackage[item.id] ??= item.package?.id ?? '';
     this.reasons[item.id] ??= '';
   }
 
@@ -244,6 +296,7 @@ export class OpsAccountsComponent implements OnInit {
           this.selectedAccount = keepSelected(this.accounts, this.selectedAccount);
           for (const row of rows) {
             this.nextStatus[row.id] ??= row.status === 'PENDING_APPROVAL' ? 'ACTIVE' : row.status;
+            this.nextPackage[row.id] ??= row.package?.id ?? '';
             this.reasons[row.id] ??= '';
           }
           this.loading = false;
@@ -255,18 +308,60 @@ export class OpsAccountsComponent implements OnInit {
       });
   }
 
-  applyStatus(item: OpsManagedAccount): void {
-    const status = this.nextStatus[item.id];
-    if (!status) {
+  openNotify(item: OpsManagedAccount): void {
+    this.notifyTarget = item;
+    this.notifyDraft = { titleAr: '', bodyAr: '' };
+  }
+
+  sendNotify(): void {
+    const item = this.notifyTarget;
+    if (!item) {
       return;
     }
-    this.api.opsPatchAccount(item.id, { status, reason: this.reasons[item.id] || undefined }).subscribe({
-      next: (row) => {
-        item.status = row.status;
-        this.toast.show('تم تحديث حالة الحساب');
+    if (this.notifyDraft.titleAr.trim().length < 2 || this.notifyDraft.bodyAr.trim().length < 4) {
+      this.toast.show('أدخلي عنوان الإشعار ونصه');
+      return;
+    }
+    this.api.opsNotifyAccount(item.id, this.notifyDraft).subscribe({
+      next: () => {
+        this.toast.show(`تم إرسال الإشعار إلى ${item.displayName}`);
+        this.notifyTarget = null;
+        this.notifyDraft = { titleAr: '', bodyAr: '' };
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحساب')),
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
     });
+  }
+
+  applyAccount(item: OpsManagedAccount): void {
+    const reason = (this.reasons[item.id] || '').trim();
+    if (reason.length < 4) {
+      this.toast.show('أدخلي سبب التعديل (4 أحرف على الأقل). يُحفظ في سجل الأحداث');
+      return;
+    }
+    const status = this.nextStatus[item.id];
+    const packageId = item.accountType === 'PROVIDER' ? this.nextPackage[item.id] || undefined : undefined;
+    const statusChanged = Boolean(status && status !== item.status);
+    const packageChanged = Boolean(packageId && packageId !== (item.package?.id || ''));
+    if (!statusChanged && !packageChanged) {
+      this.toast.show('لا يوجد تغيير للحفظ');
+      return;
+    }
+    this.api
+      .opsPatchAccount(item.id, {
+        ...(statusChanged ? { status } : {}),
+        ...(packageChanged ? { packageId } : {}),
+        reason,
+      })
+      .subscribe({
+        next: (row) => {
+          item.status = row.status;
+          item.package = row.package ?? item.package;
+          item.subscriptionEndAt = row.subscriptionEndAt ?? item.subscriptionEndAt;
+          this.nextPackage[item.id] = item.package?.id ?? '';
+          this.toast.show('تم حفظ إجراء الحساب');
+        },
+        error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحساب')),
+      });
   }
 
   typeAr(type: string): string {

@@ -27,6 +27,10 @@ export interface PhoneAuthResponse {
   user?: SessionUser;
   otpExpiresIn?: number;
   isNew?: boolean;
+  otpRequired?: boolean;
+  passwordRequired?: boolean;
+  mustSetPassword?: boolean;
+  isStaff?: boolean;
 }
 
 export interface SignupDraft {
@@ -40,6 +44,7 @@ export interface SignupDraft {
   bio?: string;
   otpCode?: string;
   needsProfile?: boolean;
+  mustSetPassword?: boolean;
 }
 
 export interface CatalogCity {
@@ -399,6 +404,10 @@ export interface OpsDashboard {
   activeProviders: number;
   customers: number;
   expiringSubscriptions: number;
+  staffCount?: number;
+  activeAccounts?: number;
+  eventsToday?: number;
+  escalatedTickets?: number;
   inbox?: OpsInboxItem[];
 }
 
@@ -560,6 +569,9 @@ export interface OpsStaff {
   mobile: string;
   accountCode: string;
   status: string;
+  mustChangePassword?: boolean;
+  email?: string | null;
+  lastActiveAt?: string | null;
   createdAt?: string;
   team: string;
   level: number;
@@ -598,11 +610,36 @@ export interface OpsTicket {
   id: string;
   refNo: string;
   status: string;
+  queue?: string;
+  priority?: number;
   body: string;
   createdAt: string;
   type: TicketType;
   owner: OpsAccountRef;
+  assignee?: { id: string; displayName: string; accountCode: string } | null;
   comments: OpsTicketComment[];
+}
+
+export interface OpsTeamActivityRow {
+  actorId: string;
+  displayName: string;
+  accountCode: string;
+  team: string;
+  media: number;
+  tickets: number;
+  accounts: number;
+  other: number;
+  total: number;
+}
+
+export interface OpsAuditEvent {
+  id: string;
+  action: string;
+  entity: string;
+  entityId?: string | null;
+  payload?: string | null;
+  createdAt: string;
+  actor?: { displayName: string; accountCode: string; accountType: string } | null;
 }
 
 export interface OpsBankAccount {
@@ -628,6 +665,8 @@ export interface OpsManagedAccount {
   accountType: AccountType;
   status: string;
   createdAt: string;
+  package?: { id: string; code: string; nameAr: string } | null;
+  subscriptionEndAt?: string | null;
   customerProfile?: { city?: { nameAr: string } | null } | null;
   providerProfile?: { city?: { nameAr: string } | null; visibility?: string | null } | null;
 }

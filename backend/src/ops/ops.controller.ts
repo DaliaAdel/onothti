@@ -13,6 +13,7 @@ import {
   PatchPackageDto,
   PatchRegionDto,
   PatchStaffDto,
+  PatchMeDto,
   ReviewChangeDto,
   ReviewMediaDto,
   ReviewProviderDto,
@@ -36,6 +37,7 @@ import {
   PatchTicketDto,
   CreateTicketCommentDto,
   PatchAccountDto,
+  NotifyAccountDto,
   BroadcastDto,
 } from "./dto/ops.dto";
 import { StaffPermission } from "../common/enums";
@@ -50,6 +52,29 @@ export class OpsController {
   @Get("me")
   me(@CurrentUser() user: AuthUser) {
     return this.ops.me(user.sub);
+  }
+
+  @Patch("me")
+  patchMe(@CurrentUser() user: AuthUser, @Body() dto: PatchMeDto) {
+    return this.ops.patchMe(user.sub, dto);
+  }
+
+  @Get("events")
+  @RequirePermission(StaffPermission.REPORTS_VIEW)
+  events(
+    @Query("q") q?: string,
+    @Query("action") action?: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+    @Query("actorId") actorId?: string,
+  ) {
+    return this.ops.events({ q, action, from, to, actorId });
+  }
+
+  @Get("team-activity")
+  @RequirePermission(StaffPermission.REPORTS_VIEW)
+  teamActivity() {
+    return this.ops.teamActivity();
   }
 
   @Get("dashboard")
@@ -277,8 +302,14 @@ export class OpsController {
 
   @Get("tickets")
   @RequirePermission(StaffPermission.TICKETS_MANAGE)
-  tickets(@Query("status") status?: string) {
-    return this.ops.tickets(status);
+  tickets(
+    @Query("status") status?: string,
+    @Query("priority") priority?: string,
+    @Query("queue") queue?: string,
+    @Query("mine") mine?: string,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    return this.ops.tickets({ status, priority, queue, mine, actorId: user?.sub });
   }
 
   @Patch("tickets/:id")
@@ -359,6 +390,16 @@ export class OpsController {
   @RequirePermission(StaffPermission.CUSTOMERS_REVIEW, StaffPermission.PROVIDERS_APPROVE)
   patchAccount(@Param("id") id: string, @Body() dto: PatchAccountDto, @CurrentUser() user: AuthUser) {
     return this.ops.patchAccount(id, dto, user.sub);
+  }
+
+  @Post("accounts/:id/notify")
+  @RequirePermission(
+    StaffPermission.CUSTOMERS_REVIEW,
+    StaffPermission.PROVIDERS_APPROVE,
+    StaffPermission.SETTINGS_MANAGE,
+  )
+  notifyAccount(@Param("id") id: string, @Body() dto: NotifyAccountDto, @CurrentUser() user: AuthUser) {
+    return this.ops.notifyAccount(id, dto, user.sub);
   }
 
   @Post("broadcast")

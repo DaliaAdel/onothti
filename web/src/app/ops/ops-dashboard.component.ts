@@ -6,13 +6,53 @@ import type { OpsDashboard, OpsInboxItem } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { SessionService } from '../core/session.service';
+import { IconComponent } from '../shared/icon.component';
 import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-dashboard',
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   template: `
     <div class="section-head" style="margin-top:0">
+      <div>
+        <h2>لوحة المعلومات</h2>
+        <p>ملخص المنصة والمهام المخصصة لحسابك.</p>
+      </div>
+    </div>
+    <div class="stats stats-6">
+      <a class="stat" routerLink="/ops/accounts" [queryParams]="{ tab: 'all' }">
+        <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
+        <b>{{ dash?.customers ?? '—' }}</b>
+        <span>حساب عميلة مسجّل</span>
+      </a>
+      <a class="stat" routerLink="/ops/accounts">
+        <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
+        <b>{{ dash?.activeProviders ?? '—' }}</b>
+        <span>حساب خبيرة نشط</span>
+      </a>
+      <article class="stat">
+        <div class="top"><span>الحسابات النشطة</span><span class="head-icon"><app-icon name="home" /></span></div>
+        <b>{{ dash?.activeAccounts ?? '—' }}</b>
+        <span>عميلات وخبيرات</span>
+      </article>
+      <a class="stat" routerLink="/ops/staff">
+        <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
+        <b>{{ dash?.staffCount ?? '—' }}</b>
+        <span>حسابات تشغيل ومالية</span>
+      </a>
+      <a class="stat" routerLink="/ops/tickets" [queryParams]="{ priority: '1' }">
+        <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+        <b>{{ dash?.escalatedTickets ?? 0 }}</b>
+        <span>تحتاج مراجعة إدارية</span>
+      </a>
+      <a class="stat" routerLink="/ops/events">
+        <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
+        <b>{{ dash?.eventsToday ?? 0 }}</b>
+        <span>مسجّلة في السجل</span>
+      </a>
+    </div>
+
+    <div class="section-head">
       <div>
         <h2>مهام تحتاج إجراء</h2>
         <p>الأحدث أولًا. اضغطي الصف للانتقال إلى شاشة المراجعة.</p>
@@ -64,115 +104,54 @@ import { opsDate } from './ops-ui';
       </div>
     }
 
-    <div class="section-head">
-      <div>
-        <h2>ملخص سريع</h2>
-        <p>اختصارات للشاشات حسب العدد الحالي</p>
-      </div>
-    </div>
-    <div class="grid four">
-      <a class="card metric hover" routerLink="/ops/media">
-        <div>
-          <span>ملفات بانتظار الاعتماد</span>
-          <strong>{{ dash?.pendingMedia ?? '—' }}</strong>
+    <div class="grid two" style="margin-top:22px">
+      <article class="card">
+        <h3>حالة العمل اليوم</h3>
+        <a class="activity" routerLink="/ops/media">
+          <span class="dot"></span>
+          <div><b>ملفات بانتظار الاعتماد</b><span>{{ dash?.pendingMedia ?? 0 }} عنصر</span></div>
+        </a>
+        <a class="activity" routerLink="/ops/media">
+          <span class="dot"></span>
+          <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
+        </a>
+        <a class="activity" routerLink="/ops/accounts">
+          <span class="dot"></span>
+          <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
+        </a>
+        <a class="activity" routerLink="/ops/reviews" [queryParams]="{ tab: 'ratings' }">
+          <span class="dot"></span>
+          <div><b>تقييمات وبلاغات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.openComplaints ?? 0) }} عنصر</span></div>
+        </a>
+        <a class="activity" routerLink="/ops/packages">
+          <span class="dot"></span>
+          <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ dash?.expiringSubscriptions ?? 0 }} باقة</span></div>
+        </a>
+      </article>
+      <article class="card">
+        <h3>اختصارات الإدارة</h3>
+        <div class="ops-shortcuts">
+          <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
+          <a class="btn ghost" routerLink="/ops/geo">المناطق</a>
+          <a class="btn ghost" routerLink="/ops/packages">الباقات</a>
+          @if (session.user()?.permissions?.includes('SETTINGS_MANAGE')) {
+            <a class="btn ghost" routerLink="/ops/settings">الإعدادات</a>
+          }
+          @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
+            <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>
+          }
+          @if (session.user()?.permissions?.includes('LEGAL_MANAGE')) {
+            <a class="btn ghost" routerLink="/ops/legal">الشروط</a>
+          }
+          @if (session.user()?.permissions?.includes('REPORTS_VIEW')) {
+            <a class="btn ghost" routerLink="/ops/activity">نشاط الفريق</a>
+          }
         </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/media">
-        <div>
-          <span>إيصالات تحويل</span>
-          <strong>{{ dash?.pendingReceipts ?? '—' }}</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/accounts">
-        <div>
-          <span>حسابات خبيرات للمراجعة</span>
-          <strong>{{ dash?.pendingProviders ?? '—' }}</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/tickets">
-        <div>
-          <span>طلبات دعم مفتوحة</span>
-          <strong>{{ dash?.openTickets ?? 0 }}</strong>
-        </div>
-      </a>
-    </div>
-    <div class="grid four" style="margin-top:17px">
-      <a class="card metric hover" routerLink="/ops/reviews" [queryParams]="{ tab: 'changes' }">
-        <div>
-          <span>تعديلات ملف معلّقة</span>
-          <strong>{{ dash?.pendingProfileChanges ?? 0 }}</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/reviews" [queryParams]="{ tab: 'ratings' }">
-        <div>
-          <span>تقييمات للمراجعة</span>
-          <strong>{{ dash?.pendingRatings ?? 0 }}</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/reviews" [queryParams]="{ tab: 'complaints' }">
-        <div>
-          <span>بلاغات مفتوحة</span>
-          <strong>{{ dash?.openComplaints ?? 0 }}</strong>
-        </div>
-      </a>
-      <article class="card metric">
-        <div>
-          <span>اشتراكات تنتهي خلال 7 أيام</span>
-          <strong>{{ dash?.expiringSubscriptions ?? 0 }}</strong>
-        </div>
+        <p class="notice" style="margin-top:16px">
+          أي صورة أو فيديو أو إيصال لا يظهر للعامة إلا بعد الاعتماد من شاشة الملفات.
+        </p>
       </article>
     </div>
-    <div class="grid four" style="margin-top:17px">
-      <a class="card metric hover" routerLink="/ops/catalog">
-        <div>
-          <span>الخدمات</span>
-          <strong>إدارة</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/geo">
-        <div>
-          <span>المناطق والمدن</span>
-          <strong>إدارة</strong>
-        </div>
-      </a>
-      <a class="card metric hover" routerLink="/ops/packages">
-        <div>
-          <span>الباقات والحملات</span>
-          <strong>إدارة</strong>
-        </div>
-      </a>
-      @if (session.user()?.permissions?.includes('SETTINGS_MANAGE')) {
-        <a class="card metric hover" routerLink="/ops/settings">
-          <div>
-            <span>الإعدادات والرسائل</span>
-            <strong>إدارة</strong>
-          </div>
-        </a>
-      }
-    </div>
-    @if (session.user()?.permissions?.includes('USERS_MANAGE') || session.user()?.permissions?.includes('LEGAL_MANAGE')) {
-      <div class="grid four" style="margin-top:17px">
-        @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
-          <a class="card metric hover" routerLink="/ops/staff">
-            <div>
-              <span>مستخدمو التشغيل</span>
-              <strong>صلاحيات</strong>
-            </div>
-          </a>
-        }
-        @if (session.user()?.permissions?.includes('LEGAL_MANAGE')) {
-          <a class="card metric hover" routerLink="/ops/legal">
-            <div>
-              <span>الشروط والسياسات</span>
-              <strong>تحرير</strong>
-            </div>
-          </a>
-        }
-      </div>
-    }
-    <p class="notice" style="margin-top:22px">
-      أي صورة أو فيديو أو إيصال ترفعه العميلة أو الخبيرة لا يظهر للعامة إلا بعد اعتمادكِ من شاشة اعتماد الملفات.
-    </p>
   `,
 })
 export class OpsDashboardComponent implements OnInit {

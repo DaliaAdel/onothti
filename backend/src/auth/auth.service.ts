@@ -22,6 +22,8 @@ import {
   PhoneStartDto,
   PhoneVerifyDto,
   PhoneCompleteDto,
+  SetStaffPasswordDto,
+  ChangeStaffPasswordDto,
 } from "./dto/auth.dto";
 import {
   AccountStatus,
@@ -130,6 +132,10 @@ export class AuthService {
     const user = matches[0];
     this.assertLoginAllowed(user.status);
 
+    if (user.accountType === AccountType.STAFF && user.mustChangePassword) {
+      throw new ForbiddenException("يجب تأكيد الجوال وتعيين كلمة مرور أولاً");
+    }
+
     if (!user.mobileVerifiedAt) {
       throw new ForbiddenException("أكدِ رمز التحقق أولًا");
     }
@@ -150,6 +156,19 @@ export class AuthService {
       this.assertLoginAllowed(user.status);
     }
     const channel = (dto.channel ?? AuthChannel.WEB) as AuthChannelValue;
+    if (user?.accountType === AccountType.STAFF) {
+      if (user.mustChangePassword) {
+        const otp = await this.issueOtp(dto.mobile, OtpPurpose.LOGIN);
+        return {
+          otpExpiresIn: otp.ttlSeconds,
+          isNew: false,
+          otpRequired: true,
+          mustSetPassword: true,
+          isStaff: true,
+        };
+      }
+      return { otpExpiresIn: 0, isNew: false, otpRequired: false, passwordRequired: true, isStaff: true };
+    }
     if (user && channel === AuthChannel.APP && dto.deviceId) {
       const trusted = await this.findTrustedDevice(user.id, dto.deviceId, channel);
       if (trusted) {
@@ -175,6 +194,12 @@ export class AuthService {
       return { verified: true, needsProfile: true, otpRequired: false };
     }
     this.assertLoginAllowed(user.status);
+    if (user.accountType === AccountType.STAFF) {
+      if (user.mustChangePassword) {
+        return { verified: true, mustSetPassword: true, otpRequired: false, isStaff: true };
+      }
+      return { verified: true, passwordRequired: true, otpRequired: false, isStaff: true };
+    }
     return this.issueSession(user, {
       deviceId: dto.deviceId,
       channel: dto.channel ?? AuthChannel.WEB,
@@ -382,6 +407,51 @@ export class AuthService {
     return { otpExpiresIn: otp.ttlSeconds };
   }
 
+  async setStaffPassword(dto: SetStaffPasswordDto) {
+    await this.requireVerifiedLogin(dto.mobile, dto.code);
+    const user = await this.prisma.user.findFirst({
+      where: { mobile: dto.mobile, accountType: AccountType.STAFF },
+      include: { providerProfile: true },
+    });
+    if (!user) {
+      throw new BadRequestException("حساب التشغيل غير موجود");
+    }
+    this.assertLoginAllowed(user.status);
+    if (!user.mustChangePassword) {
+      throw new BadRequestException("كلمة المرور معيّنة بالفعل، سجّلي الدخول بها");
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false, mobileVerifiedAt: new Date() },
+      include: { providerProfile: true },
+    });
+    return this.issueSession(updated, { channel: AuthChannel.WEB });
+  }
+
+  async changeStaffPassword(userId: string, dto: ChangeStaffPasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.accountType !== AccountType.STAFF) {
+      throw new ForbiddenException("الحساب غير مسموح له بالدخول");
+    }
+    this.assertLoginAllowed(user.status);
+    const matches = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new UnauthorizedException("بيانات الدخول غير صحيحة");
+    }
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException("كلمة المرور الجديدة لازم تختلف عن الحالية");
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await bcrypt.hash(dto.newPassword, 12),
+        mustChangePassword: false,
+      },
+    });
+    return { ok: true };
+  }
+
   async resetPassword(dto: ResetPasswordDto) {
     await this.verifyOtp({
       mobile: dto.mobile,
@@ -391,7 +461,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
     const result = await this.prisma.user.updateMany({
       where: { mobile: dto.mobile },
-      data: { passwordHash },
+      data: { passwordHash, mustChangePassword: false },
     });
     if (result.count === 0) {
       throw new BadRequestException("الحساب غير موجود");

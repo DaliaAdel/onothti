@@ -8,7 +8,7 @@ import { AppShellComponent, NavItem } from '../shared/app-shell.component';
   selector: 'app-ops-layout',
   imports: [AppShellComponent, RouterOutlet],
   template: `
-    <app-shell [items]="items" home="/ops" profileRoute="/ops" notifyRoute="/ops">
+    <app-shell [items]="items" home="/ops" profileRoute="/ops/profile" notifyRoute="/ops/notifications">
       <router-outlet />
     </app-shell>
   `,
@@ -64,8 +64,15 @@ export class OpsLayoutComponent implements OnInit {
       items.push({ icon: 'about', label: 'الشروط', route: '/ops/legal' });
     }
     if (can('USERS_MANAGE')) {
-      items.push({ icon: 'profile', label: 'المستخدمون', route: '/ops/staff' });
+      items.push({ icon: 'profile', label: 'حسابات التشغيل', route: '/ops/staff' });
     }
+    if (can('REPORTS_VIEW')) {
+      items.push({ icon: 'views', label: 'سجل الأحداث', route: '/ops/events' });
+      items.push({ icon: 'views', label: 'نشاط الفريق', route: '/ops/activity' });
+    }
+    items.push({ icon: 'bell', label: 'التنبيهات', route: '/ops/notifications' });
+    items.push({ icon: 'profile', label: 'الملف الشخصي', route: '/ops/profile' });
+    items.push({ icon: 'about', label: 'حول المنصة', route: '/ops/about' });
     return items;
   }
 }

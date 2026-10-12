@@ -20,6 +20,7 @@ import {
   PatchComplaintDto,
   CreateStaffDto,
   PatchStaffDto,
+  PatchMeDto,
   PatchRolePermissionsDto,
   PatchLegalDto,
   UpsertServiceDto,
@@ -34,6 +35,7 @@ import {
   PatchTicketDto,
   CreateTicketCommentDto,
   PatchAccountDto,
+  NotifyAccountDto,
   BroadcastDto,
 } from "./dto/ops.dto";
 import { parseCityIds, replaceProviderCities } from "../common/geo";
@@ -251,6 +253,129 @@ export class OpsService {
     return this.toStaff(user);
   }
 
+  async patchMe(userId: string, dto: PatchMeDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+      },
+    });
+    if (!user?.staff) {
+      throw new NotFoundException("حساب التشغيل غير موجود");
+    }
+    if (!dto.displayName?.trim()) {
+      return this.toStaff(user);
+    }
+    const displayName = await assertUniqueDisplayName(
+      this.prisma,
+      AccountType.STAFF,
+      dto.displayName,
+      userId,
+    );
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { displayName },
+      include: {
+        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+      },
+    });
+    await this.audit(userId, "PROFILE_UPDATE", "User", userId, { displayName });
+    return this.toStaff(updated);
+  }
+
+  async events(query: { q?: string; action?: string; from?: string; to?: string; actorId?: string }) {
+    const q = query.q?.trim();
+    const from = query.from ? new Date(`${query.from}T00:00:00`) : undefined;
+    const to = query.to ? new Date(`${query.to}T23:59:59`) : undefined;
+    return this.prisma.auditLog.findMany({
+      where: {
+        ...(query.action ? { action: query.action } : {}),
+        ...(query.actorId ? { actorId: query.actorId } : {}),
+        ...(from || to
+          ? {
+              createdAt: {
+                ...(from && !Number.isNaN(from.getTime()) ? { gte: from } : {}),
+                ...(to && !Number.isNaN(to.getTime()) ? { lte: to } : {}),
+              },
+            }
+          : {}),
+        ...(q
+          ? {
+              OR: [
+                { action: { contains: q } },
+                { entity: { contains: q } },
+                { entityId: { contains: q } },
+                { actor: { displayName: { contains: q } } },
+                { actor: { accountCode: { contains: q } } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        actor: { select: { displayName: true, accountCode: true, accountType: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+    });
+  }
+
+  async teamActivity() {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const logs = await this.prisma.auditLog.findMany({
+      where: { createdAt: { gte: start }, actorId: { not: null } },
+      select: { actorId: true, action: true },
+    });
+    const staff = await this.prisma.user.findMany({
+      where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      select: {
+        id: true,
+        displayName: true,
+        accountCode: true,
+        staff: { select: { team: true } },
+      },
+    });
+    const byId = new Map(
+      staff.map((row) => [
+        row.id,
+        {
+          actorId: row.id,
+          displayName: row.displayName,
+          accountCode: row.accountCode,
+          team: row.staff?.team || "OPS",
+          media: 0,
+          tickets: 0,
+          accounts: 0,
+          other: 0,
+          total: 0,
+        },
+      ]),
+    );
+    for (const log of logs) {
+      if (!log.actorId) {
+        continue;
+      }
+      const row = byId.get(log.actorId);
+      if (!row) {
+        continue;
+      }
+      row.total += 1;
+      if (log.action.startsWith("MEDIA_") || log.action.startsWith("PROVIDER_")) {
+        row.media += 1;
+      } else if (log.action.startsWith("TICKET_")) {
+        row.tickets += 1;
+      } else if (log.action.startsWith("ACCOUNT_") || log.action === "NOTIFY_ACCOUNT") {
+        row.accounts += 1;
+      } else {
+        row.other += 1;
+      }
+    }
+    return {
+      date: start.toISOString().slice(0, 10),
+      rows: [...byId.values()].filter((row) => row.total > 0).sort((a, b) => b.total - a.total),
+    };
+  }
+
   roles() {
     return this.prisma.role.findMany({
       include: { permissions: { include: { permission: true } } },
@@ -413,9 +538,15 @@ export class OpsService {
     });
   }
 
-  tickets(status?: string) {
+  tickets(query: { status?: string; priority?: string; queue?: string; mine?: string; actorId?: string }) {
+    const priorityNum = query.priority ? Number(query.priority) : NaN;
     return this.prisma.ticket.findMany({
-      where: status ? { status } : undefined,
+      where: {
+        ...(query.status ? { status: query.status } : {}),
+        ...(Number.isFinite(priorityNum) ? { priority: priorityNum } : {}),
+        ...(query.queue ? { queue: query.queue } : {}),
+        ...(query.mine === "1" && query.actorId ? { assigneeId: query.actorId } : {}),
+      },
       include: this.ticketInclude,
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -427,15 +558,48 @@ export class OpsService {
     if (!ticket) {
       throw new NotFoundException("الطلب غير موجود");
     }
+    if (dto.status == null && dto.priority == null && dto.queue == null && !dto.claim && !dto.note) {
+      throw new BadRequestException("حددي الحالة أو التوجيه أو الإسناد");
+    }
+    const queue = dto.queue;
+    const claim = dto.claim === true;
     await this.prisma.ticket.update({
       where: { id },
-      data: { status: dto.status, assigneeId: actorId },
+      data: {
+        ...(dto.status ? { status: dto.status } : {}),
+        ...(dto.priority != null ? { priority: dto.priority } : {}),
+        ...(queue ? { queue, assigneeId: null, priority: dto.priority ?? (queue === "OPS" ? ticket.priority : 1) } : {}),
+        ...(claim ? { assigneeId: actorId, status: ticket.status === "SENT" ? "IN_PROGRESS" : ticket.status } : {}),
+        ...(!queue && !claim && dto.status ? { assigneeId: actorId } : {}),
+        ...(!queue && !claim && dto.priority != null ? { assigneeId: actorId } : {}),
+      },
     });
-    await this.notifyOwner(
-      ticket.ownerId,
-      dto.status === "CLOSED" || dto.status === "RESOLVED" ? "تم إغلاق طلبك" : "تحديث على طلبك",
-      this.ticketStatusLabel(dto.status),
-    );
+    if (dto.note?.trim()) {
+      await this.prisma.ticketComment.create({
+        data: { ticketId: id, authorId: actorId, body: dto.note.trim() },
+      });
+    }
+    const action = queue
+      ? "TICKET_ROUTE"
+      : claim
+        ? "TICKET_CLAIM"
+        : dto.priority === 1
+          ? "TICKET_ESCALATE"
+          : "TICKET_UPDATE";
+    await this.audit(actorId, action, "Ticket", id, {
+      status: dto.status,
+      priority: dto.priority,
+      queue,
+      claim,
+      note: dto.note,
+    });
+    if (dto.status) {
+      await this.notifyOwner(
+        ticket.ownerId,
+        dto.status === "CLOSED" || dto.status === "RESOLVED" ? "تم إغلاق طلبك" : "تحديث على طلبك",
+        this.ticketStatusLabel(dto.status),
+      );
+    }
     return this.ticketById(id);
   }
 
@@ -550,9 +714,9 @@ export class OpsService {
     });
   }
 
-  accounts(query: { q?: string; accountType?: string; status?: string }) {
+  async accounts(query: { q?: string; accountType?: string; status?: string }) {
     const q = query.q?.trim();
-    return this.prisma.user.findMany({
+    const rows = await this.prisma.user.findMany({
       where: {
         accountType: query.accountType
           ? query.accountType
@@ -571,50 +735,139 @@ export class OpsService {
       include: {
         customerProfile: { include: { city: true } },
         providerProfile: { include: { city: true } },
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          orderBy: { endAt: "desc" },
+          take: 1,
+          include: { package: { select: { id: true, code: true, nameAr: true } } },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
+    return rows.map((user) => ({
+      ...user,
+      package: user.subscriptions[0]?.package ?? null,
+      subscriptionEndAt: user.subscriptions[0]?.endAt ?? null,
+    }));
   }
 
   async patchAccount(id: string, dto: PatchAccountDto, actorId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { providerProfile: true },
+      include: {
+        providerProfile: true,
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          orderBy: { endAt: "desc" },
+          take: 1,
+          include: { package: true },
+        },
+      },
     });
     if (!user || user.accountType === AccountType.STAFF) {
       throw new NotFoundException("الحساب غير موجود");
     }
-    const hide =
-      dto.status === AccountStatus.RESTRICTED ||
-      dto.status === AccountStatus.SUSPENDED ||
-      dto.status === AccountStatus.CANCELLED ||
-      dto.status === AccountStatus.DELETED;
-    const visibility = hide ? Visibility.HIDDEN : dto.visibility;
-    await this.prisma.user.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        ...(user.providerProfile && visibility
-          ? { providerProfile: { update: { visibility } } }
-          : {}),
-        statusHistory: {
-          create: {
-            fromStatus: user.status,
-            toStatus: dto.status,
-            reason: dto.reason?.trim() || "ops-account",
-            actorId,
+    const reason = dto.reason.trim();
+    const nextStatus = dto.status;
+    const statusChanged = Boolean(nextStatus && nextStatus !== user.status);
+    const currentPackageId = user.subscriptions[0]?.packageId ?? null;
+    const nextPackageId = dto.packageId?.trim() || undefined;
+    if (nextPackageId && user.accountType !== AccountType.PROVIDER) {
+      throw new BadRequestException("الباقة تخص حساب الخبيرة فقط");
+    }
+    const packageChanged = Boolean(nextPackageId && nextPackageId !== currentPackageId);
+    if (!statusChanged && !packageChanged) {
+      throw new BadRequestException("لا يوجد تغيير للحفظ. أدخلي سببًا مع تغيير الحالة أو الباقة");
+    }
+
+    let assignedPackage: { id: string; code: string; nameAr: string } | null = null;
+    if (packageChanged && nextPackageId) {
+      assignedPackage = await this.assignProviderPackage(id, nextPackageId);
+    }
+
+    if (statusChanged && nextStatus) {
+      const hide =
+        nextStatus === AccountStatus.RESTRICTED ||
+        nextStatus === AccountStatus.SUSPENDED ||
+        nextStatus === AccountStatus.CANCELLED ||
+        nextStatus === AccountStatus.DELETED;
+      const visibility = hide ? Visibility.HIDDEN : dto.visibility;
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          ...(user.providerProfile && visibility
+            ? { providerProfile: { update: { visibility } } }
+            : {}),
+          statusHistory: {
+            create: {
+              fromStatus: user.status,
+              toStatus: nextStatus,
+              reason,
+              actorId,
+            },
           },
         },
+      });
+      await this.audit(actorId, "ACCOUNT_STATUS", "User", id, {
+        from: user.status,
+        status: nextStatus,
+        reason,
+      });
+    }
+
+    if (packageChanged && assignedPackage) {
+      await this.audit(actorId, "ACCOUNT_PACKAGE", "User", id, {
+        from: user.subscriptions[0]?.package
+          ? {
+              id: user.subscriptions[0].package.id,
+              code: user.subscriptions[0].package.code,
+              nameAr: user.subscriptions[0].package.nameAr,
+            }
+          : null,
+        package: assignedPackage,
+        reason,
+      });
+    }
+
+    const summary = [
+      statusChanged && nextStatus ? `الحالة: ${this.accountStatusLabel(nextStatus)}` : "",
+      assignedPackage ? `الباقة: ${assignedPackage.nameAr}` : "",
+      reason,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    await this.notifyOwner(id, "تحديث الحساب", summary);
+
+    const rows = await this.accounts({ q: user.accountCode });
+    return rows[0] ?? { id, status: nextStatus ?? user.status, package: assignedPackage };
+  }
+
+  async notifyAccount(id: string, dto: NotifyAccountDto, actorId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user || user.accountType === AccountType.STAFF || user.status === AccountStatus.DELETED) {
+      throw new NotFoundException("الحساب غير موجود");
+    }
+    const titleAr = dto.titleAr.trim();
+    const bodyAr = dto.bodyAr.trim();
+    await this.prisma.notification.create({
+      data: {
+        userId: user.id,
+        audience: user.accountType,
+        type: "SYSTEM",
+        titleAr,
+        titleEn: titleAr,
+        bodyAr,
+        bodyEn: bodyAr,
+        status: "SENT",
       },
     });
-    await this.notifyOwner(
-      id,
-      "تحديث حالة الحساب",
-      dto.reason?.trim() || `أصبحت حالة الحساب: ${this.accountStatusLabel(dto.status)}`,
-    );
-    const rows = await this.accounts({ q: user.accountCode });
-    return rows[0] ?? { id, status: dto.status };
+    await this.audit(actorId, "NOTIFY_ACCOUNT", "User", user.id, {
+      accountCode: user.accountCode,
+      titleAr,
+    });
+    return { sent: 1, displayName: user.displayName, accountCode: user.accountCode };
   }
 
   async broadcast(dto: BroadcastDto) {
@@ -676,15 +929,15 @@ export class OpsService {
         accountType: AccountType.STAFF,
         mobile: dto.mobile,
         passwordHash,
+        mustChangePassword: true,
         status: AccountStatus.ACTIVE,
         displayName,
         accountCode: this.prisma.nextAccountCode(AccountType.STAFF, count),
-        mobileVerifiedAt: new Date(),
         termsAcceptedAt: new Date(),
         staff: {
           create: {
             roleId: role.id,
-            team: dto.team?.trim() || "OPS",
+            team: this.teamForRole(role.code, dto.team),
             level: role.code === "ADMIN" ? 3 : role.code === "OPS_LEAD" ? 2 : 1,
           },
         },
@@ -692,6 +945,10 @@ export class OpsService {
       include: {
         staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
       },
+    });
+    await this.audit(user.id, "STAFF_CREATE", "User", user.id, {
+      role: role.code,
+      team: user.staff?.team,
     });
     return this.toStaff(user);
   }
@@ -734,6 +991,7 @@ export class OpsService {
       data: {
         displayName,
         ...(dto.status ? { status: dto.status } : {}),
+        ...(dto.resetPassword ? { mustChangePassword: true } : {}),
         staff: {
           update: {
             roleId,
@@ -744,6 +1002,12 @@ export class OpsService {
       include: {
         staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
       },
+    });
+    await this.audit(actorId, dto.resetPassword ? "STAFF_PASSWORD_RESET" : "STAFF_UPDATE", "User", id, {
+      status: dto.status,
+      roleId,
+      team: dto.team,
+      resetPassword: dto.resetPassword === true,
     });
     return this.toStaff(updated);
   }
@@ -767,6 +1031,9 @@ export class OpsService {
     mobile: string;
     accountCode: string;
     status: string;
+    mustChangePassword?: boolean;
+    email?: string | null;
+    lastActiveAt?: Date | null;
     createdAt?: Date;
     staff?: {
       team: string;
@@ -787,6 +1054,9 @@ export class OpsService {
       mobile: user.mobile,
       accountCode: user.accountCode,
       status: user.status,
+      mustChangePassword: user.mustChangePassword === true,
+      email: user.email,
+      lastActiveAt: user.lastActiveAt,
       createdAt: user.createdAt,
       team: user.staff?.team ?? "OPS",
       level: user.staff?.level ?? 1,
@@ -1024,6 +1294,10 @@ export class OpsService {
       ratingRows,
       complaintRows,
       ticketRows,
+      staffCount,
+      activeAccounts,
+      eventsToday,
+      escalatedTickets,
     ] = await Promise.all([
       this.prisma.mediaFile.count({ where: { status: { in: ["PENDING", "NEED_CLEARER"] } } }),
       this.prisma.paymentProof.count({ where: { opsStatus: { in: ["PENDING", "NEED_CLEARER"] } } }),
@@ -1112,6 +1386,21 @@ export class OpsService {
         orderBy: { createdAt: "desc" },
         take: 6,
       }),
+      this.prisma.user.count({
+        where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      }),
+      this.prisma.user.count({
+        where: {
+          accountType: { in: [AccountType.CUSTOMER, AccountType.PROVIDER] },
+          status: AccountStatus.ACTIVE,
+        },
+      }),
+      this.prisma.auditLog.count({
+        where: { createdAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) } },
+      }),
+      this.prisma.ticket.count({
+        where: { priority: 1, status: { in: ["SENT", "IN_PROGRESS"] } },
+      }),
     ]);
     const inbox = [
       ...mediaRows.map((row) => ({
@@ -1170,6 +1459,10 @@ export class OpsService {
       activeProviders,
       customers,
       expiringSubscriptions,
+      staffCount,
+      activeAccounts,
+      eventsToday,
+      escalatedTickets,
       inbox,
     };
   }
@@ -1286,6 +1579,9 @@ export class OpsService {
       dto.note?.trim() ||
         (dto.approve ? "اعتمد المشغّل الملف المرفوع" : "رفض المشغّل الملف المرفوع"),
     );
+    await this.audit(actorId, dto.approve ? "MEDIA_APPROVE" : "MEDIA_REJECT", "MediaFile", id, {
+      status,
+    });
     return this.mediaById(id);
   }
 
@@ -1380,6 +1676,7 @@ export class OpsService {
       dto.reason?.trim() ||
         (dto.approve ? "اعتمد المشغّل ملف الخبيرة" : "لم يُعتمد ملف الخبيرة"),
     );
+    await this.audit(actorId ?? null, dto.approve ? "PROVIDER_APPROVE" : "PROVIDER_REJECT", "User", id);
     return { ok: true, approve: dto.approve };
   }
 
@@ -1526,6 +1823,64 @@ export class OpsService {
     });
   }
 
+  private teamForRole(code: string, override?: string) {
+    if (override?.trim()) {
+      return override.trim();
+    }
+    if (code === "FINANCE") {
+      return "FINANCE";
+    }
+    if (code === "ADMIN") {
+      return "ADMIN";
+    }
+    return "OPS";
+  }
+
+  private audit(
+    actorId: string | null | undefined,
+    action: string,
+    entity: string,
+    entityId?: string | null,
+    payload?: unknown,
+  ) {
+    return this.prisma.auditLog.create({
+      data: {
+        actorId: actorId ?? null,
+        action,
+        entity,
+        entityId: entityId ?? null,
+        payload: payload == null ? null : JSON.stringify(payload),
+      },
+    });
+  }
+
+  private async assignProviderPackage(providerUserId: string, packageId: string) {
+    const pkg = await this.prisma.package.findUnique({
+      where: { id: packageId },
+      select: { id: true, code: true, nameAr: true, durationMonths: true },
+    });
+    if (!pkg) {
+      throw new BadRequestException("الباقة غير موجودة");
+    }
+    await this.prisma.subscription.updateMany({
+      where: { providerUserId, status: "ACTIVE" },
+      data: { status: "CANCELLED" },
+    });
+    const startAt = new Date();
+    const endAt = new Date(startAt);
+    endAt.setMonth(endAt.getMonth() + pkg.durationMonths);
+    await this.prisma.subscription.create({
+      data: {
+        providerUserId,
+        packageId: pkg.id,
+        startAt,
+        endAt,
+        status: "ACTIVE",
+      },
+    });
+    return { id: pkg.id, code: pkg.code, nameAr: pkg.nameAr };
+  }
+
   private notifyOwner(userId: string, titleAr: string, bodyAr: string) {
     return this.prisma.notification.create({
       data: {
@@ -1544,6 +1899,9 @@ export class OpsService {
     type: true,
     owner: {
       select: { id: true, displayName: true, accountCode: true, accountType: true, mobile: true },
+    },
+    assignee: {
+      select: { id: true, displayName: true, accountCode: true },
     },
     comments: {
       include: {

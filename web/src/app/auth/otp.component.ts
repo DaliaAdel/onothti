@@ -83,7 +83,13 @@ export class OtpComponent implements OnInit, OnDestroy {
   }
 
   get backLink(): string {
-    return this.purpose === 'REGISTER' ? '/signup/phone' : '/login/phone';
+    if (this.purpose === 'REGISTER') {
+      return '/signup/phone';
+    }
+    if (this.purpose === 'RESET_PASSWORD') {
+      return '/login/forgot';
+    }
+    return '/login/phone';
   }
 
   get backQuery(): Record<string, string> {
@@ -149,6 +155,27 @@ export class OtpComponent implements OnInit, OnDestroy {
     }
     this.loading = true;
     this.setError('');
+    if (this.purpose === 'RESET_PASSWORD') {
+      this.api.verifyOtp(this.mobile, 'RESET_PASSWORD', this.code).subscribe({
+        next: () => {
+          const draft = this.session.getDraft();
+          this.session.saveDraft({
+            displayName: draft?.displayName ?? '',
+            mobile: this.mobile,
+            otpCode: this.code,
+            needsProfile: false,
+          });
+          this.toast.show(this.locale.t('auth.otp.success'));
+          void this.router.navigateByUrl('/login/reset-password');
+        },
+        error: (err) => {
+          this.loading = false;
+          const message = apiMessage(err, '');
+          this.setError(this.locale.messageKey(message), message || this.locale.t('auth.otp.wrong'));
+        },
+      });
+      return;
+    }
     this.api.verifyPhone(this.mobile, this.code).subscribe({
       next: (res) => {
         if (res.accessToken && res.user) {
@@ -168,8 +195,17 @@ export class OtpComponent implements OnInit, OnDestroy {
           cityId: draft?.cityId,
           cityIds: draft?.cityIds,
           email: draft?.email,
+          mustSetPassword: res.mustSetPassword,
         });
         this.toast.show(this.locale.t('auth.otp.success'));
+        if (res.mustSetPassword) {
+          void this.router.navigateByUrl('/login/set-password');
+          return;
+        }
+        if (res.passwordRequired) {
+          void this.router.navigateByUrl('/login/password');
+          return;
+        }
         void this.router.navigateByUrl('/complete');
       },
       error: (err) => {
@@ -181,14 +217,18 @@ export class OtpComponent implements OnInit, OnDestroy {
   }
 
   resend(): void {
-    this.api.startPhone(this.mobile).subscribe({
-      next: () => {
-        this.seconds = 120;
-        this.startTimer();
-        this.toast.show(this.locale.t('auth.otp.resent'));
-      },
-      error: (err) => this.toast.show(this.locale.t(this.locale.messageKey(apiMessage(err, '')) ?? 'auth.otp.resendFailed')),
-    });
+    const onSent = () => {
+      this.seconds = 120;
+      this.startTimer();
+      this.toast.show(this.locale.t('auth.otp.resent'));
+    };
+    const onFail = (err: unknown) =>
+      this.toast.show(this.locale.t(this.locale.messageKey(apiMessage(err, '')) ?? 'auth.otp.resendFailed'));
+    if (this.purpose === 'RESET_PASSWORD') {
+      this.api.sendOtp(this.mobile, 'RESET_PASSWORD').subscribe({ next: onSent, error: onFail });
+      return;
+    }
+    this.api.startPhone(this.mobile).subscribe({ next: onSent, error: onFail });
   }
 
   private startTimer(): void {
