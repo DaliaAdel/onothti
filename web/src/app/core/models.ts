@@ -343,6 +343,7 @@ export interface ProviderTicket {
   id: string;
   refNo: string;
   status: string;
+  title?: string | null;
   body: string;
   createdAt: string;
   type: TicketType;
@@ -596,6 +597,40 @@ export interface OpsLegalPage {
   isActive: boolean;
 }
 
+export interface OpsOrgMember {
+  id: string;
+  displayName: string;
+  accountCode: string;
+  status: string;
+  mobile: string;
+  titleAr: string;
+  isLead?: boolean;
+  role?: { id: string; code: string; nameAr: string };
+}
+
+export interface OpsOrgTeam {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  sortOrder: number;
+  isActive: boolean;
+  leadUserId?: string | null;
+  lead?: { id: string; displayName: string; accountCode?: string } | null;
+  memberCount: number;
+  members: OpsOrgMember[];
+}
+
+export interface OpsOrgDepartment {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  sortOrder: number;
+  isActive: boolean;
+  teams: OpsOrgTeam[];
+}
+
 export interface OpsStaff {
   id: string;
   displayName: string;
@@ -607,6 +642,9 @@ export interface OpsStaff {
   lastActiveAt?: string | null;
   createdAt?: string;
   team: string;
+  teamId?: string | null;
+  titleAr?: string | null;
+  orgTeam?: { id: string; nameAr: string; nameEn: string; department: { id: string; code: string; nameAr: string; nameEn: string } } | null;
   level: number;
   role: { id: string; code: string; nameAr: string; nameEn: string } | null;
   permissions: string[];
@@ -645,6 +683,7 @@ export interface OpsTicket {
   status: string;
   queue?: string;
   priority?: number;
+  title?: string | null;
   body: string;
   createdAt: string;
   type: TicketType;

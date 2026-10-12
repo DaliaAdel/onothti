@@ -3,18 +3,26 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import type { OpsTicket } from '../core/models';
+import type { OpsTicket, TicketType } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { SessionService } from '../core/session.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
-import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
+import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } from './ops-ui';
 
 @Component({
   selector: 'app-ops-tickets',
   imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
+    <div class="section-head">
+      <div>
+        <h2>الطلبات</h2>
+        <p>اختاري النوع ثم اكتبي عنوان المشكلة</p>
+      </div>
+      <button class="btn primary" type="button" (click)="openAdd()">+ إضافة طلب</button>
+    </div>
+
     <div class="filters">
       <button class="chip" type="button" [class.active]="status === '' && !escalatedOnly" (click)="setStatus('')">الكل</button>
       <button class="chip" type="button" [class.active]="status === 'SENT'" (click)="setStatus('SENT')">جديدة</button>
@@ -39,6 +47,7 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
             <tr>
               <th>الرقم</th>
               <th>النوع</th>
+              <th>عنوان المشكلة</th>
               <th>المرسلة</th>
               <th>الملخص</th>
               <th>الحالة</th>
@@ -52,6 +61,7 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
               <tr [class.active]="selected?.id === item.id" (click)="selected = item">
                 <td><b>{{ item.refNo }}</b></td>
                 <td>{{ item.type.nameAr }}</td>
+                <td>{{ ticketTitle(item) }}</td>
                 <td>{{ item.owner.displayName }}</td>
                 <td class="clip">{{ clip(item.body) }}</td>
                 <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
@@ -67,11 +77,12 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
     <app-ops-drawer
       [open]="!!selected"
-      [title]="selected?.refNo || ''"
+      [title]="selected ? ticketTitle(selected) : ''"
       [kicker]="selected?.type?.nameAr || 'طلب دعم'"
       (closed)="selected = null"
     >
       @if (selected; as item) {
+        <p class="muted small">{{ item.refNo }}</p>
         <p class="muted small">
           {{ item.owner.displayName }} · {{ item.owner.accountCode }} ·
           <span dir="ltr">{{ item.owner.mobile }}</span>
@@ -131,6 +142,26 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">حفظ وتوجيه الطلب</button>
     </app-ops-modal>
+    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="دعم وصيانة أو مقترحات" (closed)="adding = false">
+      <div class="field">
+        <label>النوع *</label>
+        <select class="input" [(ngModel)]="draft.typeCode">
+          <option value="">اختاري النوع</option>
+          @for (type of types; track type.id) {
+            <option [value]="type.code">{{ type.nameAr }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>عنوان المشكلة *</label>
+        <input class="input" [(ngModel)]="draft.title" placeholder="اكتبي عنوان المشكلة" />
+      </div>
+      <div class="field">
+        <label>التفاصيل</label>
+        <textarea class="input" rows="4" [(ngModel)]="draft.body" placeholder="تفاصيل إضافية (اختياري)"></textarea>
+      </div>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createTicket()">إضافة الطلب</button>
+    </app-ops-modal>
   `,
 })
 export class OpsTicketsComponent implements OnInit {
@@ -143,21 +174,26 @@ export class OpsTicketsComponent implements OnInit {
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;
   readonly clip = clip;
+  readonly ticketTitle = ticketTitle;
   readonly meId = this.session.user()?.id ?? '';
 
   loading = true;
+  adding = false;
   status = 'SENT';
   escalatedOnly = false;
   mineOnly = false;
   queue = '';
+  types: TicketType[] = [];
   items: OpsTicket[] = [];
   selected: OpsTicket | null = null;
   replies: Record<string, string> = {};
   routeTarget: OpsTicket | null = null;
   routeDraft = { queue: 'ADMIN' as 'OPS' | 'FINANCE' | 'ADMIN', note: '' };
+  draft = { typeCode: '', title: '', body: '' };
 
   ngOnInit(): void {
     this.shell.set('الطلبات المصعّدة والدعم', 'الرد أو التصعيد وإغلاق الطلب');
+    this.api.opsTicketTypes().subscribe({ next: (types) => (this.types = types) });
     if (this.route.snapshot.queryParamMap.get('priority') === '1') {
       this.escalatedOnly = true;
       this.status = '';
@@ -199,6 +235,42 @@ export class OpsTicketsComponent implements OnInit {
     this.queue = queue;
     this.selected = null;
     this.load();
+  }
+
+  openAdd(): void {
+    this.draft = { typeCode: this.types[0]?.code ?? '', title: '', body: '' };
+    this.adding = true;
+  }
+
+  createTicket(): void {
+    if (!this.draft.typeCode) {
+      this.toast.show('اختاري نوع الطلب');
+      return;
+    }
+    if (this.draft.title.trim().length < 2) {
+      this.toast.show('اكتبي عنوان المشكلة');
+      return;
+    }
+    this.api
+      .opsCreateTicket({
+        typeCode: this.draft.typeCode,
+        title: this.draft.title.trim(),
+        body: this.draft.body.trim() || undefined,
+      })
+      .subscribe({
+        next: (row) => {
+          this.adding = false;
+          this.status = 'SENT';
+          this.escalatedOnly = false;
+          this.mineOnly = false;
+          this.queue = '';
+          this.selected = row;
+          this.replies[row.id] ??= '';
+          this.toast.show('تم إضافة الطلب');
+          this.load();
+        },
+        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الطلب')),
+      });
   }
 
   queueLabel(queue?: string): string {

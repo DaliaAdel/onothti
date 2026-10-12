@@ -22,6 +22,10 @@ import {
   CreateStaffDto,
   PatchStaffDto,
   PatchMeDto,
+  UpsertStaffDepartmentDto,
+  PatchStaffDepartmentDto,
+  UpsertStaffTeamDto,
+  PatchStaffTeamDto,
   PatchRolePermissionsDto,
   PatchLegalDto,
   CreateLegalDto,
@@ -35,6 +39,7 @@ import {
   PatchBankDto,
   CreateBannedPhoneDto,
   PatchTicketDto,
+  CreateOpsTicketDto,
   CreateTicketCommentDto,
   PatchAccountDto,
   NotifyAccountDto,
@@ -256,7 +261,12 @@ export class OpsService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     if (!user?.staff) {
@@ -269,7 +279,12 @@ export class OpsService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     if (!user?.staff) {
@@ -288,7 +303,12 @@ export class OpsService {
       where: { id: userId },
       data: { displayName },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     await this.audit(userId, "PROFILE_UPDATE", "User", userId, { displayName });
@@ -596,6 +616,38 @@ export class OpsService {
         ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
       },
     });
+  }
+
+  ticketTypes() {
+    return this.prisma.ticketType.findMany({
+      where: { audience: AccountType.STAFF, code: { in: ["OP-SUPPORT", "OP-SUGGEST"] } },
+      orderBy: { code: "asc" },
+    });
+  }
+
+  async createTicket(actorId: string, dto: CreateOpsTicketDto) {
+    const type = await this.prisma.ticketType.findFirst({
+      where: { code: dto.typeCode, audience: AccountType.STAFF },
+    });
+    if (!type) {
+      throw new BadRequestException("نوع الطلب غير متاح");
+    }
+    const title = dto.title.trim();
+    const body = dto.body?.trim() || title;
+    const count = await this.prisma.ticket.count();
+    const created = await this.prisma.ticket.create({
+      data: {
+        refNo: `OP-${String(count + 1).padStart(6, "0")}-${actorId.slice(0, 4)}`,
+        typeId: type.id,
+        ownerId: actorId,
+        title,
+        body,
+        queue: "OPS",
+        status: "SENT",
+      },
+    });
+    await this.audit(actorId, "TICKET_CREATE", "Ticket", created.id, { typeCode: type.code, title });
+    return this.ticketById(created.id);
   }
 
   tickets(query: { status?: string; priority?: string; queue?: string; mine?: string; actorId?: string }) {
@@ -1092,7 +1144,12 @@ export class OpsService {
     const rows = await this.prisma.user.findMany({
       where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -1114,6 +1171,7 @@ export class OpsService {
     const displayName = await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName);
     const count = await this.prisma.user.count({ where: { accountType: AccountType.STAFF } });
     const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
+    const orgTeam = await this.resolveOrgTeam(dto.teamId, this.teamForRole(role.code, dto.team));
     const user = await this.prisma.user.create({
       data: {
         accountType: AccountType.STAFF,
@@ -1127,13 +1185,20 @@ export class OpsService {
         staff: {
           create: {
             roleId: role.id,
-            team: this.teamForRole(role.code, dto.team),
+            team: orgTeam?.department.code ?? this.teamForRole(role.code, dto.team),
+            teamId: orgTeam?.id,
+            titleAr: dto.titleAr?.trim() || null,
             level: role.code === "ADMIN" ? 3 : role.code === "OPS_LEAD" ? 2 : 1,
           },
         },
       },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     await this.audit(user.id, "STAFF_CREATE", "User", user.id, {
@@ -1147,7 +1212,12 @@ export class OpsService {
     const user = await this.prisma.user.findFirst({
       where: { id, accountType: AccountType.STAFF },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     if (!user?.staff) {
@@ -1176,6 +1246,10 @@ export class OpsService {
     const displayName = dto.displayName
       ? await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName, id)
       : user.displayName;
+    const orgTeam =
+      dto.teamId !== undefined
+        ? await this.resolveOrgTeam(dto.teamId || undefined, dto.team || user.staff.team)
+        : null;
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
@@ -1186,11 +1260,18 @@ export class OpsService {
           update: {
             roleId,
             ...(dto.team !== undefined ? { team: dto.team.trim() || user.staff.team } : {}),
+            ...(orgTeam ? { teamId: orgTeam.id, team: orgTeam.department.code } : {}),
+            ...(dto.titleAr !== undefined ? { titleAr: dto.titleAr.trim() || null } : {}),
           },
         },
       },
       include: {
-        staff: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        staff: {
+          include: {
+            role: { include: { permissions: { include: { permission: true } } } },
+            orgTeam: { include: { department: true } },
+          },
+        },
       },
     });
     await this.audit(actorId, dto.resetPassword ? "STAFF_PASSWORD_RESET" : "STAFF_UPDATE", "User", id, {
@@ -1200,6 +1281,228 @@ export class OpsService {
       resetPassword: dto.resetPassword === true,
     });
     return this.toStaff(updated);
+  }
+
+  async orgDepartments() {
+    const rows = await this.prisma.staffDepartment.findMany({
+      include: {
+        teams: {
+          orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
+          include: {
+            lead: { select: { id: true, displayName: true, accountCode: true } },
+            members: {
+              include: {
+                user: {
+                  select: { id: true, displayName: true, accountCode: true, status: true, mobile: true },
+                },
+                role: { select: { id: true, code: true, nameAr: true } },
+              },
+              orderBy: { level: "desc" },
+            },
+          },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
+    });
+    return rows.map((department) => this.serializeDepartment(department));
+  }
+
+  async createDepartment(dto: UpsertStaffDepartmentDto) {
+    const code = await this.uniqueCatalogCode("department", dto.nameEn, dto.code);
+    return this.prisma.staffDepartment
+      .create({
+        data: {
+          code,
+          nameAr: dto.nameAr.trim(),
+          nameEn: dto.nameEn.trim(),
+          sortOrder: dto.sortOrder ?? 0,
+          isActive: dto.isActive ?? true,
+        },
+        include: { teams: true },
+      })
+      .then((row) => this.serializeDepartment({ ...row, teams: row.teams.map((team) => ({ ...team, members: [], lead: null })) }))
+      .catch((error: unknown) => this.rethrowUnique(error, "رمز القسم مستخدم"));
+  }
+
+  async patchDepartment(id: string, dto: PatchStaffDepartmentDto) {
+    const row = await this.prisma.staffDepartment.findUnique({ where: { id } });
+    if (!row) {
+      throw new NotFoundException("القسم غير موجود");
+    }
+    const updated = await this.prisma.staffDepartment.update({
+      where: { id },
+      data: {
+        ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      },
+    });
+    const tree = await this.orgDepartments();
+    return tree.find((item) => item.id === updated.id) ?? updated;
+  }
+
+  async createTeam(dto: UpsertStaffTeamDto) {
+    const department = await this.prisma.staffDepartment.findUnique({ where: { id: dto.departmentId } });
+    if (!department) {
+      throw new NotFoundException("القسم غير موجود");
+    }
+    if (dto.leadUserId) {
+      await this.assertStaffUser(dto.leadUserId);
+    }
+    const code = await this.uniqueCatalogCode("team", dto.nameEn, dto.code);
+    let row;
+    try {
+      row = await this.prisma.staffTeam.create({
+        data: {
+          departmentId: department.id,
+          code,
+          nameAr: dto.nameAr.trim(),
+          nameEn: dto.nameEn.trim(),
+          sortOrder: dto.sortOrder ?? 0,
+          isActive: dto.isActive ?? true,
+          leadUserId: dto.leadUserId || null,
+        },
+      });
+    } catch (error: unknown) {
+      this.rethrowUnique(error, "رمز الفريق مستخدم");
+    }
+    if (dto.leadUserId) {
+      await this.prisma.staffUser.update({
+        where: { userId: dto.leadUserId },
+        data: { teamId: row.id, team: department.code },
+      });
+    }
+    const tree = await this.orgDepartments();
+    const parent = tree.find((item) => item.id === department.id);
+    return parent?.teams.find((team) => team.id === row.id) ?? row;
+  }
+
+  async patchTeam(id: string, dto: PatchStaffTeamDto) {
+    const team = await this.prisma.staffTeam.findUnique({ where: { id }, include: { department: true } });
+    if (!team) {
+      throw new NotFoundException("الفريق غير موجود");
+    }
+    if (dto.departmentId && dto.departmentId !== team.departmentId) {
+      const department = await this.prisma.staffDepartment.findUnique({ where: { id: dto.departmentId } });
+      if (!department) {
+        throw new NotFoundException("القسم غير موجود");
+      }
+    }
+    if (dto.leadUserId) {
+      await this.assertStaffUser(dto.leadUserId);
+    }
+    const updated = await this.prisma.staffTeam.update({
+      where: { id },
+      data: {
+        ...(dto.departmentId ? { departmentId: dto.departmentId } : {}),
+        ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.leadUserId !== undefined ? { leadUserId: dto.leadUserId || null } : {}),
+      },
+      include: { department: true },
+    });
+    if (dto.leadUserId) {
+      await this.prisma.staffUser.update({
+        where: { userId: dto.leadUserId },
+        data: { teamId: updated.id, team: updated.department.code },
+      });
+    }
+    const tree = await this.orgDepartments();
+    const parent = tree.find((item) => item.id === updated.departmentId);
+    return parent?.teams.find((item) => item.id === updated.id) ?? updated;
+  }
+
+  private async assertStaffUser(userId: string) {
+    const staff = await this.prisma.staffUser.findUnique({ where: { userId } });
+    if (!staff) {
+      throw new NotFoundException("حساب التشغيل غير موجود");
+    }
+  }
+
+  private async resolveOrgTeam(teamId?: string, departmentCode?: string) {
+    if (teamId) {
+      const row = await this.prisma.staffTeam.findUnique({
+        where: { id: teamId },
+        include: { department: true },
+      });
+      if (!row) {
+        throw new NotFoundException("الفريق غير موجود");
+      }
+      return row;
+    }
+    const code = (departmentCode || "OPS").trim() || "OPS";
+    const department = await this.prisma.staffDepartment.findUnique({ where: { code } });
+    if (!department) {
+      return null;
+    }
+    return this.prisma.staffTeam.findFirst({
+      where: { departmentId: department.id, isActive: true },
+      include: { department: true },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  private serializeDepartment(department: {
+    id: string;
+    code: string;
+    nameAr: string;
+    nameEn: string;
+    sortOrder: number;
+    isActive: boolean;
+    teams: {
+      id: string;
+      code: string;
+      nameAr: string;
+      nameEn: string;
+      sortOrder: number;
+      isActive: boolean;
+      leadUserId?: string | null;
+      lead?: { id: string; displayName: string; accountCode?: string } | null;
+      members?: {
+        userId: string;
+        titleAr?: string | null;
+        level: number;
+        user: { id: string; displayName: string; accountCode: string; status: string; mobile: string };
+        role: { id: string; code: string; nameAr: string };
+      }[];
+    }[];
+  }) {
+    return {
+      id: department.id,
+      code: department.code,
+      nameAr: department.nameAr,
+      nameEn: department.nameEn,
+      sortOrder: department.sortOrder,
+      isActive: department.isActive,
+      teams: department.teams.map((team) => {
+        const members = (team.members ?? []).map((member) => ({
+          id: member.user.id,
+          displayName: member.user.displayName,
+          accountCode: member.user.accountCode,
+          status: member.user.status,
+          mobile: member.user.mobile,
+          titleAr: member.titleAr || member.role.nameAr,
+          role: member.role,
+          isLead: team.leadUserId === member.user.id,
+        }));
+        members.sort((a, b) => Number(b.isLead) - Number(a.isLead));
+        return {
+          id: team.id,
+          code: team.code,
+          nameAr: team.nameAr,
+          nameEn: team.nameEn,
+          sortOrder: team.sortOrder,
+          isActive: team.isActive,
+          leadUserId: team.leadUserId ?? null,
+          lead: team.lead ?? members.find((row) => row.isLead) ?? null,
+          memberCount: members.length,
+          members,
+        };
+      }),
+    };
   }
 
   private async assertNotLastManager(userId: string) {
@@ -1227,7 +1530,15 @@ export class OpsService {
     createdAt?: Date;
     staff?: {
       team: string;
+      teamId?: string | null;
+      titleAr?: string | null;
       level: number;
+      orgTeam?: {
+        id: string;
+        nameAr: string;
+        nameEn: string;
+        department: { id: string; code: string; nameAr: string; nameEn: string };
+      } | null;
       role: {
         id: string;
         code: string;
@@ -1238,6 +1549,7 @@ export class OpsService {
     } | null;
   }) {
     const role = user.staff?.role;
+    const orgTeam = user.staff?.orgTeam;
     return {
       id: user.id,
       displayName: user.displayName,
@@ -1249,6 +1561,16 @@ export class OpsService {
       lastActiveAt: user.lastActiveAt,
       createdAt: user.createdAt,
       team: user.staff?.team ?? "OPS",
+      teamId: user.staff?.teamId ?? orgTeam?.id ?? null,
+      titleAr: user.staff?.titleAr ?? null,
+      orgTeam: orgTeam
+        ? {
+            id: orgTeam.id,
+            nameAr: orgTeam.nameAr,
+            nameEn: orgTeam.nameEn,
+            department: orgTeam.department,
+          }
+        : null,
       level: user.staff?.level ?? 1,
       role: role
         ? { id: role.id, code: role.code, nameAr: role.nameAr, nameEn: role.nameEn }
@@ -2147,12 +2469,20 @@ export class OpsService {
   }
 
   private async uniqueCatalogCode(
-    kind: "service" | "subService" | "region" | "city" | "coverage",
+    kind: "service" | "subService" | "region" | "city" | "coverage" | "department" | "team",
     nameEn: string,
     provided?: string,
   ) {
-    const max = kind === "coverage" ? 40 : kind === "subService" ? 30 : 20;
-    const fallback = { service: "SVC", subService: "SUB", region: "REG", city: "CTY", coverage: "COV" }[kind];
+    const max = kind === "coverage" || kind === "team" ? 40 : kind === "subService" ? 30 : 20;
+    const fallback = {
+      service: "SVC",
+      subService: "SUB",
+      region: "REG",
+      city: "CTY",
+      coverage: "COV",
+      department: "DEP",
+      team: "TEAM",
+    }[kind];
     const base = (provided?.trim() || this.catalogCode(nameEn, fallback)).toUpperCase().slice(0, max);
     const taken =
       kind === "service"
@@ -2163,7 +2493,11 @@ export class OpsService {
             ? await this.prisma.region.findUnique({ where: { code: base } })
             : kind === "city"
               ? await this.prisma.city.findUnique({ where: { code: base } })
-              : await this.prisma.coverageArea.findUnique({ where: { code: base } });
+              : kind === "coverage"
+                ? await this.prisma.coverageArea.findUnique({ where: { code: base } })
+                : kind === "department"
+                  ? await this.prisma.staffDepartment.findUnique({ where: { code: base } })
+                  : await this.prisma.staffTeam.findUnique({ where: { code: base } });
     if (!taken) {
       return base;
     }
@@ -2171,7 +2505,7 @@ export class OpsService {
     return `${base.slice(0, max - suffix.length)}${suffix}`;
   }
 
-  private rethrowUnique(error: unknown, message: string) {
+  private rethrowUnique(error: unknown, message: string): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       throw new ConflictException(message);
     }

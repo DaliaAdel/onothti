@@ -37,6 +37,8 @@ import type {
   OpsWelcome,
   OpsRole,
   OpsStaff,
+  OpsOrgDepartment,
+  OpsOrgTeam,
   OpsPermission,
   OpsLegalPage,
   OpsCatalogService,
@@ -352,7 +354,7 @@ export class ApiService {
     return this.http.get<ProviderTicket[]>(`${this.base}/provider/tickets`);
   }
 
-  createProviderTicket(body: { typeCode: string; body: string }) {
+  createProviderTicket(body: { typeCode: string; title?: string; body: string }) {
     return this.http.post<ProviderTicket>(`${this.base}/provider/tickets`, body);
   }
 
@@ -364,7 +366,7 @@ export class ApiService {
     return this.http.get<ProviderTicket[]>(`${this.base}/customer/tickets`);
   }
 
-  createCustomerTicket(body: { typeCode: string; body: string }) {
+  createCustomerTicket(body: { typeCode: string; title?: string; body: string }) {
     return this.http.post<ProviderTicket>(`${this.base}/customer/tickets`, body);
   }
 
@@ -563,7 +565,14 @@ export class ApiService {
     return this.http.get<OpsStaff[]>(`${this.base}/ops/staff`);
   }
 
-  opsCreateStaff(body: { mobile: string; displayName: string; roleId: string; team?: string }) {
+  opsCreateStaff(body: {
+    mobile: string;
+    displayName: string;
+    roleId: string;
+    team?: string;
+    teamId?: string;
+    titleAr?: string;
+  }) {
     return this.http.post<OpsStaff>(`${this.base}/ops/staff`, body);
   }
 
@@ -574,10 +583,53 @@ export class ApiService {
       roleId?: string;
       status?: 'ACTIVE' | 'SUSPENDED';
       team?: string;
+      teamId?: string;
+      titleAr?: string;
       resetPassword?: boolean;
     },
   ) {
     return this.http.patch<OpsStaff>(`${this.base}/ops/staff/${id}`, body);
+  }
+
+  opsOrg() {
+    return this.http.get<OpsOrgDepartment[]>(`${this.base}/ops/org`);
+  }
+
+  opsCreateDepartment(body: { nameAr: string; nameEn: string; sortOrder?: number; isActive?: boolean; code?: string }) {
+    return this.http.post<OpsOrgDepartment>(`${this.base}/ops/org/departments`, body);
+  }
+
+  opsPatchDepartment(
+    id: string,
+    body: Partial<Pick<OpsOrgDepartment, 'nameAr' | 'nameEn' | 'sortOrder' | 'isActive'>>,
+  ) {
+    return this.http.patch<OpsOrgDepartment>(`${this.base}/ops/org/departments/${id}`, body);
+  }
+
+  opsCreateTeam(body: {
+    departmentId: string;
+    nameAr: string;
+    nameEn: string;
+    sortOrder?: number;
+    isActive?: boolean;
+    leadUserId?: string;
+    code?: string;
+  }) {
+    return this.http.post<OpsOrgTeam>(`${this.base}/ops/org/teams`, body);
+  }
+
+  opsPatchTeam(
+    id: string,
+    body: {
+      departmentId?: string;
+      nameAr?: string;
+      nameEn?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      leadUserId?: string | null;
+    },
+  ) {
+    return this.http.patch<OpsOrgTeam>(`${this.base}/ops/org/teams/${id}`, body);
   }
 
   opsPermissions() {
@@ -629,6 +681,14 @@ export class ApiService {
 
   opsPatchSubService(id: string, body: Partial<Pick<OpsSubService, 'nameAr' | 'nameEn' | 'sortOrder' | 'isVisible'>>) {
     return this.http.patch<OpsSubService>(`${this.base}/ops/sub-services/${id}`, body);
+  }
+
+  opsTicketTypes() {
+    return this.http.get<TicketType[]>(`${this.base}/ops/ticket-types`);
+  }
+
+  opsCreateTicket(body: { typeCode: string; title: string; body?: string }) {
+    return this.http.post<OpsTicket>(`${this.base}/ops/tickets`, body);
   }
 
   opsTickets(query: { status?: string; priority?: number | string; queue?: string; mine?: boolean } = {}) {

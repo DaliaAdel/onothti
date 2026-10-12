@@ -8,6 +8,10 @@ import {
   CreateCampaignDto,
   CreateCityDto,
   CreateStaffDto,
+  UpsertStaffDepartmentDto,
+  PatchStaffDepartmentDto,
+  UpsertStaffTeamDto,
+  PatchStaffTeamDto,
   PatchCampaignDto,
   PatchCityDto,
   PatchPackageDto,
@@ -37,6 +41,7 @@ import {
   PatchBankDto,
   CreateBannedPhoneDto,
   PatchTicketDto,
+  CreateOpsTicketDto,
   CreateTicketCommentDto,
   PatchAccountDto,
   NotifyAccountDto,
@@ -260,6 +265,37 @@ export class OpsController {
     return this.ops.patchStaff(id, dto, user.sub);
   }
 
+  @Get("org")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  orgDepartments() {
+    return this.ops.orgDepartments();
+  }
+
+
+  @Post("org/departments")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  createDepartment(@Body() dto: UpsertStaffDepartmentDto) {
+    return this.ops.createDepartment(dto);
+  }
+
+  @Patch("org/departments/:id")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  patchDepartment(@Param("id") id: string, @Body() dto: PatchStaffDepartmentDto) {
+    return this.ops.patchDepartment(id, dto);
+  }
+
+  @Post("org/teams")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  createTeam(@Body() dto: UpsertStaffTeamDto) {
+    return this.ops.createTeam(dto);
+  }
+
+  @Patch("org/teams/:id")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  patchTeam(@Param("id") id: string, @Body() dto: PatchStaffTeamDto) {
+    return this.ops.patchTeam(id, dto);
+  }
+
   @Get("legal")
   @RequirePermission(StaffPermission.LEGAL_MANAGE)
   legalPages() {
@@ -308,6 +344,12 @@ export class OpsController {
     return this.ops.patchSubService(id, dto);
   }
 
+  @Get("ticket-types")
+  @RequirePermission(StaffPermission.TICKETS_MANAGE)
+  ticketTypes() {
+    return this.ops.ticketTypes();
+  }
+
   @Get("tickets")
   @RequirePermission(StaffPermission.TICKETS_MANAGE)
   tickets(
@@ -318,6 +360,12 @@ export class OpsController {
     @CurrentUser() user?: AuthUser,
   ) {
     return this.ops.tickets({ status, priority, queue, mine, actorId: user?.sub });
+  }
+
+  @Post("tickets")
+  @RequirePermission(StaffPermission.TICKETS_MANAGE)
+  createTicket(@Body() dto: CreateOpsTicketDto, @CurrentUser() user: AuthUser) {
+    return this.ops.createTicket(user.sub, dto);
   }
 
   @Patch("tickets/:id")

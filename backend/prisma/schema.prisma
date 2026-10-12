@@ -29,6 +29,7 @@ model User {
   customerProfile CustomerProfile?
   providerProfile ProviderProfile?
   staff           StaffUser?
+  ledTeams        StaffTeam[]    @relation("StaffTeamLead")
   sessions        Session[]
   statusHistory   AccountStatusHistory[]
   actedStatus     AccountStatusHistory[] @relation("StatusActor")
@@ -86,13 +87,44 @@ model RolePermission {
   @@map("rolepermission")
 }
 
+model StaffDepartment {
+  id        String      @id @default(uuid()) @db.Char(36)
+  code      String      @unique @db.VarChar(20)
+  nameAr    String      @db.VarChar(80)
+  nameEn    String      @db.VarChar(80)
+  sortOrder Int         @default(0)
+  isActive  Boolean     @default(true)
+  teams     StaffTeam[]
+  @@map("staffdepartment")
+}
+
+model StaffTeam {
+  id           String          @id @default(uuid()) @db.Char(36)
+  departmentId String          @db.Char(36)
+  code         String          @unique @db.VarChar(40)
+  nameAr       String          @db.VarChar(120)
+  nameEn       String          @db.VarChar(120)
+  sortOrder    Int             @default(0)
+  isActive     Boolean         @default(true)
+  leadUserId   String?         @db.Char(36)
+  department   StaffDepartment @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lead         User?           @relation("StaffTeamLead", fields: [leadUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  members      StaffUser[]
+  @@index([departmentId])
+  @@map("staffteam")
+}
+
 model StaffUser {
-  userId String @id @db.Char(36)
-  roleId String @db.Char(36)
-  team   String @db.VarChar(40)
-  level  Int    @default(1)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  userId  String     @id @db.Char(36)
+  roleId  String     @db.Char(36)
+  team    String     @db.VarChar(40)
+  teamId  String?    @db.Char(36)
+  titleAr String?    @db.VarChar(80)
+  level   Int        @default(1)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  role    Role       @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  orgTeam StaffTeam? @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@index([teamId])
   @@map("staffuser")
 }
 
@@ -569,6 +601,7 @@ model Ticket {
   status     String       @default("SENT") @db.VarChar(20)
   queue      String       @default("OPS") @db.VarChar(20)
   priority   Int          @default(3)
+  title      String?      @db.VarChar(160)
   body       String       @db.LongText
   createdAt  DateTime     @default(now()) @db.DateTime(0)
   type       TicketType   @relation(fields: [typeId], references: [id], onDelete: Restrict, onUpdate: Restrict)

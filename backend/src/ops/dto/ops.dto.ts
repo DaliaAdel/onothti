@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, Min, MinLength } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateSettingDto {
@@ -547,6 +547,16 @@ export class CreateStaffDto {
   @IsOptional()
   @IsString()
   team?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  titleAr?: string;
 }
 
 export class PatchStaffDto {
@@ -574,8 +584,145 @@ export class PatchStaffDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  teamId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  titleAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   resetPassword?: boolean;
+}
+
+export class UpsertStaffDepartmentDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  code?: string;
+
+  @ApiProperty({ example: "التشغيل" })
+  @IsString()
+  @MinLength(2)
+  nameAr!: string;
+
+  @ApiProperty({ example: "Operations" })
+  @IsString()
+  @MinLength(2)
+  nameEn!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class PatchStaffDepartmentDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpsertStaffTeamDto {
+  @ApiProperty()
+  @IsString()
+  departmentId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  code?: string;
+
+  @ApiProperty({ example: "فريق التشغيل الأول" })
+  @IsString()
+  @MinLength(2)
+  nameAr!: string;
+
+  @ApiProperty({ example: "Operations Team 1" })
+  @IsString()
+  @MinLength(2)
+  nameEn!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  leadUserId?: string;
+}
+
+export class PatchStaffTeamDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  leadUserId?: string | null;
 }
 
 export class PatchMeDto {
@@ -877,6 +1024,23 @@ export class CreateBannedPhoneDto {
   @IsString()
   @MinLength(4)
   reason!: string;
+}
+
+export class CreateOpsTicketDto {
+  @ApiProperty({ enum: ["OP-SUPPORT", "OP-SUGGEST"] })
+  @IsIn(["OP-SUPPORT", "OP-SUGGEST"])
+  typeCode!: "OP-SUPPORT" | "OP-SUGGEST";
+
+  @ApiProperty({ example: "تعطل تسجيل الدخول" })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  title!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  body?: string;
 }
 
 export class PatchTicketDto {

@@ -59,8 +59,8 @@ import { ToastService } from '../core/toast.service';
             </select>
           </div>
           <div class="field">
-            <label>عنوان الطلب</label>
-            <input name="title" [(ngModel)]="title" placeholder="اكتبي عنوانًا مختصرًا" />
+            <label>عنوان المشكلة</label>
+            <input name="title" [(ngModel)]="title" placeholder="اكتبي عنوان المشكلة" />
           </div>
         </div>
         <div class="field">
@@ -140,6 +140,10 @@ export class ProviderSupportComponent implements OnInit {
   }
 
   titleOf(ticket: ProviderTicket): string {
+    const titled = ticket.title?.trim();
+    if (titled) {
+      return titled;
+    }
     const first = ticket.body.split('\n')[0]?.trim();
     return first && first.length < 80 ? first : ticket.refNo;
   }
@@ -149,13 +153,12 @@ export class ProviderSupportComponent implements OnInit {
   }
 
   send(): void {
-    if (!this.typeCode || this.body.trim().length < 8) {
-      this.toast.show('اختاري النوع واكتبي تفاصيل أوضح');
+    if (!this.typeCode || this.title.trim().length < 2 || this.body.trim().length < 8) {
+      this.toast.show('اختاري النوع واكتبي عنوان المشكلة وتفاصيل أوضح');
       return;
     }
-    const payload = this.title.trim() ? `${this.title.trim()}\n\n${this.body.trim()}` : this.body.trim();
     this.loading = true;
-    this.api.createProviderTicket({ typeCode: this.typeCode, body: payload }).subscribe({
+    this.api.createProviderTicket({ typeCode: this.typeCode, title: this.title.trim(), body: this.body.trim() }).subscribe({
       next: () => {
         this.loading = false;
         this.body = '';

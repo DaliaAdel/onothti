@@ -53,6 +53,13 @@ export class CreateCustomerTicketDto {
   @IsString()
   typeCode!: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  title?: string;
+
   @ApiProperty()
   @IsString()
   @MinLength(8)

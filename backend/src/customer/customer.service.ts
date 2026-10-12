@@ -232,6 +232,7 @@ export class CustomerService {
         refNo: `CU-${String(count + 1).padStart(6, "0")}-${userId.slice(0, 4)}`,
         typeId: type.id,
         ownerId: userId,
+        title: dto.title?.trim() || null,
         body: dto.body.trim(),
       },
       include: { type: true },

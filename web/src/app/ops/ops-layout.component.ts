@@ -71,6 +71,7 @@ export class OpsLayoutComponent implements OnInit {
       settingsChildren.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
     }
     if (can('USERS_MANAGE')) {
+      settingsChildren.push({ icon: 'profile', label: 'الهيكل التنظيمي', route: '/ops/org' });
       settingsChildren.push({ icon: 'profile', label: 'حسابات موظفى المنصة', route: '/ops/staff' });
     }
     if (settingsChildren.length) {

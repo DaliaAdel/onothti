@@ -188,6 +188,7 @@ export const routes: Routes = [
       { path: 'settings', loadComponent: () => import('./ops/ops-settings.component').then((m) => m.OpsSettingsComponent) },
       { path: 'notices', loadComponent: () => import('./ops/ops-notices.component').then((m) => m.OpsNoticesComponent) },
       { path: 'staff', loadComponent: () => import('./ops/ops-staff.component').then((m) => m.OpsStaffComponent) },
+      { path: 'org', loadComponent: () => import('./ops/ops-org.component').then((m) => m.OpsOrgComponent) },
       { path: 'legal', loadComponent: () => import('./ops/ops-legal.component').then((m) => m.OpsLegalComponent) },
       { path: 'catalog', loadComponent: () => import('./ops/ops-catalog.component').then((m) => m.OpsCatalogComponent) },
       { path: 'tickets', loadComponent: () => import('./ops/ops-tickets.component').then((m) => m.OpsTicketsComponent) },

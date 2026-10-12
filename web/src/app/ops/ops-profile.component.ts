@@ -43,7 +43,7 @@ import { opsDate } from './ops-ui';
             </div>
             <div class="field">
               <label>الفريق</label>
-              <input class="input" [value]="teamLabel(me.team)" disabled />
+              <input class="input" [value]="me.orgTeam?.nameAr || teamLabel(me.team)" disabled />
             </div>
             <div class="field">
               <label>الحالة</label>

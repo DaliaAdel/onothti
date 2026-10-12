@@ -233,6 +233,13 @@ export class CreateProviderTicketDto {
   typeCode!: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  title?: string;
+
+  @ApiPropertyOptional()
   @IsString()
   @MinLength(8)
   body!: string;

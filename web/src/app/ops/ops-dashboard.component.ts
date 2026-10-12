@@ -144,6 +144,7 @@ import { opsDate } from './ops-ui';
             <a class="btn ghost" routerLink="/ops/clients">عملاء المنصة</a>
           }
           @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
+            <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
             <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>
           }
           @if (session.user()?.permissions?.includes('LEGAL_MANAGE')) {

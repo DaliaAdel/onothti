@@ -21,6 +21,18 @@ export function opsDate(value?: string | null): string {
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function ticketTitle(item: { title?: string | null; body?: string; refNo?: string }): string {
+  const titled = (item.title ?? '').trim();
+  if (titled) {
+    return titled;
+  }
+  const first = (item.body ?? '').split('\n')[0]?.trim();
+  if (first && first.length < 80) {
+    return first;
+  }
+  return item.refNo || '—';
+}
+
 export function clip(text?: string | null, max = 42): string {
   const value = (text ?? '').replace(/\s+/g, ' ').trim();
   if (!value) {

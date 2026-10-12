@@ -1,8 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
-import type { OpsBannedPhone, OpsPermission, OpsRole, OpsStaff } from '../core/models';
+import type { OpsBannedPhone, OpsOrgDepartment, OpsOrgTeam, OpsPermission, OpsRole, OpsStaff } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -12,22 +13,37 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-staff',
-  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
+  imports: [FormsModule, RouterLink, OpsDrawerComponent, OpsModalComponent],
   template: `
     <div class="section-head">
       <div>
         <h2>حسابات موظفي التشغيل والمالية</h2>
-        <p>أضيفي مشغّلة أو موظفة مالية أو إدارية. المستخدمة الجديدة تؤكد OTP ثم تعيّن كلمة مرور جديدة.</p>
+        <p>أضيفي مشغّلة واربطيها بفريق من الهيكل التنظيمي. المستخدمة الجديدة تؤكد OTP ثم تعيّن كلمة مرور جديدة.</p>
       </div>
-      <button class="btn primary" type="button" (click)="adding = true">+ إضافة مستخدمة</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
+        <button class="btn primary" type="button" (click)="adding = true">+ إضافة مستخدمة</button>
+      </div>
     </div>
 
     <div class="filters">
-      <button class="chip" type="button" [class.active]="teamFilter === ''" (click)="teamFilter = ''">الكل</button>
-      <button class="chip" type="button" [class.active]="teamFilter === 'OPS'" (click)="teamFilter = 'OPS'">التشغيل</button>
-      <button class="chip" type="button" [class.active]="teamFilter === 'FINANCE'" (click)="teamFilter = 'FINANCE'">المالية</button>
-      <button class="chip" type="button" [class.active]="teamFilter === 'ADMIN'" (click)="teamFilter = 'ADMIN'">الإدارة</button>
+      <button class="chip" type="button" [class.active]="departmentFilter === ''" (click)="setDepartmentFilter('')">الكل</button>
+      @for (department of departments; track department.id) {
+        <button class="chip" type="button" [class.active]="departmentFilter === department.id" (click)="setDepartmentFilter(department.id)">
+          {{ department.nameAr }}
+        </button>
+      }
     </div>
+    @if (departmentFilter && departmentTeams.length) {
+      <div class="filters">
+        <button class="chip" type="button" [class.active]="teamFilter === ''" (click)="teamFilter = ''">كل الفرق</button>
+        @for (team of departmentTeams; track team.id) {
+          <button class="chip" type="button" [class.active]="teamFilter === team.id" (click)="teamFilter = team.id">
+            {{ team.nameAr }}
+          </button>
+        }
+      </div>
+    }
 
     <app-ops-modal [open]="adding" title="إضافة مستخدمة" kicker="حساب تشغيل جديد" (closed)="adding = false">
       <div class="form-grid">
@@ -49,12 +65,26 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           </select>
         </div>
         <div class="field">
-          <label>الفريق</label>
-          <select class="input" [(ngModel)]="draft.team">
-            <option value="OPS">فريق التشغيل</option>
-            <option value="FINANCE">فريق المالية</option>
-            <option value="ADMIN">الإدارة</option>
+          <label>القسم</label>
+          <select class="input" [(ngModel)]="draft.departmentId" (ngModelChange)="onDraftDepartmentChange()">
+            <option value="">اختاري القسم</option>
+            @for (department of departments; track department.id) {
+              <option [value]="department.id">{{ department.nameAr }}</option>
+            }
           </select>
+        </div>
+        <div class="field">
+          <label>الفريق</label>
+          <select class="input" [(ngModel)]="draft.teamId">
+            <option value="">اختاري الفريق</option>
+            @for (team of draftTeams; track team.id) {
+              <option [value]="team.id">{{ team.nameAr }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>المنصب</label>
+          <input class="input" [(ngModel)]="draft.titleAr" placeholder="مدير التشغيل" />
         </div>
       </div>
       @if (selectedRole) {
@@ -74,6 +104,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
               <th>الجوال</th>
               <th>الرمز</th>
               <th>نوع الحساب</th>
+              <th>المنصب</th>
               <th>الفريق</th>
               <th>الحالة</th>
               <th>كلمة المرور</th>
@@ -87,6 +118,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
                 <td dir="ltr">{{ item.mobile }}</td>
                 <td>{{ item.accountCode }}</td>
                 <td>{{ item.role?.nameAr || '—' }}</td>
+                <td>{{ item.titleAr || item.role?.nameAr || '—' }}</td>
                 <td>{{ teamLabel(item) }}</td>
                 <td><span class="status {{ item.status === 'ACTIVE' ? 'success' : 'error' }}">{{ item.status === 'ACTIVE' ? 'نشطة' : 'موقوفة' }}</span></td>
                 <td>
@@ -122,12 +154,24 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           </select>
         </div>
         <div class="field">
+          <label>القسم</label>
+          <select class="input" [(ngModel)]="departmentById[item.id]" (ngModelChange)="onItemDepartmentChange(item)">
+            @for (department of departments; track department.id) {
+              <option [value]="department.id">{{ department.nameAr }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
           <label>الفريق</label>
           <select class="input" [(ngModel)]="teamById[item.id]">
-            <option value="OPS">فريق التشغيل</option>
-            <option value="FINANCE">فريق المالية</option>
-            <option value="ADMIN">الإدارة</option>
+            @for (team of teamsFor(departmentById[item.id]); track team.id) {
+              <option [value]="team.id">{{ team.nameAr }}</option>
+            }
           </select>
+        </div>
+        <div class="field">
+          <label>المنصب</label>
+          <input class="input" [(ngModel)]="titleById[item.id]" placeholder="مدير التشغيل" />
         </div>
         <div class="ops-drawer-actions">
           <button class="btn primary" type="button" (click)="saveRole(item)">حفظ نوع الحساب والفريق</button>
@@ -257,6 +301,7 @@ export class OpsStaffComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
   private readonly session = inject(SessionService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly opsDate = opsDate;
 
@@ -267,10 +312,14 @@ export class OpsStaffComponent implements OnInit {
   selectedBan: OpsBannedPhone | null = null;
   roles: OpsRole[] = [];
   catalog: OpsPermission[] = [];
+  departments: OpsOrgDepartment[] = [];
   roleById: Record<string, string> = {};
   teamById: Record<string, string> = {};
+  departmentById: Record<string, string> = {};
+  titleById: Record<string, string> = {};
   matrix: Record<string, Record<string, boolean>> = {};
-  draft = { displayName: '', mobile: '', roleId: '', team: 'OPS' };
+  draft = { displayName: '', mobile: '', roleId: '', departmentId: '', teamId: '', titleAr: '' };
+  departmentFilter = '';
   teamFilter = '';
   adding = false;
   addingBan = false;
@@ -283,15 +332,41 @@ export class OpsStaffComponent implements OnInit {
   }
 
   get filteredStaff(): OpsStaff[] {
-    if (!this.teamFilter) {
-      return this.staff;
-    }
-    return this.staff.filter((item) => this.teamGroup(item) === this.teamFilter);
+    return this.staff.filter((item) => {
+      if (this.teamFilter) {
+        return item.teamId === this.teamFilter;
+      }
+      if (this.departmentFilter) {
+        return item.orgTeam?.department.id === this.departmentFilter;
+      }
+      return true;
+    });
+  }
+
+  get departmentTeams(): OpsOrgTeam[] {
+    return this.teamsFor(this.departmentFilter);
+  }
+
+  get draftTeams(): OpsOrgTeam[] {
+    return this.teamsFor(this.draft.departmentId);
   }
 
   ngOnInit(): void {
     this.shell.set('مستخدمو التشغيل', 'أدوار وصلاحيات المشغّلات');
+    const teamId = this.route.snapshot.queryParamMap.get('teamId');
+    if (teamId) {
+      this.teamFilter = teamId;
+    }
     this.load();
+  }
+
+  teamsFor(departmentId: string): OpsOrgTeam[] {
+    return this.departments.find((row) => row.id === departmentId)?.teams ?? [];
+  }
+
+  setDepartmentFilter(id: string): void {
+    this.departmentFilter = id;
+    this.teamFilter = '';
   }
 
   onRoleChange(): void {
@@ -299,26 +374,34 @@ export class OpsStaffComponent implements OnInit {
     if (!role) {
       return;
     }
-    this.draft.team = role.code === 'FINANCE' ? 'FINANCE' : role.code === 'ADMIN' ? 'ADMIN' : 'OPS';
+    const code = role.code === 'FINANCE' ? 'FINANCE' : role.code === 'ADMIN' ? 'ADMIN' : 'OPS';
+    const department = this.departments.find((row) => row.code === code) ?? this.departments[0];
+    this.draft.departmentId = department?.id ?? '';
+    this.onDraftDepartmentChange();
   }
 
-  teamGroup(item: OpsStaff): string {
-    const code = item.role?.code || '';
-    if (code === 'FINANCE' || item.team === 'FINANCE') {
-      return 'FINANCE';
+  onDraftDepartmentChange(): void {
+    const teams = this.draftTeams;
+    if (!teams.some((team) => team.id === this.draft.teamId)) {
+      this.draft.teamId = teams[0]?.id ?? '';
     }
-    if (code === 'ADMIN' || item.team === 'ADMIN') {
-      return 'ADMIN';
+  }
+
+  onItemDepartmentChange(item: OpsStaff): void {
+    const teams = this.teamsFor(this.departmentById[item.id]);
+    if (!teams.some((team) => team.id === this.teamById[item.id])) {
+      this.teamById[item.id] = teams[0]?.id ?? '';
     }
-    return 'OPS';
   }
 
   teamLabel(item: OpsStaff): string {
-    const group = this.teamGroup(item);
-    if (group === 'FINANCE') {
+    if (item.orgTeam?.nameAr) {
+      return item.orgTeam.nameAr;
+    }
+    if (item.team === 'FINANCE') {
       return 'المالية';
     }
-    if (group === 'ADMIN') {
+    if (item.team === 'ADMIN') {
       return 'الإدارة';
     }
     return 'التشغيل';
@@ -344,17 +427,22 @@ export class OpsStaffComponent implements OnInit {
       this.toast.show('أدخلي الاسم والجوال السعودي ونوع الحساب');
       return;
     }
+    if (!this.draft.teamId) {
+      this.toast.show('اختاري الفريق من الهيكل التنظيمي');
+      return;
+    }
     this.api
       .opsCreateStaff({
           displayName: this.draft.displayName,
           mobile,
           roleId: this.draft.roleId,
-          team: this.draft.team,
+          teamId: this.draft.teamId,
+          titleAr: this.draft.titleAr.trim() || undefined,
         })
       .subscribe({
         next: () => {
           this.toast.show('تمت إضافة المستخدمة. ستؤكد OTP ثم تعيّن كلمة مرور عند أول دخول.');
-          this.draft = { displayName: '', mobile: '', roleId: '', team: 'OPS' };
+          this.draft = { displayName: '', mobile: '', roleId: '', departmentId: '', teamId: '', titleAr: '' };
           this.adding = false;
           this.load();
         },
@@ -367,11 +455,20 @@ export class OpsStaffComponent implements OnInit {
     if (!roleId) {
       return;
     }
-    this.api.opsPatchStaff(item.id, { roleId, team: this.teamById[item.id] || item.team }).subscribe({
+    this.api
+      .opsPatchStaff(item.id, {
+        roleId,
+        teamId: this.teamById[item.id] || item.teamId || undefined,
+        titleAr: this.titleById[item.id] ?? item.titleAr ?? '',
+      })
+      .subscribe({
       next: (row) => {
         item.role = row.role;
         item.permissions = row.permissions;
         item.team = row.team;
+        item.teamId = row.teamId;
+        item.titleAr = row.titleAr;
+        item.orgTeam = row.orgTeam;
         this.toast.show('تم تحديث نوع الحساب والفريق');
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث نوع الحساب')),
@@ -458,7 +555,15 @@ export class OpsStaffComponent implements OnInit {
         this.selectedStaff = keepSelected(this.staff, this.selectedStaff);
         for (const row of rows) {
           this.roleById[row.id] = row.role?.id ?? '';
-          this.teamById[row.id] = this.teamGroup(row);
+          this.teamById[row.id] = row.teamId ?? '';
+          this.departmentById[row.id] = row.orgTeam?.department.id ?? '';
+          this.titleById[row.id] = row.titleAr ?? '';
+        }
+        if (this.teamFilter && !this.departmentFilter) {
+          const teamDept = this.staff.find((row) => row.teamId === this.teamFilter)?.orgTeam?.department.id;
+          if (teamDept) {
+            this.departmentFilter = teamDept;
+          }
         }
         this.loading = false;
       },
@@ -468,6 +573,18 @@ export class OpsStaffComponent implements OnInit {
       },
     });
     this.loadBanned();
+    this.api.opsOrg().subscribe({
+      next: (rows) => {
+        this.departments = rows;
+        if (this.teamFilter && !this.departmentFilter) {
+          const department = rows.find((row) => row.teams.some((team) => team.id === this.teamFilter));
+          if (department) {
+            this.departmentFilter = department.id;
+          }
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   private loadBanned(): void {
