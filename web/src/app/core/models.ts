@@ -695,13 +695,27 @@ export interface OpsManagedAccount {
   displayName: string;
   accountCode: string;
   mobile: string;
+  email?: string | null;
   accountType: AccountType;
   status: string;
   createdAt: string;
   package?: { id: string; code: string; nameAr: string } | null;
   subscriptionEndAt?: string | null;
-  customerProfile?: { city?: { nameAr: string } | null } | null;
-  providerProfile?: { city?: { nameAr: string } | null; visibility?: string | null } | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  whatsapp?: string | null;
+  customerProfile?: { city?: { nameAr: string } | null; bio?: string | null } | null;
+  providerProfile?: {
+    city?: { nameAr: string } | null;
+    region?: { nameAr: string } | null;
+    visibility?: string | null;
+    bio?: string | null;
+    whatsapp?: string | null;
+    badge?: string | null;
+    cities?: { nameAr: string }[];
+    coverage?: { id: string; nameAr: string }[];
+    services?: { nameAr: string; isPrimary?: boolean }[];
+  } | null;
 }
 
 export const FALLBACK_SERVICES = [

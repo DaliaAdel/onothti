@@ -20,12 +20,12 @@ import { opsDate } from './ops-ui';
       </div>
     </div>
     <div class="stats stats-6">
-      <a class="stat" routerLink="/ops/accounts" [queryParams]="{ tab: 'all' }">
+      <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
         <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
         <b>{{ dash?.customers ?? '—' }}</b>
         <span>حساب عميلة مسجّل</span>
       </a>
-      <a class="stat" routerLink="/ops/accounts">
+      <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
         <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
         <b>{{ dash?.activeProviders ?? '—' }}</b>
         <span>حساب خبيرة نشط</span>
@@ -139,6 +139,9 @@ import { opsDate } from './ops-ui';
           }
           @if (session.hasAnyPermission('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
             <a class="btn ghost" routerLink="/ops/notices">إشعارات المنصة</a>
+          }
+          @if (session.hasAnyPermission('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE')) {
+            <a class="btn ghost" routerLink="/ops/clients">عملاء المنصة</a>
           }
           @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
             <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>

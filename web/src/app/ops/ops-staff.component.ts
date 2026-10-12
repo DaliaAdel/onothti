@@ -40,9 +40,9 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           <input class="input" dir="ltr" [(ngModel)]="draft.mobile" placeholder="05xxxxxxxx" />
         </div>
         <div class="field">
-          <label>الدور</label>
+          <label>نوع الحساب</label>
           <select class="input" [(ngModel)]="draft.roleId" (ngModelChange)="onRoleChange()">
-            <option value="">اختاري الدور</option>
+            <option value="">اختاري نوع الحساب</option>
             @for (role of roles; track role.id) {
               <option [value]="role.id">{{ role.nameAr }}</option>
             }
@@ -73,7 +73,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
               <th>الاسم</th>
               <th>الجوال</th>
               <th>الرمز</th>
-              <th>الدور</th>
+              <th>نوع الحساب</th>
               <th>الفريق</th>
               <th>الحالة</th>
               <th>كلمة المرور</th>
@@ -109,12 +109,12 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     >
       @if (selectedStaff; as item) {
         <p class="muted small">{{ item.accountCode }} · <span dir="ltr">{{ item.mobile }}</span></p>
-        <p class="muted small">{{ item.permissions.length }} صلاحية مرتبطة بالدور</p>
+        <p class="muted small">{{ item.permissions.length }} صلاحية مرتبطة بنوع الحساب</p>
         @if (item.mustChangePassword) {
           <p class="notice">عند أول دخول تؤكد رقمها بـ OTP ثم تضع كلمة مرور جديدة.</p>
         }
         <div class="field">
-          <label>الدور</label>
+          <label>نوع الحساب</label>
           <select class="input" [(ngModel)]="roleById[item.id]">
             @for (role of roles; track role.id) {
               <option [value]="role.id">{{ role.nameAr }}</option>
@@ -130,7 +130,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           </select>
         </div>
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveRole(item)">حفظ الدور والفريق</button>
+          <button class="btn primary" type="button" (click)="saveRole(item)">حفظ نوع الحساب والفريق</button>
           <button class="btn ghost" type="button" (click)="resetPassword(item)">إعادة تعيين كلمة المرور</button>
           <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
             {{ item.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
@@ -152,7 +152,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الدور</th>
+              <th>نوع الحساب</th>
               <th>الرمز</th>
               <th>الصلاحيات</th>
             </tr>
@@ -172,7 +172,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     <app-ops-drawer
       [open]="!!selectedRoleRow"
       [title]="selectedRoleRow?.nameAr || ''"
-      kicker="صلاحيات الدور"
+      kicker="صلاحيات الحساب"
       (closed)="selectedRoleRow = null"
     >
       @if (selectedRoleRow; as role) {
@@ -187,7 +187,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           </div>
         }
         <button class="btn primary" style="margin-top:14px" type="button" (click)="savePermissions(role)">
-          حفظ صلاحيات الدور
+          حفظ صلاحيات الحساب
         </button>
       }
     </app-ops-drawer>
@@ -341,7 +341,7 @@ export class OpsStaffComponent implements OnInit {
   create(): void {
     const mobile = toMobile(this.draft.mobile);
     if (this.draft.displayName.trim().length < 2 || !isSaudiMobile(mobile) || !this.draft.roleId) {
-      this.toast.show('أدخلي الاسم والجوال السعودي والدور');
+      this.toast.show('أدخلي الاسم والجوال السعودي ونوع الحساب');
       return;
     }
     this.api
@@ -372,9 +372,9 @@ export class OpsStaffComponent implements OnInit {
         item.role = row.role;
         item.permissions = row.permissions;
         item.team = row.team;
-        this.toast.show('تم تحديث الدور والفريق');
+        this.toast.show('تم تحديث نوع الحساب والفريق');
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الدور')),
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث نوع الحساب')),
     });
   }
 

@@ -9,173 +9,258 @@ import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected } from './ops-ui';
 
+const emptyRegionDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
+const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
+const emptyCoverageDraft = () => ({ nameAr: '', nameEn: '' });
+
 @Component({
   selector: 'app-ops-geo',
   imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
   template: `
-    <div class="section-head">
-      <div>
-        <h2>المناطق والمدن</h2>
-        <p>أضيفي منطقة، ثم اضغطي عليها لإدارة مدنها وأحيائها.</p>
+    @if (!selected) {
+      <div class="section-head">
+        <div>
+          <h2>المناطق والمدن</h2>
+          <p>اضغطي على صف المنطقة لعرض مدنها</p>
+        </div>
+        <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
       </div>
-      <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
-    </div>
 
-    <app-ops-modal [open]="adding" title="إضافة منطقة" kicker="التغطية الجغرافية" (closed)="adding = false">
+      <app-ops-modal [open]="adding" title="إضافة منطقة" kicker="التغطية الجغرافية" (closed)="adding = false">
+        <div class="form-grid">
+          <div class="field">
+            <label>الاسم *</label>
+            <input class="input" [(ngModel)]="regionDraft.nameAr" placeholder="الشرقية" />
+          </div>
+          <div class="field">
+            <label>الاسم الإنجليزي *</label>
+            <input class="input" [(ngModel)]="regionDraft.nameEn" placeholder="Eastern" />
+          </div>
+          <div class="field">
+            <label>الترتيب</label>
+            <input class="input" type="number" [(ngModel)]="regionDraft.sortOrder" />
+          </div>
+        </div>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">إضافة المنطقة</button>
+      </app-ops-modal>
+
+      @if (loading) {
+        <p class="loading">جاري التحميل...</p>
+      } @else if (!regions.length) {
+        <p class="page-empty">لا توجد مناطق بعد.</p>
+      } @else {
+        <div class="ops-table-wrap">
+          <table class="ops-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الاسم الإنجليزي</th>
+                <th>المدن</th>
+                <th>الترتيب</th>
+                <th>الظهور</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (region of regions; track region.id) {
+                <tr (click)="openRegion(region)">
+                  <td><b>{{ region.nameAr }}</b></td>
+                  <td>{{ region.nameEn }}</td>
+                  <td>{{ region.cities.length }}</td>
+                  <td>{{ region.sortOrder }}</td>
+                  <td>
+                    <span class="status {{ region.isVisible ? 'success' : 'error' }}">
+                      {{ region.isVisible ? 'ظاهرة' : 'مخفية' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @else if (!selectedCity) {
+      <div class="section-head">
+        <div>
+          <button class="text-link" type="button" (click)="closeRegion()">→ رجوع للمناطق</button>
+          <h2>{{ selected.nameAr }}</h2>
+          <p>{{ selected.nameEn }} · {{ selected.cities.length }} مدينة</p>
+        </div>
+        <button class="btn primary" type="button" (click)="openAddCity()">+ إضافة مدينة</button>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:18px">
+        <div class="field">
+          <label>الاسم *</label>
+          <input class="input" [(ngModel)]="selected.nameAr" />
+        </div>
+        <div class="field">
+          <label>الاسم الإنجليزي *</label>
+          <input class="input" [(ngModel)]="selected.nameEn" />
+        </div>
+        <div class="field">
+          <label>الترتيب</label>
+          <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+        </div>
+      </div>
+      <div class="ops-drawer-actions" style="margin:0 0 22px">
+        <button class="btn primary" type="button" (click)="saveRegion(selected)">حفظ المنطقة</button>
+        <button class="btn ghost" type="button" (click)="toggleRegion(selected)">
+          {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
+        </button>
+      </div>
+
+      <div class="section-head">
+        <div>
+          <h2>المدن</h2>
+          <p>اضغطي على صف لعرض أحياء التغطية</p>
+        </div>
+      </div>
+      @if (!selected.cities.length) {
+        <p class="page-empty">لا توجد مدن بعد.</p>
+      } @else {
+        <div class="ops-table-wrap">
+          <table class="ops-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الاسم الإنجليزي</th>
+                <th>أحياء</th>
+                <th>الظهور</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (city of selected.cities; track city.id) {
+                <tr (click)="openCity(city)">
+                  <td><b>{{ city.nameAr }}</b></td>
+                  <td>{{ city.nameEn }}</td>
+                  <td>{{ city.coverageAreas?.length || 0 }}</td>
+                  <td>
+                    <span class="status {{ city.isVisible ? 'success' : 'error' }}">
+                      {{ city.isVisible ? 'ظاهرة' : 'مخفية' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @else {
+      <div class="section-head">
+        <div>
+          <button class="text-link" type="button" (click)="closeCity()">→ رجوع لـ {{ selected.nameAr }}</button>
+          <h2>{{ selectedCity.nameAr }}</h2>
+          <p>{{ selectedCity.nameEn }} · {{ selectedCity.coverageAreas?.length || 0 }} حي تغطية</p>
+        </div>
+        <button class="btn primary" type="button" (click)="openAddCoverage()">+ إضافة حي</button>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:18px">
+        <div class="field">
+          <label>الاسم *</label>
+          <input class="input" [(ngModel)]="selectedCity.nameAr" />
+        </div>
+        <div class="field">
+          <label>الاسم الإنجليزي *</label>
+          <input class="input" [(ngModel)]="selectedCity.nameEn" />
+        </div>
+      </div>
+      <div class="ops-drawer-actions" style="margin:0 0 22px">
+        <button class="btn primary" type="button" (click)="saveCity(selectedCity)">حفظ المدينة</button>
+        <button class="btn ghost" type="button" (click)="toggleCity(selectedCity)">
+          {{ selectedCity.isVisible ? 'إخفاء' : 'إظهار' }}
+        </button>
+      </div>
+
+      <div class="section-head">
+        <div>
+          <h2>أحياء التغطية</h2>
+          <p>اضغطي على صف لتعديل الحي</p>
+        </div>
+      </div>
+      @if (!(selectedCity.coverageAreas?.length || 0)) {
+        <p class="page-empty">لا توجد أحياء بعد.</p>
+      } @else {
+        <div class="ops-table-wrap">
+          <table class="ops-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الاسم الإنجليزي</th>
+                <th>الظهور</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (area of selectedCity.coverageAreas ?? []; track area.id) {
+                <tr [class.active]="selectedCoverage?.id === area.id" (click)="selectedCoverage = area">
+                  <td><b>{{ area.nameAr }}</b></td>
+                  <td>{{ area.nameEn }}</td>
+                  <td>
+                    <span class="status {{ area.isVisible ? 'success' : 'error' }}">
+                      {{ area.isVisible ? 'ظاهر' : 'مخفي' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+    <app-ops-modal [open]="addingCity" title="إضافة مدينة" [kicker]="selected?.nameAr || ''" (closed)="addingCity = false">
       <div class="form-grid">
         <div class="field">
-          <label>الرمز</label>
-          <input class="input" [(ngModel)]="regionDraft.code" placeholder="EAST" />
+          <label>الاسم *</label>
+          <input class="input" [(ngModel)]="cityDraft.nameAr" placeholder="الظهران" />
         </div>
         <div class="field">
-          <label>الاسم</label>
-          <input class="input" [(ngModel)]="regionDraft.nameAr" placeholder="الشرقية" />
-        </div>
-        <div class="field">
-          <label>الاسم الإنجليزي</label>
-          <input class="input" [(ngModel)]="regionDraft.nameEn" placeholder="Eastern" />
-        </div>
-        <div class="field">
-          <label>ترتيب الظهور</label>
-          <input class="input" type="number" [(ngModel)]="regionDraft.sortOrder" />
+          <label>الاسم الإنجليزي *</label>
+          <input class="input" [(ngModel)]="cityDraft.nameEn" placeholder="Dhahran" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">إضافة المنطقة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createCity()">إضافة المدينة</button>
     </app-ops-modal>
 
-    @if (loading) {
-      <p class="loading">جاري التحميل...</p>
-    } @else if (!regions.length) {
-      <p class="page-empty">لا توجد مناطق بعد.</p>
-    } @else {
-      <div class="ops-table-wrap">
-        <table class="ops-table">
-          <thead>
-            <tr>
-              <th>المنطقة</th>
-              <th>الرمز</th>
-              <th>المدن</th>
-              <th>الترتيب</th>
-              <th>الظهور</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (region of regions; track region.id) {
-              <tr [class.active]="selected?.id === region.id" (click)="selected = region">
-                <td><b>{{ region.nameAr }}</b></td>
-                <td>{{ region.code }}</td>
-                <td>{{ region.cities.length }}</td>
-                <td>{{ region.sortOrder }}</td>
-                <td><span class="status {{ region.isVisible ? 'success' : 'error' }}">{{ region.isVisible ? 'ظاهرة' : 'مخفية' }}</span></td>
-              </tr>
-            }
-          </tbody>
-        </table>
+    <app-ops-modal [open]="addingCoverage" title="إضافة حي تغطية" [kicker]="selectedCity?.nameAr || ''" (closed)="addingCoverage = false">
+      <div class="form-grid">
+        <div class="field">
+          <label>الاسم *</label>
+          <input class="input" [(ngModel)]="coverageDraft.nameAr" placeholder="شمال المدينة" />
+        </div>
+        <div class="field">
+          <label>الاسم الإنجليزي *</label>
+          <input class="input" [(ngModel)]="coverageDraft.nameEn" placeholder="North" />
+        </div>
       </div>
-      <app-ops-drawer
-        [open]="!!selected"
-        [title]="selected?.nameAr || ''"
-        [kicker]="selected?.code || 'منطقة'"
-        (closed)="selected = null"
-      >
-        @if (selected; as region) {
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-              <h3 style="margin:0;color:var(--plum)">{{ region.nameAr }} · {{ region.code }}</h3>
-              <span class="badge" [style.opacity]="region.isVisible ? '1' : '.45'">
-                {{ region.isVisible ? 'ظاهرة' : 'مخفية' }}
-              </span>
-            </div>
-            <div class="form-grid" style="margin-top:14px">
-              <div class="field">
-                <label>الاسم</label>
-                <input class="input" [(ngModel)]="region.nameAr" />
-              </div>
-              <div class="field">
-                <label>الاسم الإنجليزي</label>
-                <input class="input" [(ngModel)]="region.nameEn" />
-              </div>
-              <div class="field">
-                <label>ترتيب الظهور</label>
-                <input class="input" type="number" [(ngModel)]="region.sortOrder" />
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-              <button class="btn primary" type="button" (click)="saveRegion(region)">حفظ المنطقة</button>
-              <button class="btn ghost" type="button" (click)="toggleRegion(region)">
-                {{ region.isVisible ? 'إخفاء المنطقة' : 'إظهار المنطقة' }}
-              </button>
-            </div>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createCoverage()">إضافة الحي</button>
+    </app-ops-modal>
 
-            <h4 style="margin:22px 0 8px;color:var(--plum)">مدن المنطقة ({{ region.cities.length }})</h4>
-            @if (!region.cities.length) {
-              <p class="muted small">لا توجد مدن. أضيفي مدينة واحدة أو أكثر لهذه المنطقة.</p>
-            }
-            @for (city of region.cities; track city.id) {
-              <div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px">
-                  <b>{{ city.nameAr }} · {{ city.code }}</b>
-                  <span class="badge" [style.opacity]="city.isVisible ? '1' : '.45'">
-                    {{ city.isVisible ? 'ظاهرة' : 'مخفية' }}
-                  </span>
-                </div>
-                <div class="form-grid">
-                  <div class="field">
-                    <label>الاسم</label>
-                    <input class="input" [(ngModel)]="city.nameAr" />
-                  </div>
-                  <div class="field">
-                    <label>الاسم الإنجليزي</label>
-                    <input class="input" [(ngModel)]="city.nameEn" />
-                  </div>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-                  <button class="btn primary" type="button" (click)="saveCity(city)">حفظ</button>
-                  <button class="btn ghost" type="button" (click)="toggleCity(city)">
-                    {{ city.isVisible ? 'إخفاء' : 'إظهار' }}
-                  </button>
-                </div>
-                <p class="muted small" style="margin:12px 0 8px">أحياء التغطية ({{ city.coverageAreas?.length || 0 }})</p>
-                @for (area of city.coverageAreas ?? []; track area.id) {
-                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                    <input class="input" [(ngModel)]="area.nameAr" />
-                    <button class="btn ghost" type="button" (click)="saveCoverage(area)">حفظ</button>
-                    <button class="btn ghost" type="button" (click)="toggleCoverage(area)">
-                      {{ area.isVisible ? 'إخفاء' : 'إظهار' }}
-                    </button>
-                  </div>
-                }
-                <div class="form-grid">
-                  <div class="field">
-                    <label>رمز الحي</label>
-                    <input class="input" [(ngModel)]="coverageDrafts[city.id].code" placeholder="NORTH" />
-                  </div>
-                  <div class="field">
-                    <label>اسم الحي</label>
-                    <input class="input" [(ngModel)]="coverageDrafts[city.id].nameAr" placeholder="شمال المدينة" />
-                  </div>
-                </div>
-                <button class="btn soft" style="margin-top:10px" type="button" (click)="createCoverage(city)">
-                  إضافة حي تغطية
-                </button>
-              </div>
-            }
-
-            <div class="form-grid" style="margin-top:8px">
-              <div class="field">
-                <label>رمز المدينة</label>
-                <input class="input" [(ngModel)]="cityDrafts[region.id].code" placeholder="DHAHRAN" />
-              </div>
-              <div class="field">
-                <label>اسم المدينة</label>
-                <input class="input" [(ngModel)]="cityDrafts[region.id].nameAr" placeholder="الظهران" />
-              </div>
-            </div>
-            <button class="btn soft" style="margin-top:12px" type="button" (click)="createCity(region)">
-              إضافة مدينة للمنطقة
-            </button>
-        }
-      </app-ops-drawer>
-    }
+    <app-ops-drawer
+      [open]="!!selectedCoverage"
+      [title]="selectedCoverage?.nameAr || ''"
+      kicker="حي تغطية"
+      (closed)="selectedCoverage = null"
+    >
+      @if (selectedCoverage; as area) {
+        <div class="form-grid">
+          <div class="field">
+            <label>الاسم *</label>
+            <input class="input" [(ngModel)]="area.nameAr" />
+          </div>
+          <div class="field">
+            <label>الاسم الإنجليزي *</label>
+            <input class="input" [(ngModel)]="area.nameEn" />
+          </div>
+        </div>
+        <div class="ops-drawer-actions">
+          <button class="btn primary" type="button" (click)="saveCoverage(area)">حفظ</button>
+          <button class="btn ghost" type="button" (click)="toggleCoverage(area)">
+            {{ area.isVisible ? 'إخفاء' : 'إظهار' }}
+          </button>
+        </div>
+      }
+    </app-ops-drawer>
   `,
 })
 export class OpsGeoComponent implements OnInit {
@@ -183,36 +268,67 @@ export class OpsGeoComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
+  loading = true;
+  adding = false;
+  addingCity = false;
+  addingCoverage = false;
   regions: OpsRegion[] = [];
   selected: OpsRegion | null = null;
-  loading = true;
-  regionDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
-  adding = false;
-  cityDrafts: Record<string, { code: string; nameAr: string }> = {};
-  coverageDrafts: Record<string, { code: string; nameAr: string }> = {};
+  selectedCity: OpsCity | null = null;
+  selectedCoverage: OpsCoverage | null = null;
+  regionDraft = emptyRegionDraft();
+  cityDraft = emptyCityDraft();
+  coverageDraft = emptyCoverageDraft();
 
   ngOnInit(): void {
     this.shell.set('المناطق والمدن', 'منطقة واحدة تتسع لعدة مدن');
     this.load();
   }
 
+  openRegion(region: OpsRegion): void {
+    this.selected = region;
+    this.selectedCity = null;
+    this.selectedCoverage = null;
+    this.shell.set(region.nameAr, region.nameEn || 'مدن المنطقة');
+  }
+
+  closeRegion(): void {
+    this.selected = null;
+    this.selectedCity = null;
+    this.selectedCoverage = null;
+    this.shell.set('المناطق والمدن', 'منطقة واحدة تتسع لعدة مدن');
+  }
+
+  openCity(city: OpsCity): void {
+    this.selectedCity = city;
+    this.selectedCoverage = null;
+    this.shell.set(city.nameAr, city.nameEn || 'أحياء التغطية');
+  }
+
+  closeCity(): void {
+    this.selectedCity = null;
+    this.selectedCoverage = null;
+    if (this.selected) {
+      this.shell.set(this.selected.nameAr, this.selected.nameEn || 'مدن المنطقة');
+    }
+  }
+
   createRegion(): void {
-    if (!this.regionDraft.code.trim() || this.regionDraft.nameAr.trim().length < 2) {
-      this.toast.show('أدخلي رمز المنطقة واسمها');
+    if (!this.hasNames(this.regionDraft.nameAr, this.regionDraft.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
     }
     this.api
       .opsCreateRegion({
-        code: this.regionDraft.code,
-        nameAr: this.regionDraft.nameAr,
-        nameEn: this.regionDraft.nameEn || undefined,
+        nameAr: this.regionDraft.nameAr.trim(),
+        nameEn: this.regionDraft.nameEn.trim(),
         sortOrder: Number(this.regionDraft.sortOrder) || 0,
         isVisible: true,
       })
       .subscribe({
         next: () => {
           this.toast.show('تمت إضافة المنطقة');
-          this.regionDraft = { code: '', nameAr: '', nameEn: '', sortOrder: 0 };
+          this.regionDraft = emptyRegionDraft();
           this.adding = false;
           this.load();
         },
@@ -221,14 +337,24 @@ export class OpsGeoComponent implements OnInit {
   }
 
   saveRegion(region: OpsRegion): void {
+    if (!this.hasNames(region.nameAr, region.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      return;
+    }
     this.api
       .opsPatchRegion(region.id, {
-        nameAr: region.nameAr,
-        nameEn: region.nameEn,
+        nameAr: region.nameAr.trim(),
+        nameEn: region.nameEn.trim(),
         sortOrder: Number(region.sortOrder) || 0,
       })
       .subscribe({
-        next: () => this.toast.show('تم حفظ المنطقة'),
+        next: (row) => {
+          region.nameAr = row.nameAr;
+          region.nameEn = row.nameEn;
+          region.sortOrder = row.sortOrder;
+          this.shell.set(region.nameAr, region.nameEn || 'مدن المنطقة');
+          this.toast.show('تم حفظ المنطقة');
+        },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ المنطقة')),
       });
   }
@@ -243,23 +369,31 @@ export class OpsGeoComponent implements OnInit {
     });
   }
 
-  createCity(region: OpsRegion): void {
-    const draft = this.cityDrafts[region.id];
-    if (!draft?.code.trim() || (draft.nameAr.trim().length ?? 0) < 2) {
-      this.toast.show('أدخلي رمز المدينة واسمها');
+  openAddCity(): void {
+    this.cityDraft = emptyCityDraft();
+    this.addingCity = true;
+  }
+
+  createCity(): void {
+    if (!this.selected) {
+      return;
+    }
+    if (!this.hasNames(this.cityDraft.nameAr, this.cityDraft.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
     }
     this.api
       .opsCreateCity({
-        regionId: region.id,
-        code: draft.code,
-        nameAr: draft.nameAr,
+        regionId: this.selected.id,
+        nameAr: this.cityDraft.nameAr.trim(),
+        nameEn: this.cityDraft.nameEn.trim(),
         isVisible: true,
       })
       .subscribe({
         next: () => {
           this.toast.show('تمت إضافة المدينة');
-          this.cityDrafts[region.id] = { code: '', nameAr: '' };
+          this.cityDraft = emptyCityDraft();
+          this.addingCity = false;
           this.load();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة المدينة')),
@@ -267,13 +401,22 @@ export class OpsGeoComponent implements OnInit {
   }
 
   saveCity(city: OpsCity): void {
+    if (!this.hasNames(city.nameAr, city.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      return;
+    }
     this.api
       .opsPatchCity(city.id, {
-        nameAr: city.nameAr,
-        nameEn: city.nameEn,
+        nameAr: city.nameAr.trim(),
+        nameEn: city.nameEn.trim(),
       })
       .subscribe({
-        next: () => this.toast.show('تم حفظ المدينة'),
+        next: (row) => {
+          city.nameAr = row.nameAr;
+          city.nameEn = row.nameEn;
+          this.shell.set(city.nameAr, city.nameEn || 'أحياء التغطية');
+          this.toast.show('تم حفظ المدينة');
+        },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ المدينة')),
       });
   }
@@ -288,18 +431,31 @@ export class OpsGeoComponent implements OnInit {
     });
   }
 
-  createCoverage(city: OpsCity): void {
-    const draft = this.coverageDrafts[city.id];
-    if (!draft?.code.trim() || draft.nameAr.trim().length < 2) {
-      this.toast.show('أدخلي رمز الحي واسمه');
+  openAddCoverage(): void {
+    this.coverageDraft = emptyCoverageDraft();
+    this.addingCoverage = true;
+  }
+
+  createCoverage(): void {
+    if (!this.selectedCity) {
+      return;
+    }
+    if (!this.hasNames(this.coverageDraft.nameAr, this.coverageDraft.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
     }
     this.api
-      .opsCreateCoverage({ cityId: city.id, code: draft.code, nameAr: draft.nameAr, isVisible: true })
+      .opsCreateCoverage({
+        cityId: this.selectedCity.id,
+        nameAr: this.coverageDraft.nameAr.trim(),
+        nameEn: this.coverageDraft.nameEn.trim(),
+        isVisible: true,
+      })
       .subscribe({
         next: () => {
           this.toast.show('تمت إضافة حي التغطية');
-          this.coverageDrafts[city.id] = { code: '', nameAr: '' };
+          this.coverageDraft = emptyCoverageDraft();
+          this.addingCoverage = false;
           this.load();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الحي')),
@@ -307,10 +463,22 @@ export class OpsGeoComponent implements OnInit {
   }
 
   saveCoverage(area: OpsCoverage): void {
-    this.api.opsPatchCoverage(area.id, { nameAr: area.nameAr, nameEn: area.nameEn }).subscribe({
-      next: () => this.toast.show('تم حفظ الحي'),
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الحي')),
-    });
+    if (!this.hasNames(area.nameAr, area.nameEn)) {
+      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      return;
+    }
+    this.api
+      .opsPatchCoverage(area.id, {
+        nameAr: area.nameAr.trim(),
+        nameEn: area.nameEn.trim(),
+      })
+      .subscribe({
+        next: (row) => {
+          Object.assign(area, row);
+          this.toast.show('تم حفظ الحي');
+        },
+        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الحي')),
+      });
   }
 
   toggleCoverage(area: OpsCoverage): void {
@@ -323,17 +491,24 @@ export class OpsGeoComponent implements OnInit {
     });
   }
 
+  private hasNames(nameAr: string, nameEn: string): boolean {
+    return nameAr.trim().length >= 2 && nameEn.trim().length >= 2;
+  }
+
   private load(): void {
     this.loading = true;
     this.api.opsRegions().subscribe({
       next: (regions) => {
         this.regions = regions;
         this.selected = keepSelected(this.regions, this.selected);
-        for (const region of regions) {
-          this.cityDrafts[region.id] ??= { code: '', nameAr: '' };
-          for (const city of region.cities) {
-            this.coverageDrafts[city.id] ??= { code: '', nameAr: '' };
-          }
+        this.selectedCity = this.selected ? keepSelected(this.selected.cities, this.selectedCity) : null;
+        this.selectedCoverage = this.selectedCity
+          ? keepSelected(this.selectedCity.coverageAreas ?? [], this.selectedCoverage)
+          : null;
+        if (this.selectedCity) {
+          this.shell.set(this.selectedCity.nameAr, this.selectedCity.nameEn || 'أحياء التغطية');
+        } else if (this.selected) {
+          this.shell.set(this.selected.nameAr, this.selected.nameEn || 'مدن المنطقة');
         }
         this.loading = false;
       },

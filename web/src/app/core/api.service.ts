@@ -497,7 +497,7 @@ export class ApiService {
     return this.http.get<OpsRegion[]>(`${this.base}/ops/regions`);
   }
 
-  opsCreateRegion(body: { code: string; nameAr: string; nameEn?: string; isVisible?: boolean; sortOrder?: number }) {
+  opsCreateRegion(body: { nameAr: string; nameEn: string; isVisible?: boolean; sortOrder?: number; code?: string }) {
     return this.http.post<OpsRegion>(`${this.base}/ops/regions`, body);
   }
 
@@ -505,7 +505,7 @@ export class ApiService {
     return this.http.patch<OpsRegion>(`${this.base}/ops/regions/${id}`, body);
   }
 
-  opsCreateCity(body: { regionId: string; code: string; nameAr: string; nameEn?: string; isVisible?: boolean }) {
+  opsCreateCity(body: { regionId: string; nameAr: string; nameEn: string; isVisible?: boolean; code?: string }) {
     return this.http.post<OpsCity>(`${this.base}/ops/cities`, body);
   }
 
@@ -615,7 +615,7 @@ export class ApiService {
     return this.http.get<OpsCatalogService[]>(`${this.base}/ops/catalog`);
   }
 
-  opsCreateService(body: { code: string; nameAr: string; nameEn?: string; sortOrder?: number; isVisible?: boolean }) {
+  opsCreateService(body: { code?: string; nameAr: string; nameEn: string; sortOrder?: number; isVisible?: boolean }) {
     return this.http.post<OpsCatalogService>(`${this.base}/ops/catalog`, body);
   }
 
@@ -623,7 +623,7 @@ export class ApiService {
     return this.http.patch<OpsCatalogService>(`${this.base}/ops/catalog/${id}`, body);
   }
 
-  opsCreateSubService(serviceId: string, body: { code: string; nameAr: string; nameEn?: string; sortOrder?: number }) {
+  opsCreateSubService(serviceId: string, body: { code?: string; nameAr: string; nameEn: string; sortOrder?: number }) {
     return this.http.post<OpsSubService>(`${this.base}/ops/catalog/${serviceId}/sub-services`, body);
   }
 
@@ -689,7 +689,7 @@ export class ApiService {
     return this.http.post<{ ok: boolean }>(`${this.base}/ops/banned-phones/${mobile}/lift`, {});
   }
 
-  opsCreateCoverage(body: { cityId: string; code: string; nameAr: string; nameEn?: string; isVisible?: boolean }) {
+  opsCreateCoverage(body: { cityId: string; nameAr: string; nameEn: string; isVisible?: boolean; code?: string }) {
     return this.http.post<OpsCoverage>(`${this.base}/ops/coverage`, body);
   }
 
@@ -705,6 +705,10 @@ export class ApiService {
       }
     }
     return this.http.get<OpsManagedAccount[]>(`${this.base}/ops/accounts`, { params });
+  }
+
+  opsAccount(id: string) {
+    return this.http.get<OpsManagedAccount>(`${this.base}/ops/accounts/${id}`);
   }
 
   opsPatchAccount(id: string, body: { status?: string; packageId?: string; reason: string; visibility?: string }) {

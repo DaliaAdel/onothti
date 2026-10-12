@@ -399,6 +399,17 @@ export class OpsController {
     return this.ops.accounts({ q, accountType, status });
   }
 
+  @Get("accounts/:id")
+  @RequirePermission(
+    StaffPermission.CUSTOMERS_REVIEW,
+    StaffPermission.PROVIDERS_APPROVE,
+    StaffPermission.NOTIFY_PROVIDER,
+    StaffPermission.NOTIFY_CUSTOMER,
+  )
+  accountDetail(@Param("id") id: string) {
+    return this.ops.accountDetail(id);
+  }
+
   @Patch("accounts/:id")
   @RequirePermission(StaffPermission.CUSTOMERS_REVIEW, StaffPermission.PROVIDERS_APPROVE)
   patchAccount(@Param("id") id: string, @Body() dto: PatchAccountDto, @CurrentUser() user: AuthUser) {

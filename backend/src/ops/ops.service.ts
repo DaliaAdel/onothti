@@ -42,7 +42,7 @@ import {
 } from "./dto/ops.dto";
 import { parseCityIds, replaceProviderCities } from "../common/geo";
 import { resolvePackagePricing, serializePackage } from "../common/package-price";
-import { fileUrl } from "../common/upload-url";
+import { fileUrl, publicUploadUrl } from "../common/upload-url";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 
@@ -530,12 +530,13 @@ export class OpsService {
   }
 
   async createService(dto: UpsertServiceDto) {
+    const code = await this.uniqueCatalogCode("service", dto.nameEn, dto.code);
     return this.prisma.service
       .create({
         data: {
-          code: dto.code.trim().toUpperCase(),
+          code,
           nameAr: dto.nameAr.trim(),
-          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          nameEn: dto.nameEn.trim(),
           sortOrder: dto.sortOrder ?? 0,
           isVisible: dto.isVisible ?? true,
         },
@@ -566,13 +567,14 @@ export class OpsService {
     if (!service) {
       throw new NotFoundException("الخدمة غير موجودة");
     }
+    const code = await this.uniqueCatalogCode("subService", dto.nameEn, dto.code);
     return this.prisma.subService
       .create({
         data: {
           serviceId,
-          code: dto.code.trim().toUpperCase(),
+          code,
           nameAr: dto.nameAr.trim(),
-          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          nameEn: dto.nameEn.trim(),
           sortOrder: dto.sortOrder ?? 0,
           isVisible: dto.isVisible ?? true,
         },
@@ -744,13 +746,14 @@ export class OpsService {
     if (!city) {
       throw new NotFoundException("المدينة غير موجودة");
     }
+    const code = await this.uniqueCatalogCode("coverage", dto.nameEn, dto.code);
     return this.prisma.coverageArea
       .create({
         data: {
           cityId: dto.cityId,
-          code: dto.code.trim().toUpperCase(),
+          code,
           nameAr: dto.nameAr.trim(),
-          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          nameEn: dto.nameEn.trim(),
           isVisible: dto.isVisible ?? true,
         },
       })
@@ -803,11 +806,121 @@ export class OpsService {
       orderBy: { createdAt: "desc" },
       take: 100,
     });
-    return rows.map((user) => ({
-      ...user,
-      package: user.subscriptions[0]?.package ?? null,
-      subscriptionEndAt: user.subscriptions[0]?.endAt ?? null,
-    }));
+    return Promise.all(rows.map((user) => this.toManagedAccount(user, false)));
+  }
+
+  async accountDetail(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id,
+        accountType: { in: [AccountType.CUSTOMER, AccountType.PROVIDER] },
+      },
+      include: {
+        customerProfile: { include: { city: true } },
+        providerProfile: {
+          include: {
+            city: { include: { region: true } },
+            cities: { include: { city: true }, orderBy: { sortOrder: "asc" } },
+            coverage: { include: { coverageArea: { select: { id: true, nameAr: true } } } },
+            services: {
+              where: { isActive: true },
+              orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+              include: {
+                service: { select: { nameAr: true } },
+                subService: { select: { nameAr: true } },
+              },
+            },
+          },
+        },
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          orderBy: { endAt: "desc" },
+          take: 1,
+          include: { package: { select: { id: true, code: true, nameAr: true } } },
+        },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException("الحساب غير موجود");
+    }
+    return this.toManagedAccount(user, true);
+  }
+
+  private async toManagedAccount(
+    user: {
+      id: string;
+      displayName: string;
+      accountCode: string;
+      mobile: string;
+      email: string | null;
+      accountType: string;
+      status: string;
+      createdAt: Date;
+      avatarFileId?: string | null;
+      customerProfile?: { bio?: string | null; city?: { nameAr: string } | null } | null;
+      providerProfile?: {
+        bio?: string | null;
+        whatsapp?: string | null;
+        visibility?: string | null;
+        badge?: string | null;
+        city?: { nameAr: string; region?: { nameAr: string } | null } | null;
+        cities?: { city: { nameAr: string } }[];
+        coverage?: { coverageArea: { id: string; nameAr: string } }[];
+        services?: {
+          isActive: boolean;
+          isPrimary: boolean;
+          service: { nameAr: string };
+          subService?: { nameAr: string } | null;
+        }[];
+      } | null;
+      subscriptions?: { endAt: Date; package: { id: string; code: string; nameAr: string } }[];
+    },
+    detail: boolean,
+  ) {
+    const pkg = user.subscriptions?.[0];
+    const provider = user.providerProfile;
+    const customer = user.customerProfile;
+    let avatarUrl: string | null = null;
+    if (detail && user.avatarFileId) {
+      const file = await this.prisma.mediaFile.findUnique({ where: { id: user.avatarFileId } });
+      avatarUrl = publicUploadUrl(file?.storageKey);
+    }
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      accountCode: user.accountCode,
+      mobile: user.mobile,
+      email: user.email,
+      accountType: user.accountType,
+      status: user.status,
+      createdAt: user.createdAt,
+      package: pkg?.package ?? null,
+      subscriptionEndAt: pkg?.endAt ?? null,
+      avatarUrl,
+      bio: provider?.bio ?? customer?.bio ?? null,
+      whatsapp: provider?.whatsapp || (user.accountType === AccountType.PROVIDER ? user.mobile : null),
+      customerProfile: customer
+        ? { city: customer.city ?? null, bio: customer.bio ?? null }
+        : null,
+      providerProfile: provider
+        ? {
+            city: provider.city ?? null,
+            visibility: provider.visibility ?? null,
+            bio: provider.bio ?? null,
+            whatsapp: provider.whatsapp || user.mobile,
+            badge: provider.badge ?? null,
+            region: provider.city?.region ?? null,
+            cities: (provider.cities ?? []).map((row) => row.city),
+            coverage: (provider.coverage ?? []).map((row) => row.coverageArea),
+            services: (provider.services ?? [])
+              .filter((row) => row.isActive)
+              .map((row) => ({
+                nameAr: row.subService?.nameAr || row.service.nameAr,
+                isPrimary: row.isPrimary,
+              })),
+          }
+        : null,
+    };
   }
 
   async patchAccount(id: string, dto: PatchAccountDto, actorId: string) {
@@ -898,8 +1011,7 @@ export class OpsService {
       .join(" · ");
     await this.notifyOwner(id, "تحديث الحساب", summary);
 
-    const rows = await this.accounts({ q: user.accountCode });
-    return rows[0] ?? { id, status: nextStatus ?? user.status, package: assignedPackage };
+    return this.accountDetail(id);
   }
 
   async notifyAccount(id: string, dto: NotifyAccountDto, actorId: string, permissions: string[] = []) {
@@ -1158,12 +1270,13 @@ export class OpsService {
   }
 
   async createRegion(dto: UpsertRegionDto) {
+    const code = await this.uniqueCatalogCode("region", dto.nameEn, dto.code);
     return this.prisma.region
       .create({
         data: {
-          code: dto.code.trim().toUpperCase(),
+          code,
           nameAr: dto.nameAr.trim(),
-          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          nameEn: dto.nameEn.trim(),
           isVisible: dto.isVisible ?? true,
           sortOrder: dto.sortOrder ?? 0,
         },
@@ -1185,7 +1298,12 @@ export class OpsService {
         ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       },
-      include: { cities: { orderBy: { nameAr: "asc" } } },
+      include: {
+        cities: {
+          orderBy: { nameAr: "asc" },
+          include: { coverageAreas: { orderBy: { nameAr: "asc" } } },
+        },
+      },
     });
   }
 
@@ -1201,16 +1319,17 @@ export class OpsService {
     if (!region) {
       throw new NotFoundException("المنطقة غير موجودة");
     }
+    const code = await this.uniqueCatalogCode("city", dto.nameEn, dto.code);
     return this.prisma.city
       .create({
         data: {
           regionId: dto.regionId,
-          code: dto.code.trim().toUpperCase(),
+          code,
           nameAr: dto.nameAr.trim(),
-          nameEn: (dto.nameEn ?? dto.nameAr).trim(),
+          nameEn: dto.nameEn.trim(),
           isVisible: dto.isVisible ?? true,
         },
-        include: { region: true },
+        include: { region: true, coverageAreas: true },
       })
       .catch((error: unknown) => this.rethrowUnique(error, "رمز المدينة مستخدم"));
   }
@@ -1234,7 +1353,7 @@ export class OpsService {
         ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
         ...(dto.isVisible !== undefined ? { isVisible: dto.isVisible } : {}),
       },
-      include: { region: true },
+      include: { region: true, coverageAreas: { orderBy: { nameAr: "asc" } } },
     });
   }
 
@@ -2015,6 +2134,41 @@ export class OpsService {
       DELETED: "محذوف",
     };
     return labels[status] ?? status;
+  }
+
+  private catalogCode(nameEn: string, fallback: string) {
+    const slug = nameEn
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 20);
+    return slug.length >= 2 ? slug : fallback;
+  }
+
+  private async uniqueCatalogCode(
+    kind: "service" | "subService" | "region" | "city" | "coverage",
+    nameEn: string,
+    provided?: string,
+  ) {
+    const max = kind === "coverage" ? 40 : kind === "subService" ? 30 : 20;
+    const fallback = { service: "SVC", subService: "SUB", region: "REG", city: "CTY", coverage: "COV" }[kind];
+    const base = (provided?.trim() || this.catalogCode(nameEn, fallback)).toUpperCase().slice(0, max);
+    const taken =
+      kind === "service"
+        ? await this.prisma.service.findUnique({ where: { code: base } })
+        : kind === "subService"
+          ? await this.prisma.subService.findUnique({ where: { code: base } })
+          : kind === "region"
+            ? await this.prisma.region.findUnique({ where: { code: base } })
+            : kind === "city"
+              ? await this.prisma.city.findUnique({ where: { code: base } })
+              : await this.prisma.coverageArea.findUnique({ where: { code: base } });
+    if (!taken) {
+      return base;
+    }
+    const suffix = `_${randomBytes(2).toString("hex").toUpperCase()}`;
+    return `${base.slice(0, max - suffix.length)}${suffix}`;
   }
 
   private rethrowUnique(error: unknown, message: string) {

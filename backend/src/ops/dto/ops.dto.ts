@@ -101,20 +101,21 @@ export class PatchWelcomeDto {
 }
 
 export class UpsertRegionDto {
-  @ApiProperty({ example: "EAS" })
+  @ApiPropertyOptional({ example: "EAS" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: "الشرقية" })
   @IsString()
   @MinLength(2)
   nameAr!: string;
 
-  @ApiPropertyOptional({ example: "Eastern" })
-  @IsOptional()
+  @ApiProperty({ example: "Eastern" })
   @IsString()
-  nameEn?: string;
+  @MinLength(2)
+  nameEn!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -138,6 +139,7 @@ export class PatchRegionDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(2)
   nameEn?: string;
 
   @ApiPropertyOptional()
@@ -157,20 +159,21 @@ export class CreateCityDto {
   @IsString()
   regionId!: string;
 
-  @ApiProperty({ example: "DHAHRAN" })
+  @ApiPropertyOptional({ example: "DHAHRAN" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: "الظهران" })
   @IsString()
   @MinLength(2)
   nameAr!: string;
 
-  @ApiPropertyOptional({ example: "Dhahran" })
-  @IsOptional()
+  @ApiProperty({ example: "Dhahran" })
   @IsString()
-  nameEn?: string;
+  @MinLength(2)
+  nameEn!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -193,6 +196,7 @@ export class PatchCityDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(2)
   nameEn?: string;
 
   @ApiPropertyOptional()
@@ -664,20 +668,21 @@ export class PatchLegalDto {
 }
 
 export class UpsertServiceDto {
-  @ApiProperty({ example: "HAIR" })
+  @ApiPropertyOptional({ example: "HAIR" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: "الشعر" })
   @IsString()
   @MinLength(2)
   nameAr!: string;
 
-  @ApiPropertyOptional({ example: "Hair" })
-  @IsOptional()
+  @ApiProperty({ example: "Hair" })
   @IsString()
-  nameEn?: string;
+  @MinLength(2)
+  nameEn!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -701,6 +706,7 @@ export class PatchServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(2)
   nameEn?: string;
 
   @ApiPropertyOptional()
@@ -716,20 +722,21 @@ export class PatchServiceDto {
 }
 
 export class UpsertSubServiceDto {
-  @ApiProperty({ example: "HAIR-CUT" })
+  @ApiPropertyOptional({ example: "HAIR-CUT" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: "قص شعر" })
   @IsString()
   @MinLength(2)
   nameAr!: string;
 
-  @ApiPropertyOptional({ example: "Haircut" })
-  @IsOptional()
+  @ApiProperty({ example: "Haircut" })
   @IsString()
-  nameEn?: string;
+  @MinLength(2)
+  nameEn!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -753,6 +760,7 @@ export class PatchSubServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(2)
   nameEn?: string;
 
   @ApiPropertyOptional()
@@ -772,20 +780,21 @@ export class UpsertCoverageDto {
   @IsString()
   cityId!: string;
 
-  @ApiProperty({ example: "NORTH" })
+  @ApiPropertyOptional({ example: "NORTH" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: "شمال المدينة" })
   @IsString()
   @MinLength(2)
   nameAr!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ example: "North" })
   @IsString()
-  nameEn?: string;
+  @MinLength(2)
+  nameEn!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -803,6 +812,7 @@ export class PatchCoverageDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(2)
   nameEn?: string;
 
   @ApiPropertyOptional()

@@ -67,6 +67,9 @@ export class OpsLayoutComponent implements OnInit {
     if (can('PACKAGES_MANAGE')) {
       settingsChildren.push({ icon: 'package', label: 'اعدادات الباقات', route: '/ops/packages' });
     }
+    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE')) {
+      settingsChildren.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
+    }
     if (can('USERS_MANAGE')) {
       settingsChildren.push({ icon: 'profile', label: 'حسابات موظفى المنصة', route: '/ops/staff' });
     }

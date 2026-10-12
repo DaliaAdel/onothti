@@ -181,6 +181,7 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./ops/ops-dashboard.component').then((m) => m.OpsDashboardComponent) },
       { path: 'media', loadComponent: () => import('./ops/ops-media.component').then((m) => m.OpsMediaComponent) },
       { path: 'accounts', loadComponent: () => import('./ops/ops-accounts.component').then((m) => m.OpsAccountsComponent) },
+      { path: 'clients', loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent) },
       { path: 'reviews', loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent) },
       { path: 'packages', loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent) },
       { path: 'geo', loadComponent: () => import('./ops/ops-geo.component').then((m) => m.OpsGeoComponent) },
