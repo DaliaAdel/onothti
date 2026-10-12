@@ -18,9 +18,11 @@ import {
   UpdateProviderCoverageDto,
   UpdateProviderProfileDto,
 } from "./dto/provider.dto";
+import { serializePackage } from "../common/package-price";
 import {
   assertUniqueDisplayName,
   assertUniqueEmail,
+  campaignSubscriptionEndAt,
   liveCampaign,
   pendingChangesFor,
   pendingValue,
@@ -593,7 +595,7 @@ export class ProviderService {
     ]);
     return {
       current,
-      packages: packages.map(toPackage),
+      packages: packages.map(serializePackage),
       bankAccounts,
       proofs,
       campaign: await liveCampaign(this.prisma),
@@ -601,17 +603,17 @@ export class ProviderService {
     };
   }
 
-  async joinCampaign(userId: string) {
+  async joinCampaign(userId: string, packageId?: string) {
     await this.requireProvider(userId);
-    const campaign = await liveCampaign(this.prisma);
+    const campaign = await liveCampaign(this.prisma, packageId);
     if (!campaign) {
-      throw new BadRequestException("لا توجد حملة مجانية مفعّلة حالياً");
+      throw new BadRequestException("لا توجد حملة ترويجية مفعّلة حالياً");
     }
-    const free = await this.prisma.package.findFirst({
-      where: { code: "FREE", isActive: true },
+    const linked = await this.prisma.package.findFirst({
+      where: { id: campaign.packageId, isActive: true },
     });
-    if (!free) {
-      throw new BadRequestException("الباقة المجانية غير متاحة");
+    if (!linked) {
+      throw new BadRequestException("الباقة المرتبطة بالحملة غير متاحة");
     }
     const active = await this.prisma.subscription.findFirst({
       where: { providerUserId: userId, status: "ACTIVE", endAt: { gte: new Date() } },
@@ -620,12 +622,14 @@ export class ProviderService {
       throw new BadRequestException("لديكِ اشتراك نشط بالفعل");
     }
     const startAt = new Date();
-    const endAt = new Date(startAt);
-    endAt.setDate(endAt.getDate() + campaign.benefitDays);
+    const endAt = campaignSubscriptionEndAt(campaign, startAt);
+    if (!endAt) {
+      throw new BadRequestException("لم يتبق وقت في الحملة");
+    }
     const subscription = await this.prisma.subscription.create({
       data: {
         providerUserId: userId,
-        packageId: free.id,
+        packageId: linked.id,
         campaignId: campaign.id,
         startAt,
         endAt,
@@ -647,10 +651,11 @@ export class ProviderService {
       endAt: subscription.endAt,
       campaign: {
         id: campaign.id,
+        packageId: campaign.packageId,
         nameAr: campaign.nameAr,
         nameEn: campaign.nameEn,
       },
-      package: toPackage(subscription.package),
+      package: serializePackage(subscription.package),
     };
   }
 
@@ -666,18 +671,20 @@ export class ProviderService {
       throw new BadRequestException("الباقة غير متاحة");
     }
     const months = await this.extensionMonths(pkg.durationMonths);
-    const campaign = pkg.code === "FREE" ? await liveCampaign(this.prisma) : null;
-    if (pkg.code === "FREE" && !campaign) {
-      throw new BadRequestException("الحملة المجانية غير مفعّلة");
-    }
+    const campaign = await liveCampaign(this.prisma, pkg.id);
+    const payable = Number(pkg.price);
     const startAt = new Date();
-    const endAt = new Date(startAt);
+    let endAt = new Date(startAt);
     if (campaign) {
-      endAt.setDate(endAt.getDate() + campaign.benefitDays);
+      const clipped = campaignSubscriptionEndAt(campaign, startAt);
+      if (!clipped) {
+        throw new BadRequestException("لم يتبق وقت في الحملة");
+      }
+      endAt = clipped;
     } else {
       endAt.setMonth(endAt.getMonth() + months);
     }
-    const autoActivate = Boolean(campaign && pkg.code === "FREE");
+    const autoActivate = Boolean(campaign && payable === 0);
     const subscription = await this.prisma.subscription.create({
       data: {
         providerUserId: userId,
@@ -808,7 +815,7 @@ export class ProviderService {
       status: chosen.status,
       startAt: chosen.startAt,
       endAt: chosen.endAt,
-      package: toPackage(chosen.package),
+      package: serializePackage(chosen.package),
     };
   }
 
@@ -873,7 +880,7 @@ export class ProviderService {
         status: proof.subscription.status,
         startAt: proof.subscription.startAt,
         endAt: proof.subscription.endAt,
-        package: toPackage(proof.subscription.package),
+        package: serializePackage(proof.subscription.package),
       },
     };
   }
@@ -1025,36 +1032,3 @@ function daysAgo(days: number) {
   return date;
 }
 
-function toPackage(pkg: {
-  id: string;
-  code: string;
-  nameAr: string;
-  nameEn: string;
-  price: { toString(): string } | number;
-  durationMonths: number;
-  rank: number;
-  maxServices: number | null;
-  maxPhotos: number | null;
-  maxVideos: number | null;
-  maxAlbums?: number | null;
-  allowWhatsApp?: boolean;
-  allowRating?: boolean;
-  hasBadge?: boolean;
-}) {
-  return {
-    id: pkg.id,
-    code: pkg.code,
-    nameAr: pkg.nameAr,
-    nameEn: pkg.nameEn,
-    price: Number(pkg.price),
-    durationMonths: pkg.durationMonths,
-    rank: pkg.rank,
-    maxServices: pkg.maxServices,
-    maxPhotos: pkg.maxPhotos,
-    maxVideos: pkg.maxVideos,
-    maxAlbums: pkg.maxAlbums ?? null,
-    allowWhatsApp: pkg.allowWhatsApp ?? true,
-    allowRating: pkg.allowRating ?? true,
-    hasBadge: pkg.hasBadge ?? false,
-  };
-}

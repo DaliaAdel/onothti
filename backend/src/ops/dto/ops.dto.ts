@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Min, MinLength } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, Min, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateSettingDto {
@@ -34,6 +34,17 @@ export class PatchCampaignDto {
   @IsInt()
   @Min(1)
   benefitDays?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  packageId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  clipToEndDate?: boolean;
 }
 
 export class UpsertWelcomeDto {
@@ -261,11 +272,27 @@ export class UpsertPackageDto {
   @Min(1)
   durationMonths!: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  price!: number;
+  price?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceBefore?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -360,6 +387,21 @@ export class PatchPackageDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  priceBefore?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   vatPercent?: number;
 
   @ApiPropertyOptional()
@@ -443,10 +485,20 @@ export class CreateCampaignDto {
   @Min(1)
   benefitDays!: number;
 
+  @ApiProperty()
+  @IsString()
+  @MinLength(8)
+  packageId!: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  clipToEndDate?: boolean;
 }
 
 export class ReviewRatingDto {

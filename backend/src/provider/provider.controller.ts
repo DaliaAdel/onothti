@@ -28,6 +28,7 @@ import {
   PatchPortfolioAlbumDto,
   PatchProviderServiceDto,
   ReorderProviderServicesDto,
+  JoinCampaignDto,
   SubmitPaymentProofDto,
   UpdateProviderCoverageDto,
   UpdateProviderProfileDto,
@@ -187,8 +188,8 @@ export class ProviderController {
   }
 
   @Post("subscription/campaign")
-  joinCampaign(@CurrentUser() user: AuthUser) {
-    return this.provider.joinCampaign(user.sub);
+  joinCampaign(@CurrentUser() user: AuthUser, @Body() dto: JoinCampaignDto) {
+    return this.provider.joinCampaign(user.sub, dto.packageId);
   }
 
   @Get("payment-proofs")

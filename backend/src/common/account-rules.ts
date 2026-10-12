@@ -115,14 +115,39 @@ export function pendingValue(
   return changes.find((item) => item.field === field)?.newValue;
 }
 
-export async function liveCampaign(prisma: PrismaService) {
+export function campaignEndOfDay(value: Date) {
+  const end = new Date(value);
+  end.setHours(23, 59, 59, 0);
+  return end;
+}
+
+export function campaignSubscriptionEndAt(
+  campaign: { endDate: Date; benefitDays: number; clipToEndDate: boolean },
+  startAt = new Date(),
+) {
+  const byDays = new Date(startAt.getTime());
+  byDays.setDate(byDays.getDate() + campaign.benefitDays);
+  if (!campaign.clipToEndDate) {
+    return byDays;
+  }
+  const campaignEnd = campaignEndOfDay(new Date(campaign.endDate));
+  const endAt = byDays.getTime() < campaignEnd.getTime() ? byDays : campaignEnd;
+  if (endAt.getTime() <= startAt.getTime()) {
+    return null;
+  }
+  return endAt;
+}
+
+export async function liveCampaign(prisma: PrismaService, packageId?: string) {
   const now = new Date();
   return prisma.campaign.findFirst({
     where: {
       isActive: true,
       startDate: { lte: now },
       endDate: { gte: now },
+      ...(packageId ? { packageId } : {}),
     },
+    include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true, price: true } } },
     orderBy: { startDate: "desc" },
   });
 }

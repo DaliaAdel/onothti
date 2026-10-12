@@ -327,6 +327,10 @@ export class ApiService {
     return this.http.get<ProviderSubscriptionResponse>(`${this.base}/provider/subscription`);
   }
 
+  joinCampaign(packageId?: string) {
+    return this.http.post(`${this.base}/provider/subscription/campaign`, packageId ? { packageId } : {});
+  }
+
   submitPaymentProof(body: {
     packageId: string;
     amount?: number;
@@ -430,7 +434,9 @@ export class ApiService {
     return this.http.get<CatalogPackage[]>(`${this.base}/ops/packages`);
   }
 
-  opsCreatePackage(body: Partial<CatalogPackage> & { code: string; nameAr: string; durationMonths: number; price: number; rank: number }) {
+  opsCreatePackage(
+    body: Partial<CatalogPackage> & { code: string; nameAr: string; durationMonths: number; rank: number },
+  ) {
     return this.http.post<CatalogPackage>(`${this.base}/ops/packages`, body);
   }
 
@@ -448,6 +454,8 @@ export class ApiService {
     startDate: string;
     endDate: string;
     benefitDays: number;
+    packageId: string;
+    clipToEndDate?: boolean;
     isActive?: boolean;
   }) {
     return this.http.post<OpsCampaign>(`${this.base}/ops/campaigns`, body);

@@ -1,7 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { apiMessage } from '../core/phone';
 import { LocaleService } from '../core/locale.service';
+import { ToastService } from '../core/toast.service';
 import {
   PACKAGE_COLORS,
   PACKAGE_POLICIES,
@@ -45,8 +47,18 @@ import { ShellService } from '../core/shell.service';
             </div>
           </div>
           <div class="package-body">
+            @if (hasDiscount(item)) {
+              <div class="price-row">
+                <span>قبل الخصم</span>
+                <del>{{ money(item.priceBefore) }} ر.س</del>
+              </div>
+              <div class="price-row">
+                <span>الخصم</span>
+                <b>{{ money(item.discountPercent) }}%</b>
+              </div>
+            }
             <div class="price-row final">
-              <span>قيمة الباقة</span>
+              <span>{{ hasDiscount(item) ? 'بعد الخصم' : 'قيمة الباقة' }}</span>
               <strong>{{ priceOf(item) }}</strong>
             </div>
             <details class="package-policy">
@@ -65,7 +77,9 @@ import { ShellService } from '../core/shell.service';
               </div>
             </details>
             <div class="package-feature"><span>✓</span> تفعيل الخدمات والألبومات بعد اعتماد الاشتراك</div>
-            @if (item.code === 'FREE') {
+            @if (isCampaignPackage(item)) {
+              <button class="btn package-action" type="button" (click)="join(item)">الاستفادة من الحملة</button>
+            } @else if (item.code === 'FREE') {
               <button class="btn package-action" type="button" disabled>تُفعّل من إدارة المنصة</button>
             } @else {
               <button class="btn package-action" type="button" (click)="choose(item)">اختيار الباقة والاشتراك</button>
@@ -80,6 +94,7 @@ export class ProviderPackageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   readonly locale = inject(LocaleService);
   data: ProviderSubscriptionResponse | null = null;
 
@@ -112,8 +127,21 @@ export class ProviderPackageComponent implements OnInit {
     return PACKAGE_POLICIES[item.code]?.duration || (item.durationMonths ? `${item.durationMonths} شهر` : 'مدة مرنة');
   }
 
+  money(value: number | string | null | undefined): number {
+    const next = Number(value ?? 0);
+    return Number.isFinite(next) ? next : 0;
+  }
+
+  hasDiscount(item: CatalogPackage): boolean {
+    return this.money(item.discountPercent) > 0;
+  }
+
+  isCampaignPackage(item: CatalogPackage): boolean {
+    return Boolean(this.data?.campaign?.packageId && this.data.campaign.packageId === item.id);
+  }
+
   priceOf(item: CatalogPackage): string {
-    const price = Number(item.price ?? 0);
+    const price = this.money(item.price);
     if (item.code === 'FREE' || price === 0) {
       return 'بدون مقابل';
     }
@@ -126,5 +154,15 @@ export class ProviderPackageComponent implements OnInit {
 
   choose(item: CatalogPackage): void {
     void this.router.navigate(['/p/payment'], { queryParams: { packageId: item.id } });
+  }
+
+  join(item: CatalogPackage): void {
+    this.api.joinCampaign(item.id).subscribe({
+      next: () => {
+        this.toast.show(`تم تفعيل ${this.locale.localizedName(item)} من الحملة`);
+        this.api.providerSubscription().subscribe({ next: (data) => (this.data = data) });
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر الاستفادة من الحملة')),
+    });
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../prisma/prisma.service";
 import { liveCampaign } from "../common/account-rules";
+import { serializePackage } from "../common/package-price";
 import { idlePeriodFor, LIMIT_DEFAULTS, settingMaxChars } from "../common/platform-settings";
 
 @ApiTags("catalog")
@@ -53,11 +54,12 @@ export class CatalogController {
   }
 
   @Get("packages")
-  packages() {
-    return this.prisma.package.findMany({
+  async packages() {
+    const rows = await this.prisma.package.findMany({
       where: { isActive: true },
       orderBy: { rank: "asc" },
     });
+    return rows.map(serializePackage);
   }
 
   @Get("campaign")

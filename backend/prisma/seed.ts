@@ -202,6 +202,8 @@ async function main() {
       nameAr: "مجانية",
       nameEn: "Free",
       durationMonths: 1,
+      priceBefore: 0,
+      discountPercent: 0,
       price: 0,
       vatPercent: 15,
       rank: 5,
@@ -218,6 +220,8 @@ async function main() {
       nameAr: "خضراء",
       nameEn: "Green",
       durationMonths: 1,
+      priceBefore: 0,
+      discountPercent: 0,
       price: 0,
       vatPercent: 15,
       rank: 4,
@@ -234,6 +238,8 @@ async function main() {
       nameAr: "برونزية",
       nameEn: "Bronze",
       durationMonths: 3,
+      priceBefore: 0,
+      discountPercent: 0,
       price: 0,
       vatPercent: 15,
       rank: 3,
@@ -250,6 +256,8 @@ async function main() {
       nameAr: "فضية",
       nameEn: "Silver",
       durationMonths: 6,
+      priceBefore: 0,
+      discountPercent: 0,
       price: 0,
       vatPercent: 15,
       rank: 2,
@@ -266,6 +274,8 @@ async function main() {
       nameAr: "ذهبية",
       nameEn: "Gold",
       durationMonths: 12,
+      priceBefore: 0,
+      discountPercent: 0,
       price: 0,
       vatPercent: 15,
       rank: 1,
@@ -883,12 +893,14 @@ async function seedCoverageAndCampaign() {
   const start = new Date();
   const end = new Date();
   end.setDate(end.getDate() + 30);
+  const freePackage = await prisma.package.findUnique({ where: { code: "FREE" } });
   await prisma.campaign.upsert({
     where: { id: "00000000-0000-0000-0000-0000000000c1" },
     update: {
       nameAr: "حملة الباقة المجانية",
       nameEn: "Free package campaign",
       benefitDays: 30,
+      ...(freePackage ? { packageId: freePackage.id } : {}),
     },
     create: {
       id: "00000000-0000-0000-0000-0000000000c1",
@@ -898,6 +910,7 @@ async function seedCoverageAndCampaign() {
       endDate: end,
       benefitDays: 30,
       isActive: false,
+      packageId: freePackage?.id ?? (await prisma.package.findFirstOrThrow()).id,
     },
   });
 }

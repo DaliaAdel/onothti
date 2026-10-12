@@ -41,6 +41,7 @@ import {
   BroadcastDto,
 } from "./dto/ops.dto";
 import { parseCityIds, replaceProviderCities } from "../common/geo";
+import { resolvePackagePricing, serializePackage } from "../common/package-price";
 import { fileUrl } from "../common/upload-url";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
@@ -62,13 +63,19 @@ export class OpsService {
   }
 
   campaigns() {
-    return this.prisma.campaign.findMany({ orderBy: { startDate: "desc" } });
+    return this.prisma.campaign.findMany({
+      include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true } } },
+      orderBy: { startDate: "desc" },
+    });
   }
 
   async patchCampaign(id: string, dto: PatchCampaignDto) {
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
     if (!campaign) {
       throw new NotFoundException("الحملة غير موجودة");
+    }
+    if (dto.packageId) {
+      await this.requirePackage(dto.packageId);
     }
     return this.prisma.campaign.update({
       where: { id },
@@ -77,7 +84,10 @@ export class OpsService {
         ...(dto.startDate ? { startDate: dto.startDate } : {}),
         ...(dto.endDate ? { endDate: dto.endDate } : {}),
         ...(dto.benefitDays ? { benefitDays: dto.benefitDays } : {}),
+        ...(dto.packageId ? { packageId: dto.packageId } : {}),
+        ...(dto.clipToEndDate !== undefined ? { clipToEndDate: dto.clipToEndDate } : {}),
       },
+      include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true } } },
     });
   }
 
@@ -1230,10 +1240,15 @@ export class OpsService {
 
   async packages() {
     const rows = await this.prisma.package.findMany({ orderBy: { rank: "asc" } });
-    return rows.map((row) => this.toPackage(row));
+    return rows.map((row) => serializePackage(row));
   }
 
   async createPackage(dto: UpsertPackageDto) {
+    const pricing = resolvePackagePricing({
+      price: dto.price,
+      priceBefore: dto.priceBefore,
+      discountPercent: dto.discountPercent,
+    });
     try {
       const row = await this.prisma.package.create({
         data: {
@@ -1241,7 +1256,9 @@ export class OpsService {
           nameAr: dto.nameAr.trim(),
           nameEn: (dto.nameEn ?? dto.nameAr).trim(),
           durationMonths: dto.durationMonths,
-          price: dto.price,
+          priceBefore: pricing.priceBefore,
+          discountPercent: pricing.discountPercent,
+          price: pricing.price,
           vatPercent: dto.vatPercent ?? 15,
           rank: dto.rank,
           maxServices: dto.maxServices ?? null,
@@ -1254,7 +1271,7 @@ export class OpsService {
           isActive: dto.isActive ?? true,
         },
       });
-      return this.toPackage(row);
+      return serializePackage(row);
     } catch (error) {
       return this.rethrowUnique(error, "رمز الباقة مستخدم");
     }
@@ -1265,13 +1282,29 @@ export class OpsService {
     if (!current) {
       throw new NotFoundException("الباقة غير موجودة");
     }
+    const pricingChanged =
+      dto.price !== undefined || dto.priceBefore !== undefined || dto.discountPercent !== undefined;
+    const pricing = pricingChanged
+      ? resolvePackagePricing({
+          price: dto.price,
+          priceBefore: dto.priceBefore,
+          discountPercent: dto.discountPercent,
+          current,
+        })
+      : null;
     const row = await this.prisma.package.update({
       where: { id },
       data: {
         ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
         ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : {}),
         ...(dto.durationMonths !== undefined ? { durationMonths: dto.durationMonths } : {}),
-        ...(dto.price !== undefined ? { price: dto.price } : {}),
+        ...(pricing
+          ? {
+              priceBefore: pricing.priceBefore,
+              discountPercent: pricing.discountPercent,
+              price: pricing.price,
+            }
+          : {}),
         ...(dto.vatPercent !== undefined ? { vatPercent: dto.vatPercent } : {}),
         ...(dto.rank !== undefined ? { rank: dto.rank } : {}),
         ...(dto.maxServices !== undefined ? { maxServices: dto.maxServices } : {}),
@@ -1284,61 +1317,35 @@ export class OpsService {
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
     });
-    return this.toPackage(row);
+    return serializePackage(row);
   }
 
   async createCampaign(dto: CreateCampaignDto) {
     if (dto.endDate < dto.startDate) {
       throw new BadRequestException("تاريخ نهاية الحملة قبل بدايتها");
     }
+    await this.requirePackage(dto.packageId);
     return this.prisma.campaign.create({
       data: {
+        packageId: dto.packageId,
         nameAr: dto.nameAr.trim(),
         nameEn: (dto.nameEn ?? dto.nameAr).trim(),
         startDate: dto.startDate,
         endDate: dto.endDate,
         benefitDays: dto.benefitDays,
+        clipToEndDate: dto.clipToEndDate ?? false,
         isActive: dto.isActive ?? false,
       },
+      include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true } } },
     });
   }
 
-  private toPackage(pkg: {
-    id: string;
-    code: string;
-    nameAr: string;
-    nameEn: string;
-    durationMonths: number;
-    price: { toString(): string } | number;
-    vatPercent: { toString(): string } | number;
-    rank: number;
-    maxServices: number | null;
-    maxPhotos: number | null;
-    maxVideos: number | null;
-    maxAlbums: number | null;
-    allowWhatsApp: boolean;
-    allowRating: boolean;
-    hasBadge: boolean;
-    isActive: boolean;
-  }) {
-    return {
-      id: pkg.id,
-      code: pkg.code,
-      nameAr: pkg.nameAr,
-      nameEn: pkg.nameEn,
-      durationMonths: pkg.durationMonths,
-      price: Number(pkg.price),
-      vatPercent: Number(pkg.vatPercent),
-      rank: pkg.rank,
-      maxServices: pkg.maxServices,
-      maxPhotos: pkg.maxPhotos,
-      maxVideos: pkg.maxVideos,
-      maxAlbums: pkg.maxAlbums,
-      allowWhatsApp: pkg.allowWhatsApp,
-      allowRating: pkg.allowRating,
-      hasBadge: pkg.hasBadge,
-      isActive: pkg.isActive,
-    };
+  private async requirePackage(id: string) {
+    const pkg = await this.prisma.package.findUnique({ where: { id } });
+    if (!pkg) {
+      throw new NotFoundException("الباقة غير موجودة");
+    }
+    return pkg;
   }
 
   async dashboard() {

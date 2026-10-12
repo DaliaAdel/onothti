@@ -194,6 +194,8 @@ export interface CatalogPackage {
   nameEn: string;
   rank: number;
   price?: number | string;
+  priceBefore?: number | string;
+  discountPercent?: number | string;
   durationMonths?: number;
   maxServices?: number | null;
   maxPhotos?: number | null;
@@ -320,6 +322,14 @@ export interface ProviderSubscriptionResponse {
   packages: CatalogPackage[];
   bankAccounts: BankAccount[];
   proofs: PaymentProof[];
+  campaign?: {
+    id: string;
+    packageId?: string;
+    nameAr: string;
+    nameEn?: string;
+    benefitDays?: number;
+    isActive?: boolean;
+  } | null;
 }
 
 export interface TicketType {
@@ -463,12 +473,15 @@ export interface OpsPendingProvider {
 
 export interface OpsCampaign {
   id: string;
+  packageId: string;
   nameAr: string;
   nameEn: string;
   startDate: string;
   endDate: string;
   benefitDays: number;
+  clipToEndDate?: boolean;
   isActive: boolean;
+  package?: { id: string; code: string; nameAr: string; nameEn?: string } | null;
 }
 
 export interface OpsAccountRef {

@@ -36,7 +36,16 @@ import { ToastService } from '../core/toast.service';
               <tr><th>اسم المستفيد</th><td>{{ bank.accountName }}</td></tr>
               <tr><th>رقم الآيبان</th><td dir="ltr">{{ bank.iban }}</td></tr>
             }
-            <tr><th>المبلغ</th><td>{{ pkg?.price ?? 0 }} ر.س</td></tr>
+            <tr><th>المبلغ</th>
+              <td>
+                @if (hasDiscount(pkg)) {
+                  <del>{{ money(pkg?.priceBefore) }} ر.س</del>
+                  <b> {{ money(pkg?.price) }} ر.س</b>
+                } @else {
+                  {{ money(pkg?.price) }} ر.س
+                }
+              </td>
+            </tr>
           </table>
           <br />
           <button class="btn primary" type="button" (click)="step = 'proof'">  إرسال الإثبات</button>
@@ -74,7 +83,11 @@ import { ToastService } from '../core/toast.service';
           <h3>ملخص الطلب</h3>
           <div class="summary-line"><span>الباقة</span><b>{{ pkg ? locale.localizedName(pkg) : '—' }}</b></div>
           <div class="summary-line"><span>طريقة الدفع</span><b>تحويل بنكي</b></div>
-          <div class="summary-line total"><span>المبلغ المطلوب</span><b>{{ pkg?.price ?? 0 }} ر.س</b></div>
+          @if (hasDiscount(pkg)) {
+            <div class="summary-line"><span>قبل الخصم</span><b>{{ money(pkg?.priceBefore) }} ر.س</b></div>
+            <div class="summary-line"><span>الخصم</span><b>{{ money(pkg?.discountPercent) }}%</b></div>
+          }
+          <div class="summary-line total"><span>المبلغ المطلوب</span><b>{{ money(pkg?.price) }} ر.س</b></div>
           <button class="btn primary" type="button" [disabled]="loading || !ready" (click)="submit()">إرسال الإثبات للمراجعة</button>
           @if (!ready) {
             <p class="proof-hint">ارفعي الإيصال أو اكتبي رسالة التحويل (8 أحرف على الأقل) لتفعيل زر الإرسال.</p>
@@ -116,6 +129,15 @@ export class ProviderPaymentComponent implements OnInit {
 
   get ready(): boolean {
     return this.tab === 'text' ? this.transferText.trim().length >= 8 : Boolean(this.storageKey);
+  }
+
+  money(value: number | string | null | undefined): number {
+    const next = Number(value ?? 0);
+    return Number.isFinite(next) ? next : 0;
+  }
+
+  hasDiscount(pkg: CatalogPackage | undefined): boolean {
+    return this.money(pkg?.discountPercent) > 0;
   }
 
   ngOnInit(): void {
@@ -163,7 +185,7 @@ export class ProviderPaymentComponent implements OnInit {
     this.api
       .submitPaymentProof({
         packageId: this.packageId,
-        amount: Number(this.pkg?.price) || undefined,
+        amount: this.money(this.pkg?.price) || undefined,
         transferText: this.tab === 'text' ? this.transferText.trim() : undefined,
         reference: reference || undefined,
         storageKey: this.tab === 'file' ? this.storageKey : undefined,

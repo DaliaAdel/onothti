@@ -173,6 +173,13 @@ export class PatchPortfolioAlbumDto {
   isActive?: boolean;
 }
 
+export class JoinCampaignDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  packageId?: string;
+}
+
 export class SubmitPaymentProofDto {
   @ApiPropertyOptional({ description: "باقة الاشتراك المطلوبة" })
   @IsString()
