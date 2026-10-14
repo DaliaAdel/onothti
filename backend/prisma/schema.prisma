@@ -69,11 +69,12 @@ model Role {
 }
 
 model Permission {
-  id     String           @id @default(uuid()) @db.Char(36)
-  code   String           @unique @db.VarChar(80)
-  nameAr String           @db.VarChar(160)
-  nameEn String           @default("") @db.VarChar(160)
-  roles  RolePermission[]
+  id          String                @id @default(uuid()) @db.Char(36)
+  code        String                @unique @db.VarChar(80)
+  nameAr      String                @db.VarChar(160)
+  nameEn      String                @default("") @db.VarChar(160)
+  roles       RolePermission[]
+  staffGrants StaffUserPermission[]
   @@map("permission")
 }
 
@@ -115,17 +116,29 @@ model StaffTeam {
 }
 
 model StaffUser {
-  userId  String     @id @db.Char(36)
-  roleId  String     @db.Char(36)
-  team    String     @db.VarChar(40)
-  teamId  String?    @db.Char(36)
-  titleAr String?    @db.VarChar(80)
-  level   Int        @default(1)
-  user    User       @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  role    Role       @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  orgTeam StaffTeam? @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  userId  String                @id @db.Char(36)
+  roleId  String                @db.Char(36)
+  team    String                @db.VarChar(40)
+  teamId  String?               @db.Char(36)
+  titleAr            String?               @db.VarChar(80)
+  level              Int                   @default(1)
+  customPermissions  Boolean               @default(false)
+  user    User                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  role    Role                  @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  orgTeam StaffTeam?            @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grants  StaffUserPermission[]
   @@index([teamId])
   @@map("staffuser")
+}
+
+model StaffUserPermission {
+  userId       String     @db.Char(36)
+  permissionId String     @db.Char(36)
+  staff        StaffUser  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("staffuserpermission")
 }
 
 model CustomerProfile {

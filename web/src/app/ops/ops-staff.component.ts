@@ -22,7 +22,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
-        <button class="btn primary" type="button" (click)="adding = true">+ إضافة مستخدمة</button>
+        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة مستخدمة</button>
       </div>
     </div>
 
@@ -45,19 +45,19 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
       </div>
     }
 
-    <app-ops-modal [open]="adding" title="إضافة مستخدمة" kicker="حساب تشغيل جديد" (closed)="adding = false">
+    <app-ops-modal [open]="adding" title="إضافة مستخدمة" kicker="حساب تشغيل جديد" (closed)="closeAdd()">
       <div class="form-grid">
         <div class="field">
           <label>الاسم</label>
-          <input class="input" [(ngModel)]="draft.displayName" />
+          <input class="input" name="staffDisplayName" [(ngModel)]="draft.displayName" [ngModelOptions]="{standalone: true}" />
         </div>
         <div class="field">
           <label>الجوال</label>
-          <input class="input" dir="ltr" [(ngModel)]="draft.mobile" placeholder="05xxxxxxxx" />
+          <input class="input" name="staffMobile" dir="ltr" [(ngModel)]="draft.mobile" placeholder="05xxxxxxxx" [ngModelOptions]="{standalone: true}" />
         </div>
         <div class="field">
           <label>نوع الحساب</label>
-          <select class="input" [(ngModel)]="draft.roleId" (ngModelChange)="onRoleChange()">
+          <select class="input" name="staffRoleId" [(ngModel)]="draft.roleId" (ngModelChange)="onRoleChange()" [ngModelOptions]="{standalone: true}">
             <option value="">اختاري نوع الحساب</option>
             @for (role of roles; track role.id) {
               <option [value]="role.id">{{ role.nameAr }}</option>
@@ -66,7 +66,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>القسم</label>
-          <select class="input" [(ngModel)]="draft.departmentId" (ngModelChange)="onDraftDepartmentChange()">
+          <select class="input" name="staffDepartmentId" [(ngModel)]="draft.departmentId" (ngModelChange)="onDraftDepartmentChange()" [ngModelOptions]="{standalone: true}">
             <option value="">اختاري القسم</option>
             @for (department of departments; track department.id) {
               <option [value]="department.id">{{ department.nameAr }}</option>
@@ -75,7 +75,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>الفريق</label>
-          <select class="input" [(ngModel)]="draft.teamId">
+          <select class="input" name="staffTeamId" [(ngModel)]="draft.teamId" [ngModelOptions]="{standalone: true}">
             <option value="">اختاري الفريق</option>
             @for (team of draftTeams; track team.id) {
               <option [value]="team.id">{{ team.nameAr }}</option>
@@ -84,13 +84,15 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>المنصب</label>
-          <input class="input" [(ngModel)]="draft.titleAr" placeholder="مدير التشغيل" />
+          <input class="input" name="staffTitleAr" [(ngModel)]="draft.titleAr" placeholder="مدير التشغيل" [ngModelOptions]="{standalone: true}" />
         </div>
       </div>
       @if (selectedRole) {
         <p class="muted small" style="margin-top:10px">الصلاحيات: {{ permissionNames(selectedRole) }}</p>
       }
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إنشاء الحساب</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" [disabled]="creating" (click)="create()">
+        {{ creating ? 'جاري الإنشاء...' : 'إنشاء الحساب' }}
+      </button>
     </app-ops-modal>
 
     @if (loading) {
@@ -113,7 +115,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           </thead>
           <tbody>
             @for (item of filteredStaff; track item.id) {
-              <tr [class.active]="selectedStaff?.id === item.id" (click)="selectedStaff = item">
+              <tr [class.active]="selectedStaff?.id === item.id" (click)="selectStaff(item)">
                 <td><b>{{ item.displayName }}</b></td>
                 <td dir="ltr">{{ item.mobile }}</td>
                 <td>{{ item.accountCode }}</td>
@@ -141,7 +143,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     >
       @if (selectedStaff; as item) {
         <p class="muted small">{{ item.accountCode }} · <span dir="ltr">{{ item.mobile }}</span></p>
-        <p class="muted small">{{ item.permissions.length }} صلاحية مرتبطة بنوع الحساب</p>
+        <p class="muted small">{{ item.permissions.length }} صلاحية{{ item.customPermissions ? ' مخصّصة' : ' من نوع الحساب' }}</p>
         @if (item.mustChangePassword) {
           <p class="notice">عند أول دخول تؤكد رقمها بـ OTP ثم تضع كلمة مرور جديدة.</p>
         }
@@ -173,8 +175,30 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           <label>المنصب</label>
           <input class="input" [(ngModel)]="titleById[item.id]" placeholder="مدير التشغيل" />
         </div>
+        <p class="muted small" style="margin:16px 0 8px">
+          صلاحيات هذه المستخدمة
+          @if (item.customPermissions) {
+            · مخصّصة
+          } @else {
+            · من نوع الحساب
+          }
+        </p>
+        @if (userMatrix[item.id]) {
+          <div class="filters" style="margin:0">
+            @for (perm of catalog; track perm.id) {
+              <label class="chip" [class.active]="userMatrix[item.id][perm.code]">
+                <input type="checkbox" [name]="'user-' + item.id + '-' + perm.code" [(ngModel)]="userMatrix[item.id][perm.code]" />
+                {{ perm.nameAr }}
+              </label>
+            }
+          </div>
+        }
         <div class="ops-drawer-actions">
           <button class="btn primary" type="button" (click)="saveRole(item)">حفظ نوع الحساب والفريق</button>
+          <button class="btn primary" type="button" (click)="saveUserPermissions(item)">حفظ الصلاحيات</button>
+          @if (item.customPermissions) {
+            <button class="btn ghost" type="button" (click)="resetUserPermissions(item)">إعادة لصلاحيات النوع</button>
+          }
           <button class="btn ghost" type="button" (click)="resetPassword(item)">إعادة تعيين كلمة المرور</button>
           <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
             {{ item.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
@@ -318,10 +342,12 @@ export class OpsStaffComponent implements OnInit {
   departmentById: Record<string, string> = {};
   titleById: Record<string, string> = {};
   matrix: Record<string, Record<string, boolean>> = {};
+  userMatrix: Record<string, Record<string, boolean>> = {};
   draft = { displayName: '', mobile: '', roleId: '', departmentId: '', teamId: '', titleAr: '' };
   departmentFilter = '';
   teamFilter = '';
   adding = false;
+  creating = false;
   addingBan = false;
   banDraft = { mobile: '', reason: '' };
   banned: OpsBannedPhone[] = [];
@@ -369,6 +395,23 @@ export class OpsStaffComponent implements OnInit {
     this.teamFilter = '';
   }
 
+  openAdd(): void {
+    this.draft.displayName = '';
+    this.draft.mobile = '';
+    this.draft.roleId = this.roles[0]?.id ?? '';
+    this.draft.departmentId = '';
+    this.draft.teamId = '';
+    this.draft.titleAr = '';
+    this.onRoleChange();
+    this.adding = true;
+  }
+
+  closeAdd(): void {
+    if (!this.creating) {
+      this.adding = false;
+    }
+  }
+
   onRoleChange(): void {
     const role = this.selectedRole;
     if (!role) {
@@ -392,6 +435,11 @@ export class OpsStaffComponent implements OnInit {
     if (!teams.some((team) => team.id === this.teamById[item.id])) {
       this.teamById[item.id] = teams[0]?.id ?? '';
     }
+  }
+
+  selectStaff(item: OpsStaff): void {
+    this.syncUserMatrixFor(item);
+    this.selectedStaff = item;
   }
 
   teamLabel(item: OpsStaff): string {
@@ -422,31 +470,49 @@ export class OpsStaffComponent implements OnInit {
   }
 
   create(): void {
+    const name = this.draft.displayName.trim();
     const mobile = toMobile(this.draft.mobile);
-    if (this.draft.displayName.trim().length < 2 || !isSaudiMobile(mobile) || !this.draft.roleId) {
-      this.toast.show('أدخلي الاسم والجوال السعودي ونوع الحساب');
+    if (name.length < 2) {
+      this.toast.show('أدخلي الاسم (حرفين على الأقل)');
+      return;
+    }
+    if (!isSaudiMobile(mobile)) {
+      this.toast.show('أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05');
+      return;
+    }
+    if (!this.draft.roleId) {
+      this.toast.show(this.roles.length ? 'اختاري نوع الحساب' : 'جاري تحميل أنواع الحساب، حاولِي بعد لحظات');
       return;
     }
     if (!this.draft.teamId) {
-      this.toast.show('اختاري الفريق من الهيكل التنظيمي');
-      return;
+      this.onRoleChange();
     }
+    this.creating = true;
     this.api
       .opsCreateStaff({
-          displayName: this.draft.displayName,
+          displayName: this.draft.displayName.trim(),
           mobile,
           roleId: this.draft.roleId,
-          teamId: this.draft.teamId,
+          teamId: this.draft.teamId || undefined,
           titleAr: this.draft.titleAr.trim() || undefined,
         })
       .subscribe({
         next: () => {
+          this.creating = false;
           this.toast.show('تمت إضافة المستخدمة. ستؤكد OTP ثم تعيّن كلمة مرور عند أول دخول.');
-          this.draft = { displayName: '', mobile: '', roleId: '', departmentId: '', teamId: '', titleAr: '' };
+          this.draft.displayName = '';
+          this.draft.mobile = '';
+          this.draft.roleId = '';
+          this.draft.departmentId = '';
+          this.draft.teamId = '';
+          this.draft.titleAr = '';
           this.adding = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة المستخدمة')),
+        error: (err) => {
+          this.creating = false;
+          this.toast.show(apiMessage(err, 'تعذر إضافة المستخدمة'));
+        },
       });
   }
 
@@ -463,13 +529,11 @@ export class OpsStaffComponent implements OnInit {
       })
       .subscribe({
       next: (row) => {
-        item.role = row.role;
-        item.permissions = row.permissions;
-        item.team = row.team;
-        item.teamId = row.teamId;
-        item.titleAr = row.titleAr;
-        item.orgTeam = row.orgTeam;
+        this.applyStaffRow(item, row);
         this.toast.show('تم تحديث نوع الحساب والفريق');
+        if (item.id === this.meId) {
+          this.session.patchUser({ permissions: row.permissions, roleCode: row.role?.code, roleNameAr: row.role?.nameAr });
+        }
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث نوع الحساب')),
     });
@@ -486,6 +550,36 @@ export class OpsStaffComponent implements OnInit {
     });
   }
 
+  saveUserPermissions(item: OpsStaff): void {
+    const selected = this.userMatrix[item.id] ?? {};
+    const permissionCodes = Object.entries(selected)
+      .filter(([, on]) => on)
+      .map(([code]) => code);
+    this.api.opsPatchStaffPermissions(item.id, { permissionCodes }).subscribe({
+      next: (row) => {
+        this.applyStaffRow(item, row);
+        this.toast.show('تم حفظ صلاحيات ' + item.displayName);
+        if (item.id === this.meId) {
+          this.session.patchUser({ permissions: row.permissions });
+        }
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ صلاحيات المستخدمة')),
+    });
+  }
+
+  resetUserPermissions(item: OpsStaff): void {
+    this.api.opsPatchStaffPermissions(item.id, { resetToRole: true }).subscribe({
+      next: (row) => {
+        this.applyStaffRow(item, row);
+        this.toast.show('رجعت صلاحيات نوع الحساب');
+        if (item.id === this.meId) {
+          this.session.patchUser({ permissions: row.permissions });
+        }
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إعادة الصلاحيات')),
+    });
+  }
+
   savePermissions(role: OpsRole): void {
     const selected = this.matrix[role.id] ?? {};
     const permissionCodes = Object.entries(selected)
@@ -494,11 +588,23 @@ export class OpsStaffComponent implements OnInit {
     this.api.opsPatchRolePermissions(role.id, permissionCodes).subscribe({
       next: (row) => {
         role.permissions = row.permissions;
+        const codes = (row.permissions ?? []).map((entry) => entry.permission.code);
+        for (const item of this.staff) {
+          if (item.role?.id === role.id && !item.customPermissions) {
+            item.permissions = codes;
+            this.syncUserMatrixFor(item);
+            if (this.selectedStaff?.id === item.id) {
+              this.selectedStaff = { ...this.selectedStaff, permissions: codes };
+            }
+          }
+        }
         this.toast.show('تم حفظ صلاحيات ' + role.nameAr);
-        if (this.session.user()?.roleCode === role.code) {
-          this.session.patchUser({
-            permissions: (row.permissions ?? []).map((item) => item.permission.code),
-          });
+        const me = this.session.user();
+        if (me?.roleCode === role.code) {
+          const mine = this.staff.find((entry) => entry.id === this.meId);
+          if (!mine?.customPermissions) {
+            this.session.patchUser({ permissions: codes });
+          }
         }
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الصلاحيات')),
@@ -539,6 +645,7 @@ export class OpsStaffComponent implements OnInit {
       next: (catalog) => {
         this.catalog = catalog;
         this.syncMatrix();
+        this.syncUserMatrix();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الصلاحيات')),
     });
@@ -559,6 +666,7 @@ export class OpsStaffComponent implements OnInit {
           this.departmentById[row.id] = row.orgTeam?.department.id ?? '';
           this.titleById[row.id] = row.titleAr ?? '';
         }
+        this.syncUserMatrix();
         if (this.teamFilter && !this.departmentFilter) {
           const teamDept = this.staff.find((row) => row.teamId === this.teamFilter)?.orgTeam?.department.id;
           if (teamDept) {
@@ -576,6 +684,9 @@ export class OpsStaffComponent implements OnInit {
     this.api.opsOrg().subscribe({
       next: (rows) => {
         this.departments = rows;
+        if (this.draft.roleId) {
+          this.onRoleChange();
+        }
         if (this.teamFilter && !this.departmentFilter) {
           const department = rows.find((row) => row.teams.some((team) => team.id === this.teamFilter));
           if (department) {
@@ -599,6 +710,19 @@ export class OpsStaffComponent implements OnInit {
     });
   }
 
+  private applyStaffRow(item: OpsStaff, row: OpsStaff): void {
+    item.role = row.role;
+    item.permissions = row.permissions;
+    item.customPermissions = row.customPermissions;
+    item.team = row.team;
+    item.teamId = row.teamId;
+    item.titleAr = row.titleAr;
+    item.orgTeam = row.orgTeam;
+    this.staff = this.staff.map((entry) => (entry.id === row.id ? { ...entry, ...row } : entry));
+    this.selectedStaff = this.selectedStaff?.id === row.id ? { ...this.selectedStaff, ...row } : this.selectedStaff;
+    this.syncUserMatrixFor(row);
+  }
+
   private syncMatrix(): void {
     if (!this.roles.length || !this.catalog.length) {
       return;
@@ -609,6 +733,23 @@ export class OpsStaffComponent implements OnInit {
       for (const perm of this.catalog) {
         this.matrix[role.id][perm.code] = current.has(perm.code);
       }
+    }
+  }
+
+  private syncUserMatrix(): void {
+    if (!this.catalog.length) {
+      return;
+    }
+    for (const item of this.staff) {
+      this.syncUserMatrixFor(item);
+    }
+  }
+
+  private syncUserMatrixFor(item: OpsStaff): void {
+    const current = new Set(item.permissions ?? []);
+    this.userMatrix[item.id] ??= {};
+    for (const perm of this.catalog) {
+      this.userMatrix[item.id][perm.code] = current.has(perm.code);
     }
   }
 }

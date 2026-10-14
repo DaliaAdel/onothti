@@ -71,7 +71,9 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                 <th>الباقة</th>
                 <th>الحالة</th>
                 <th>التاريخ</th>
-                <th>إشعار فردي</th>
+                @if (showNotifyColumn) {
+                  <th>{{ notifyColumnLabel }}</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -85,9 +87,15 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                   <td>{{ item.package?.nameAr || '—' }}</td>
                   <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
                   <td>{{ opsDate(item.createdAt) }}</td>
-                  <td>
-                    <button class="btn ghost" type="button" (click)="onNotifyClick($event, item)">إشعار فردي</button>
-                  </td>
+                  @if (showNotifyColumn) {
+                    <td>
+                      @if (canNotify(item)) {
+                        <button class="btn ghost" type="button" (click)="onNotifyClick($event, item)">
+                          {{ notifyLabel(item) }}
+                        </button>
+                      }
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
@@ -149,14 +157,14 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       <div class="ops-drawer-actions" style="margin-top:16px">
         <button class="btn primary" type="button" (click)="applyAccount(selected)">حفظ الإجراء</button>
         @if (canNotify(selected)) {
-          <button class="btn ghost" type="button" (click)="openNotify(selected)">إرسال إشعار</button>
+          <button class="btn ghost" type="button" (click)="openNotify(selected)">{{ notifyLabel(selected) }}</button>
         }
       </div>
     }
 
     <app-ops-modal
       [open]="!!notifyTarget"
-      title="إشعار فردي"
+      [title]="notifyTarget ? notifyLabel(notifyTarget) : 'إشعار فردي'"
       [kicker]="notifyTarget ? notifyTarget.displayName : ''"
       (closed)="notifyTarget = null"
     >
@@ -260,6 +268,22 @@ export class OpsClientsComponent implements OnInit {
       });
   }
 
+  get showNotifyColumn(): boolean {
+    return this.session.hasAnyPermission('NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER');
+  }
+
+  get notifyColumnLabel(): string {
+    const provider = this.session.hasPermission('NOTIFY_PROVIDER');
+    const customer = this.session.hasPermission('NOTIFY_CUSTOMER');
+    if (provider && !customer) {
+      return 'إشعار فردى للخبيرة';
+    }
+    if (customer && !provider) {
+      return 'إشعار فردى للعميلة';
+    }
+    return 'إشعار فردي';
+  }
+
   canNotify(item: OpsManagedAccount): boolean {
     if (item.accountType === 'PROVIDER') {
       return this.session.hasPermission('NOTIFY_PROVIDER');
@@ -268,6 +292,10 @@ export class OpsClientsComponent implements OnInit {
       return this.session.hasPermission('NOTIFY_CUSTOMER');
     }
     return false;
+  }
+
+  notifyLabel(item: OpsManagedAccount): string {
+    return item.accountType === 'PROVIDER' ? 'إشعار فردى للخبيرة' : 'إشعار فردى للعميلة';
   }
 
   onNotifyClick(event: Event, item: OpsManagedAccount): void {

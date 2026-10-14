@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileChangeField, Visibility, AccountStatus, AccountType, StaffPermission } from "../common/enums";
+import { effectivePermissionCodes } from "../common/staff-permissions";
+import { notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
 import { assertUniqueDisplayName, assertUniqueEmail } from "../common/account-rules";
 import {
   CreateCityDto,
@@ -27,6 +29,7 @@ import {
   UpsertStaffTeamDto,
   PatchStaffTeamDto,
   PatchRolePermissionsDto,
+  PatchStaffPermissionsDto,
   PatchLegalDto,
   CreateLegalDto,
   UpsertServiceDto,
@@ -53,6 +56,12 @@ import { randomBytes } from "crypto";
 
 @Injectable()
 export class OpsService {
+  private readonly staffDetailInclude = {
+    role: { include: { permissions: { include: { permission: true } } } },
+    orgTeam: { include: { department: true } },
+    grants: { include: { permission: true } },
+  };
+
   constructor(private readonly prisma: PrismaService) {}
 
   settings() {
@@ -263,8 +272,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -281,8 +289,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -305,8 +312,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -1146,8 +1152,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -1168,11 +1173,16 @@ export class OpsService {
     if (existing) {
       throw new ConflictException("رقم الجوال مسجل بالفعل");
     }
+    const banned = await this.prisma.bannedPhone.findUnique({ where: { mobile: dto.mobile } });
+    if (banned) {
+      throw new ConflictException("هذا الرقم محظور ولا يمكن إنشاء حساب عليه");
+    }
     const displayName = await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName);
-    const count = await this.prisma.user.count({ where: { accountType: AccountType.STAFF } });
     const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
     const orgTeam = await this.resolveOrgTeam(dto.teamId, this.teamForRole(role.code, dto.team));
-    const user = await this.prisma.user.create({
+    const accountCode = await this.prisma.allocateAccountCode(AccountType.STAFF);
+    const user = await this.prisma.user
+      .create({
       data: {
         accountType: AccountType.STAFF,
         mobile: dto.mobile,
@@ -1180,13 +1190,13 @@ export class OpsService {
         mustChangePassword: true,
         status: AccountStatus.ACTIVE,
         displayName,
-        accountCode: this.prisma.nextAccountCode(AccountType.STAFF, count),
+        accountCode,
         termsAcceptedAt: new Date(),
         staff: {
           create: {
             roleId: role.id,
             team: orgTeam?.department.code ?? this.teamForRole(role.code, dto.team),
-            teamId: orgTeam?.id,
+            teamId: orgTeam?.id ?? null,
             titleAr: dto.titleAr?.trim() || null,
             level: role.code === "ADMIN" ? 3 : role.code === "OPS_LEAD" ? 2 : 1,
           },
@@ -1195,12 +1205,12 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
-    });
+    })
+      .catch((error: unknown) => this.rethrowUnique(error, "رقم الجوال أو رمز الحساب مستخدم"));
     await this.audit(user.id, "STAFF_CREATE", "User", user.id, {
       role: role.code,
       team: user.staff?.team,
@@ -1214,8 +1224,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -1239,6 +1248,7 @@ export class OpsService {
         await this.assertNotLastManager(id);
       }
       roleId = role.id;
+      await this.prisma.staffUserPermission.deleteMany({ where: { userId: id } });
     }
     if (dto.status === "SUSPENDED") {
       await this.assertNotLastManager(id);
@@ -1259,6 +1269,7 @@ export class OpsService {
         staff: {
           update: {
             roleId,
+            ...(dto.roleId && dto.roleId !== user.staff.roleId ? { customPermissions: false } : {}),
             ...(dto.team !== undefined ? { team: dto.team.trim() || user.staff.team } : {}),
             ...(orgTeam ? { teamId: orgTeam.id, team: orgTeam.department.code } : {}),
             ...(dto.titleAr !== undefined ? { titleAr: dto.titleAr.trim() || null } : {}),
@@ -1268,8 +1279,7 @@ export class OpsService {
       include: {
         staff: {
           include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-            orgTeam: { include: { department: true } },
+            ...this.staffDetailInclude,
           },
         },
       },
@@ -1281,6 +1291,59 @@ export class OpsService {
       resetPassword: dto.resetPassword === true,
     });
     return this.toStaff(updated);
+  }
+
+  async patchStaffPermissions(id: string, dto: PatchStaffPermissionsDto, actorId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, accountType: AccountType.STAFF },
+      include: { staff: { include: this.staffDetailInclude } },
+    });
+    if (!user?.staff) {
+      throw new NotFoundException("حساب التشغيل غير موجود");
+    }
+    if (dto.resetToRole) {
+      const current = effectivePermissionCodes(user.staff);
+      if (current.codes.includes(StaffPermission.USERS_MANAGE)) {
+        const roleHasUsers = user.staff.role.permissions.some(
+          (row) => row.permission.code === StaffPermission.USERS_MANAGE,
+        );
+        if (!roleHasUsers) {
+          await this.assertNotLastManager(id);
+        }
+      }
+      await this.prisma.staffUserPermission.deleteMany({ where: { userId: id } });
+      await this.prisma.staffUser.update({ where: { userId: id }, data: { customPermissions: false } });
+      await this.audit(actorId, "STAFF_PERMISSIONS_RESET", "User", id, {});
+      return this.staffById(id);
+    }
+    const uniqueCodes = [...new Set((dto.permissionCodes ?? []).map((code) => code.trim()).filter(Boolean))];
+    const catalog = await this.prisma.permission.findMany({
+      where: { code: { in: uniqueCodes } },
+    });
+    if (catalog.length !== uniqueCodes.length) {
+      throw new BadRequestException("صلاحية غير معروفة");
+    }
+    const current = effectivePermissionCodes(user.staff);
+    if (current.codes.includes(StaffPermission.USERS_MANAGE) && !uniqueCodes.includes(StaffPermission.USERS_MANAGE)) {
+      await this.assertNotLastManager(id);
+    }
+    await this.prisma.staffUserPermission.deleteMany({ where: { userId: id } });
+    if (catalog.length) {
+      await this.prisma.staffUserPermission.createMany({
+        data: catalog.map((permission) => ({ userId: id, permissionId: permission.id })),
+      });
+    }
+    await this.prisma.staffUser.update({ where: { userId: id }, data: { customPermissions: true } });
+    await this.audit(actorId, "STAFF_PERMISSIONS", "User", id, { permissionCodes: uniqueCodes });
+    return this.staffById(id);
+  }
+
+  private async staffById(id: string) {
+    const user = await this.prisma.user.findFirstOrThrow({
+      where: { id, accountType: AccountType.STAFF },
+      include: { staff: { include: this.staffDetailInclude } },
+    });
+    return this.toStaff(user);
   }
 
   async orgDepartments() {
@@ -1506,13 +1569,16 @@ export class OpsService {
   }
 
   private async assertNotLastManager(userId: string) {
-    const managers = await this.prisma.staffUser.findMany({
-      where: {
-        user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE },
-        role: { permissions: { some: { permission: { code: StaffPermission.USERS_MANAGE } } } },
+    const rows = await this.prisma.staffUser.findMany({
+      where: { user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE } },
+      include: {
+        grants: { include: { permission: true } },
+        role: { include: { permissions: { include: { permission: true } } } },
       },
-      select: { userId: true },
     });
+    const managers = rows.filter((row) =>
+      effectivePermissionCodes(row).codes.includes(StaffPermission.USERS_MANAGE),
+    );
     if (managers.length <= 1 && managers.some((row) => row.userId === userId)) {
       throw new BadRequestException("لا يمكن تعديل آخر حساب يملك إدارة المستخدمين");
     }
@@ -1546,10 +1612,13 @@ export class OpsService {
         nameEn: string;
         permissions: { permission: { code: string; nameAr: string } }[];
       };
+      customPermissions?: boolean;
+      grants?: { permission: { code: string } }[] | null;
     } | null;
   }) {
     const role = user.staff?.role;
     const orgTeam = user.staff?.orgTeam;
+    const effective = user.staff ? effectivePermissionCodes(user.staff) : { codes: [] as string[], custom: false };
     return {
       id: user.id,
       displayName: user.displayName,
@@ -1575,7 +1644,8 @@ export class OpsService {
       role: role
         ? { id: role.id, code: role.code, nameAr: role.nameAr, nameEn: role.nameEn }
         : null,
-      permissions: role?.permissions.map((row) => row.permission.code) ?? [],
+      permissions: effective.codes,
+      customPermissions: effective.custom,
     };
   }
 
@@ -1815,7 +1885,12 @@ export class OpsService {
       eventsToday,
       escalatedTickets,
     ] = await Promise.all([
-      this.prisma.mediaFile.count({ where: { status: { in: ["PENDING", "NEED_CLEARER"] } } }),
+      this.prisma.mediaFile.count({
+        where: {
+          status: { in: ["PENDING", "NEED_CLEARER"] },
+          NOT: { storageKey: { startsWith: "avatars/" } },
+        },
+      }),
       this.prisma.paymentProof.count({ where: { opsStatus: { in: ["PENDING", "NEED_CLEARER"] } } }),
       this.prisma.user.count({
         where: {
@@ -1841,6 +1916,7 @@ export class OpsService {
         select: {
           id: true,
           createdAt: true,
+          storageKey: true,
           proofs: { select: { id: true } },
           uploadedBy: { select: { displayName: true, accountCode: true } },
         },
@@ -1921,7 +1997,7 @@ export class OpsService {
     const inbox = [
       ...mediaRows.map((row) => ({
         id: row.id,
-        kind: row.proofs.length ? "RECEIPT" : "MEDIA",
+        kind: row.proofs.length ? "RECEIPT" : row.storageKey.startsWith("avatars/") ? "AVATAR" : "MEDIA",
         title: row.uploadedBy.displayName,
         subtitle: row.uploadedBy.accountCode,
         createdAt: row.createdAt,
@@ -1936,6 +2012,7 @@ export class OpsService {
       ...changeRows.map((row) => ({
         id: row.id,
         kind: "CHANGE",
+        field: row.field,
         title: row.user.displayName,
         subtitle: row.user.accountCode,
         createdAt: row.createdAt,
@@ -1983,7 +2060,21 @@ export class OpsService {
     };
   }
 
-  async media(query: { status?: string; kind?: string; purpose?: string; accountType?: string }) {
+  async media(
+    query: { status?: string; kind?: string; purpose?: string; accountType?: string },
+    permissions: string[] = [],
+  ) {
+    const canApprovals = this.canApproveContent(permissions);
+    const canReceipts = this.canSeeReceipts(permissions);
+    if (query.purpose === "RECEIPT" && !canReceipts) {
+      return [];
+    }
+    if (query.purpose && query.purpose !== "RECEIPT" && !canApprovals) {
+      return [];
+    }
+    if (!canApprovals && !canReceipts) {
+      return [];
+    }
     const pending = !query.status || query.status === "PENDING";
     const files = await this.prisma.mediaFile.findMany({
       where: {
@@ -1994,7 +2085,8 @@ export class OpsService {
             : {}),
         ...(query.kind ? { kind: query.kind } : {}),
         ...(query.accountType ? { uploadedBy: { accountType: query.accountType } } : {}),
-        ...(query.purpose === "RECEIPT" ? { proofs: { some: {} } } : {}),
+        ...(query.purpose === "RECEIPT" || (!query.purpose && !canApprovals) ? { proofs: { some: {} } } : {}),
+        ...(!query.purpose && canApprovals && !canReceipts ? { proofs: { none: {} } } : {}),
         ...(query.purpose === "PORTFOLIO" ? { portfolio: { some: {} } } : {}),
         ...(query.purpose === "AVATAR" ? { storageKey: { startsWith: "avatars/" } } : {}),
       },
@@ -2022,7 +2114,7 @@ export class OpsService {
     return files.map((file) => this.toMediaItem(file));
   }
 
-  async reviewMedia(id: string, dto: ReviewMediaDto, actorId?: string) {
+  async reviewMedia(id: string, dto: ReviewMediaDto, actorId?: string, permissions: string[] = []) {
     const file = await this.prisma.mediaFile.findUnique({
       where: { id },
       include: {
@@ -2033,6 +2125,18 @@ export class OpsService {
     });
     if (!file) {
       throw new NotFoundException("الملف غير موجود");
+    }
+    const isReceipt = file.proofs.length > 0;
+    if (isReceipt) {
+      if (dto.requestClearer) {
+        if (!this.canSeeReceipts(permissions)) {
+          throw new ForbiddenException("ليست لديكِ صلاحية مراجعة الإيصالات");
+        }
+      } else if (!permissions.includes(StaffPermission.PAYMENTS_CONFIRM)) {
+        throw new ForbiddenException("اعتماد الإيصال للمالية فقط. حوّليه للمالية أولاً");
+      }
+    } else if (!this.canApproveContent(permissions)) {
+      throw new ForbiddenException("ليست لديكِ صلاحية الاعتمادات");
     }
     if (dto.requestClearer) {
       await this.prisma.mediaFile.update({
@@ -2097,6 +2201,44 @@ export class OpsService {
     );
     await this.audit(actorId, dto.approve ? "MEDIA_APPROVE" : "MEDIA_REJECT", "MediaFile", id, {
       status,
+    });
+    return this.mediaById(id);
+  }
+
+  async escalateReceipt(id: string, actorId: string) {
+    const file = await this.prisma.mediaFile.findUnique({
+      where: { id },
+      include: {
+        uploadedBy: { select: { displayName: true, accountCode: true } },
+        proofs: { include: { subscription: { include: { package: true } } } },
+      },
+    });
+    if (!file) {
+      throw new NotFoundException("الملف غير موجود");
+    }
+    if (!file.proofs.length) {
+      throw new BadRequestException("هذا الملف ليس إيصال تحويل");
+    }
+    if (file.proofs.every((proof) => proof.opsStatus === "ESCALATED" || proof.opsStatus === "APPROVED")) {
+      throw new BadRequestException("تم تحويل الإيصال للمالية مسبقاً");
+    }
+    await this.prisma.paymentProof.updateMany({
+      where: { fileId: id },
+      data: { opsStatus: "ESCALATED" },
+    });
+    const proof = file.proofs[0];
+    const amount = Number(proof.amount);
+    const body = `تم تحويل إيصال ${file.uploadedBy.displayName} (${file.uploadedBy.accountCode}) — ${proof.subscription.package.nameAr} بقيمة ${amount} ر.س`;
+    await this.notifyStaffWithPermission(
+      [StaffPermission.PAYMENTS_REVIEW, StaffPermission.PAYMENTS_CONFIRM],
+      "إيصال يحتاج اعتماد المالية",
+      body,
+      `receipt:${id}`,
+      actorId,
+    );
+    await this.audit(actorId, "RECEIPT_ESCALATE", "MediaFile", id, {
+      owner: file.uploadedBy.accountCode,
+      amount,
     });
     return this.mediaById(id);
   }
@@ -2395,6 +2537,31 @@ export class OpsService {
       },
     });
     return { id: pkg.id, code: pkg.code, nameAr: pkg.nameAr };
+  }
+
+  private canApproveContent(permissions: string[]) {
+    return (
+      permissions.includes(StaffPermission.RATINGS_REVIEW) ||
+      permissions.includes(StaffPermission.MEDIA_REVIEW)
+    );
+  }
+
+  private canSeeReceipts(permissions: string[]) {
+    return (
+      permissions.includes(StaffPermission.PAYMENTS_REVIEW) ||
+      permissions.includes(StaffPermission.PAYMENTS_CONFIRM) ||
+      permissions.includes(StaffPermission.ESCALATE_FINANCE)
+    );
+  }
+
+  private notifyStaffWithPermission(
+    codes: string[],
+    titleAr: string,
+    bodyAr: string,
+    ref: string,
+    exceptUserId?: string,
+  ) {
+    return notifyStaffByPermission(this.prisma, codes, titleAr, bodyAr, ref, exceptUserId);
   }
 
   private notifyOwner(userId: string, titleAr: string, bodyAr: string) {

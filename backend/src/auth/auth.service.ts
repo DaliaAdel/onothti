@@ -34,6 +34,7 @@ import {
   type AuthChannelValue,
   type OtpPurposeValue,
 } from "../common/enums";
+import { effectivePermissionCodes } from "../common/staff-permissions";
 import {
   assertUniqueDisplayName,
   assertUniqueEmail,
@@ -580,7 +581,10 @@ export class AuthService {
   private async staffSession(userId: string) {
     const staff = await this.prisma.staffUser.findUnique({
       where: { userId },
-      include: { role: { include: { permissions: { include: { permission: true } } } } },
+      include: {
+        role: { include: { permissions: { include: { permission: true } } } },
+        grants: { include: { permission: true } },
+      },
     });
     if (!staff) {
       return { roleCode: null as string | null, roleNameAr: null as string | null, permissions: [] as string[] };
@@ -588,7 +592,7 @@ export class AuthService {
     return {
       roleCode: staff.role.code,
       roleNameAr: staff.role.nameAr,
-      permissions: staff.role.permissions.map((row) => row.permission.code),
+      permissions: effectivePermissionCodes(staff).codes,
     };
   }
 

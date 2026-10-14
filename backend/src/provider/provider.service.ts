@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType, ProfileChangeField, Visibility } from "../common/enums";
+import { AccountType, ProfileChangeField, StaffPermission, Visibility } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AddPortfolioDto,
@@ -31,6 +31,7 @@ import {
 import { assertMaxChars } from "../common/platform-settings";
 import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, resolveCityIds, serializeCityIds } from "../common/geo";
 import { publicUploadUrl } from "../common/upload-url";
+import { notifyStaffWithPermission } from "../common/notify";
 
 @Injectable()
 export class ProviderService {
@@ -534,6 +535,17 @@ export class ProviderService {
       },
       include: { file: true },
     });
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, accountCode: true },
+    });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.RATINGS_REVIEW, StaffPermission.MEDIA_REVIEW],
+      "عمل جديد بانتظار الاعتماد",
+      `${owner?.displayName || "خبيرة"} (${owner?.accountCode || ""}) أضافت ${kind === "VIDEO" ? "فيديو" : "صورة"} للألبوم`,
+      `portfolio:${file.id}`,
+    );
     return this.toPortfolioItem(item);
   }
 
@@ -734,6 +746,17 @@ export class ProviderService {
       },
       include: { file: true, subscription: { include: { package: true } } },
     });
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, accountCode: true },
+    });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.PAYMENTS_REVIEW, StaffPermission.ESCALATE_FINANCE],
+      "إيصال تحويل جديد",
+      `${owner?.displayName || "خبيرة"} (${owner?.accountCode || ""}) رفعت إيصال ${pkg.nameAr}`,
+      `receipt:${file.id}`,
+    );
     return this.toProof(proof);
   }
 
@@ -777,7 +800,7 @@ export class ProviderService {
       throw new BadRequestException("نوع التذكرة غير متاح");
     }
     const count = await this.prisma.ticket.count();
-    return this.prisma.ticket.create({
+    const created = await this.prisma.ticket.create({
       data: {
         refNo: `BM-${String(count + 1).padStart(6, "0")}-${userId.slice(0, 4)}`,
         typeId: type.id,
@@ -785,8 +808,16 @@ export class ProviderService {
         title: dto.title?.trim() || null,
         body: dto.body.trim(),
       },
-      include: { type: true },
+      include: { type: true, owner: { select: { displayName: true, accountCode: true } } },
     });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.TICKETS_MANAGE],
+      "طلب جديد من خبيرة",
+      `${created.owner.displayName} (${created.owner.accountCode}) · ${created.type.nameAr}`,
+      `ticket:${created.id}`,
+    );
+    return created;
   }
 
   private async currentSubscription(userId: string) {

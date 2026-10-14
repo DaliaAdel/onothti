@@ -1,5 +1,6 @@
 import { PrismaService } from "../prisma/prisma.service";
-import { NotificationType } from "./enums";
+import { AccountStatus, AccountType, NotificationType } from "./enums";
+import { effectivePermissionCodes } from "./staff-permissions";
 
 export async function notifyOncePerDay(
   prisma: PrismaService,
@@ -76,5 +77,45 @@ export async function notifyContact(
     titleEn: "WhatsApp contact",
     bodyAr: `${name} طلبت التواصل معكِ عبر واتساب`,
     bodyEn: `${name} requested WhatsApp contact`,
+  });
+}
+
+export async function notifyStaffWithPermission(
+  prisma: PrismaService,
+  codes: string[],
+  titleAr: string,
+  bodyAr: string,
+  ref: string,
+  exceptUserId?: string,
+) {
+  const staff = await prisma.staffUser.findMany({
+    where: { user: { status: AccountStatus.ACTIVE, accountType: AccountType.STAFF } },
+    include: {
+      grants: { include: { permission: true } },
+      role: { include: { permissions: { include: { permission: true } } } },
+    },
+  });
+  const userIds = [
+    ...new Set(
+      staff
+        .filter((row) => effectivePermissionCodes(row).codes.some((code) => codes.includes(code)))
+        .map((row) => row.userId),
+    ),
+  ].filter((id) => id !== exceptUserId);
+  if (!userIds.length) {
+    return;
+  }
+  await prisma.notification.createMany({
+    data: userIds.map((userId) => ({
+      userId,
+      audience: AccountType.STAFF,
+      type: "SYSTEM",
+      ref,
+      titleAr,
+      titleEn: titleAr,
+      bodyAr,
+      bodyEn: bodyAr,
+      status: "SENT",
+    })),
   });
 }

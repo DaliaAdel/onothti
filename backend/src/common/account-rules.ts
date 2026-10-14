@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { AccountStatus, AccountType, ProfileChangeField, Visibility } from "./enums";
+import { AccountStatus, AccountType, ProfileChangeField, StaffPermission, Visibility } from "./enums";
+import { notifyStaffWithPermission } from "./notify";
 import { idleCutoffFor } from "./platform-settings";
 
 export function normalizeDisplayName(value: string) {
@@ -91,7 +92,7 @@ export async function queueProfileChange(
       data: { newValue: next, oldValue: previous || existing.oldValue },
     });
   }
-  return prisma.profileChangeRequest.create({
+  const created = await prisma.profileChangeRequest.create({
     data: {
       userId,
       field,
@@ -99,6 +100,29 @@ export async function queueProfileChange(
       newValue: next,
     },
   });
+  const owner = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { displayName: true, accountCode: true, accountType: true },
+  });
+  if (owner) {
+    const who = owner.accountType === AccountType.PROVIDER ? "الخبيرة" : "العميلة";
+    const labels: Record<string, string> = {
+      DISPLAY_NAME: "الاسم",
+      BIO: "النبذة",
+      AVATAR: "الصورة",
+      EMAIL: "البريد",
+      CITY: "المدينة",
+      WHATSAPP: "واتساب",
+    };
+    await notifyStaffWithPermission(
+      prisma,
+      [StaffPermission.RATINGS_REVIEW],
+      "طلب اعتماد جديد",
+      `${who} ${owner.displayName} (${owner.accountCode}) حدّثت ${labels[field] || field}`,
+      `change:${created.id}`,
+    );
+  }
+  return created;
 }
 
 export async function pendingChangesFor(prisma: PrismaService, userId: string) {

@@ -179,7 +179,8 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard('STAFF')],
     children: [
       { path: '', loadComponent: () => import('./ops/ops-dashboard.component').then((m) => m.OpsDashboardComponent) },
-      { path: 'media', loadComponent: () => import('./ops/ops-media.component').then((m) => m.OpsMediaComponent) },
+      { path: 'media', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
+      { path: 'approvals', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
       { path: 'accounts', loadComponent: () => import('./ops/ops-accounts.component').then((m) => m.OpsAccountsComponent) },
       { path: 'clients', loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent) },
       { path: 'reviews', loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent) },

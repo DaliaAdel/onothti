@@ -556,6 +556,7 @@ export class CreateStaffDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(80)
   titleAr?: string;
 }
 
@@ -738,6 +739,19 @@ export class PatchRolePermissionsDto {
   @IsArray()
   @IsString({ each: true })
   permissionCodes!: string[];
+}
+
+export class PatchStaffPermissionsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  resetToRole?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  permissionCodes?: string[];
 }
 
 export class CreateLegalDto {

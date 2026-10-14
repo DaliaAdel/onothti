@@ -1,5 +1,20 @@
+function latinDigits(raw: string): string {
+  return Array.from(raw ?? '')
+    .map((ch) => {
+      const code = ch.charCodeAt(0);
+      if (code >= 0x0660 && code <= 0x0669) {
+        return String(code - 0x0660);
+      }
+      if (code >= 0x06f0 && code <= 0x06f9) {
+        return String(code - 0x06f0);
+      }
+      return ch;
+    })
+    .join('');
+}
+
 export function toLocalPhone(raw: string): string {
-  let digits = raw.replace(/\D/g, '');
+  let digits = latinDigits(raw).replace(/\D/g, '');
   if (digits.startsWith('00966')) {
     digits = digits.slice(5);
   } else if (digits.startsWith('966')) {
@@ -28,12 +43,12 @@ export function displayPhone(raw: string): string {
 }
 
 export function apiMessage(err: unknown, fallback = 'حدث خطأ غير متوقع'): string {
-  const error = err as { error?: { message?: string | string[] } };
-  const message = error?.error?.message;
+  const error = err as { error?: { message?: string | string[] }; message?: string | string[] };
+  const message = error?.error?.message ?? error?.message;
   if (Array.isArray(message) && message.length) {
-    return message[0];
+    return String(message[0]);
   }
-  if (typeof message === 'string' && message.trim()) {
+  if (typeof message === 'string' && message.trim() && !message.startsWith('Http failure')) {
     return message;
   }
   return fallback;

@@ -107,11 +107,11 @@ import { opsDate } from './ops-ui';
     <div class="grid two" style="margin-top:22px">
       <article class="card">
         <h3>حالة العمل اليوم</h3>
-        <a class="activity" routerLink="/ops/media">
+        <a class="activity" routerLink="/ops/approvals">
           <span class="dot"></span>
-          <div><b>ملفات بانتظار الاعتماد</b><span>{{ dash?.pendingMedia ?? 0 }} عنصر</span></div>
+          <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) }} عنصر</span></div>
         </a>
-        <a class="activity" routerLink="/ops/media">
+        <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
           <span class="dot"></span>
           <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
         </a>
@@ -119,9 +119,9 @@ import { opsDate } from './ops-ui';
           <span class="dot"></span>
           <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
         </a>
-        <a class="activity" routerLink="/ops/reviews" [queryParams]="{ tab: 'ratings' }">
+        <a class="activity" routerLink="/ops/reviews">
           <span class="dot"></span>
-          <div><b>تقييمات وبلاغات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.openComplaints ?? 0) }} عنصر</span></div>
+          <div><b>بلاغات</b><span>{{ dash?.openComplaints ?? 0 }} بلاغ</span></div>
         </a>
         <a class="activity" routerLink="/ops/packages">
           <span class="dot"></span>
@@ -131,6 +131,9 @@ import { opsDate } from './ops-ui';
       <article class="card">
         <h3>اختصارات الإدارة</h3>
         <div class="ops-shortcuts">
+          @if (session.hasAnyPermission('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE')) {
+            <a class="btn ghost" routerLink="/ops/approvals">الاعتمادات</a>
+          }
           <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
           <a class="btn ghost" routerLink="/ops/geo">المناطق</a>
           <a class="btn ghost" routerLink="/ops/packages">الباقات</a>
@@ -155,7 +158,7 @@ import { opsDate } from './ops-ui';
           }
         </div>
         <p class="notice" style="margin-top:16px">
-          أي صورة أو فيديو أو إيصال لا يظهر للعامة إلا بعد الاعتماد من شاشة الملفات.
+          الاسم والصورة والنبذة والتقييم والأعمال والإيصالات تُعتمد من شاشة واحدة.
         </p>
       </article>
     </div>
@@ -194,6 +197,7 @@ export class OpsDashboardComponent implements OnInit {
     const labels: Record<string, string> = {
       MEDIA: 'ملف',
       RECEIPT: 'إيصال',
+      AVATAR: 'صورة',
       PROVIDER: 'حساب خبيرة',
       CHANGE: 'تعديل ملف',
       RATING: 'تقييم',
@@ -210,21 +214,35 @@ export class OpsDashboardComponent implements OnInit {
     if (item.kind === 'TICKET') {
       return '/ops/tickets';
     }
-    if (item.kind === 'CHANGE' || item.kind === 'RATING' || item.kind === 'COMPLAINT') {
+    if (item.kind === 'COMPLAINT') {
       return '/ops/reviews';
     }
-    return '/ops/media';
+    return '/ops/approvals';
   }
 
   inboxQuery(item: OpsInboxItem): Record<string, string> {
-    if (item.kind === 'CHANGE') {
-      return { tab: 'changes' };
-    }
     if (item.kind === 'RATING') {
-      return { tab: 'ratings' };
+      return { kind: 'rating' };
     }
-    if (item.kind === 'COMPLAINT') {
-      return { tab: 'complaints' };
+    if (item.kind === 'AVATAR') {
+      return { kind: 'photo' };
+    }
+    if (item.kind === 'RECEIPT') {
+      return { kind: 'receipt' };
+    }
+    if (item.kind === 'MEDIA') {
+      return { kind: 'portfolio' };
+    }
+    if (item.kind === 'CHANGE') {
+      if (item.field === 'DISPLAY_NAME') {
+        return { kind: 'name' };
+      }
+      if (item.field === 'BIO') {
+        return { kind: 'bio' };
+      }
+      if (item.field === 'AVATAR') {
+        return { kind: 'photo' };
+      }
     }
     return {};
   }

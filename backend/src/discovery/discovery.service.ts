@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { AccountStatus, AccountType, Visibility } from "../common/enums";
+import { AccountStatus, AccountType, StaffPermission, Visibility } from "../common/enums";
 import { publicUploadUrl } from "../common/upload-url";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchProvidersDto } from "./dto/search-providers.dto";
@@ -15,7 +15,7 @@ import {
   refreshExpiredProviders,
 } from "../common/account-rules";
 import { assertMaxChars } from "../common/platform-settings";
-import { notifyContact, notifyProfileView } from "../common/notify";
+import { notifyContact, notifyProfileView, notifyStaffWithPermission } from "../common/notify";
 
 @Injectable()
 export class DiscoveryService {
@@ -433,7 +433,7 @@ export class DiscoveryService {
       throw new BadRequestException("تجاوزت حد التقييم لهذه الصانعة خلال 30 يوم");
     }
 
-    return this.prisma.rating.create({
+    const rating = await this.prisma.rating.create({
       data: {
         customerUserId,
         providerUserId: providerId,
@@ -442,6 +442,14 @@ export class DiscoveryService {
         status: "PENDING",
       },
     });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.RATINGS_REVIEW],
+      "تقييم بانتظار الاعتماد",
+      `${customer.displayName} قيّمت ${provider.displayName} بـ ${stars} نجوم`,
+      `rating:${rating.id}`,
+    );
+    return rating;
   }
 
   private toCard(

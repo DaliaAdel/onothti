@@ -14,13 +14,28 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
   }
 
   nextAccountCode(type: AccountTypeValue, count: number) {
-    const prefix =
-      type === AccountType.CUSTOMER
-        ? "CU"
-        : type === AccountType.PROVIDER
-          ? "BM"
-          : "ST";
+    const prefix = this.accountCodePrefix(type);
     return `${prefix}-${String(count + 1).padStart(6, "0")}`;
+  }
+
+  async allocateAccountCode(type: AccountTypeValue) {
+    const prefix = this.accountCodePrefix(type);
+    const rows = await this.user.findMany({
+      where: { accountType: type, accountCode: { startsWith: `${prefix}-` } },
+      select: { accountCode: true },
+    });
+    let max = 0;
+    for (const row of rows) {
+      const n = Number(row.accountCode.slice(prefix.length + 1));
+      if (Number.isFinite(n) && n > max) {
+        max = n;
+      }
+    }
+    return `${prefix}-${String(max + 1).padStart(6, "0")}`;
+  }
+
+  private accountCodePrefix(type: AccountTypeValue) {
+    return type === AccountType.CUSTOMER ? "CU" : type === AccountType.PROVIDER ? "BM" : "ST";
   }
 
   isPubliclyVisible(input: {

@@ -148,7 +148,7 @@ a.avatar{text-decoration:none}
 .ops-table tbody tr.active{background:#f4e4db;box-shadow:inset -3px 0 0 var(--copper)}
 .ops-table td b{color:var(--plum);font-weight:800}
 .ops-table .clip{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ops-modal-layer{position:fixed;inset:0;z-index:90;background:rgba(47,30,24,.42);display:grid;place-items:center;padding:20px;backdrop-filter:blur(4px)}
+.ops-modal-layer{display:none;position:fixed;inset:0;z-index:90;background:rgba(47,30,24,.42);place-items:center;padding:20px;backdrop-filter:blur(4px)}.ops-modal-layer.open{display:grid}
 .ops-modal-card{width:min(640px,100%);max-height:calc(100vh - 48px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px 24px 22px;box-shadow:0 24px 70px rgba(63,45,39,.24);position:relative}
 .ops-modal-card h2{font:700 26px/1.3 'Noto Naskh Arabic',serif;color:var(--plum);margin:0 0 16px}
 .ops-modal-kicker{display:inline-block;padding:6px 10px;border-radius:99px;background:var(--pearl);color:var(--copper-dark);font-size:10px;font-weight:800;margin-bottom:8px}

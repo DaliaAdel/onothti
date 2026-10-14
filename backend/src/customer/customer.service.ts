@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType, ProfileChangeField } from "../common/enums";
+import { AccountType, ProfileChangeField, StaffPermission } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateComplaintDto,
@@ -21,6 +21,7 @@ import {
 } from "../common/account-rules";
 import { assertMaxChars } from "../common/platform-settings";
 import { orderedCitiesFromRows, replaceCustomerCities, resolveCityIds } from "../common/geo";
+import { notifyStaffWithPermission } from "../common/notify";
 
 @Injectable()
 export class CustomerService {
@@ -227,7 +228,7 @@ export class CustomerService {
       throw new BadRequestException("نوع التذكرة غير متاح");
     }
     const count = await this.prisma.ticket.count();
-    return this.prisma.ticket.create({
+    const created = await this.prisma.ticket.create({
       data: {
         refNo: `CU-${String(count + 1).padStart(6, "0")}-${userId.slice(0, 4)}`,
         typeId: type.id,
@@ -235,8 +236,16 @@ export class CustomerService {
         title: dto.title?.trim() || null,
         body: dto.body.trim(),
       },
-      include: { type: true },
+      include: { type: true, owner: { select: { displayName: true, accountCode: true } } },
     });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.TICKETS_MANAGE],
+      "طلب جديد من عميلة",
+      `${created.owner.displayName} (${created.owner.accountCode}) · ${created.type.nameAr}`,
+      `ticket:${created.id}`,
+    );
+    return created;
   }
 
   async createComplaint(userId: string, dto: CreateComplaintDto) {
@@ -247,7 +256,7 @@ export class CustomerService {
     if (!target) {
       throw new NotFoundException("صانعة الجمال غير موجودة");
     }
-    return this.prisma.complaint.create({
+    const complaint = await this.prisma.complaint.create({
       data: {
         reporterId: userId,
         targetUserId: target.id,
@@ -256,6 +265,18 @@ export class CustomerService {
         status: "OPEN",
       },
     });
+    const reporter = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, accountCode: true },
+    });
+    await notifyStaffWithPermission(
+      this.prisma,
+      [StaffPermission.RATINGS_REVIEW, StaffPermission.TICKETS_MANAGE],
+      "بلاغ جديد",
+      `${reporter?.displayName || "عميلة"} ضد ${target.displayName}: ${dto.reason.trim().slice(0, 80)}`,
+      `complaint:${complaint.id}`,
+    );
+    return complaint;
   }
 
   private async requireCustomer(userId: string) {

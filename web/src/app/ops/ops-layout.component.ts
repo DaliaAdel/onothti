@@ -36,13 +36,13 @@ export class OpsLayoutComponent implements OnInit {
   private buildItems(): NavItem[] {
     const can = (...codes: string[]) => this.session.hasAnyPermission(...codes);
     const items: NavItem[] = [{ icon: 'home', label: 'لوحة  المعلومات', route: '/ops', exact: true }];
-    if (can('MEDIA_REVIEW', 'PAYMENTS_REVIEW')) {
-      items.push({ icon: 'image', label: 'اعتماد الملفات', route: '/ops/media' });
+    if (can('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE')) {
+      items.push({ icon: 'ratings', label: 'الاعتمادات', route: '/ops/approvals' });
     }
     if (can('PROVIDERS_APPROVE')) {
       items.push({ icon: 'profile', label: 'اعتماد الحسابات', route: '/ops/accounts' });
     }
-    if (can('RATINGS_REVIEW', 'TICKETS_MANAGE')) {
+    if (can('TICKETS_MANAGE', 'RATINGS_REVIEW')) {
       items.push({ icon: 'ratings', label: 'المراجعات', route: '/ops/reviews' });
     }
     if (can('TICKETS_MANAGE')) {
@@ -67,7 +67,7 @@ export class OpsLayoutComponent implements OnInit {
     if (can('PACKAGES_MANAGE')) {
       settingsChildren.push({ icon: 'package', label: 'اعدادات الباقات', route: '/ops/packages' });
     }
-    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE')) {
+    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
       settingsChildren.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
     }
     if (can('USERS_MANAGE')) {

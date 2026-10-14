@@ -8,6 +8,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AccountStatus, AccountType } from "../common/enums";
+import { effectivePermissionCodes } from "../common/staff-permissions";
 import { PrismaService } from "../prisma/prisma.service";
 
 export const PERMISSION_KEY = "ops_permission";
@@ -34,13 +35,14 @@ export class StaffGuard implements CanActivate {
       include: {
         user: { select: { status: true } },
         role: { include: { permissions: { include: { permission: true } } } },
+        grants: { include: { permission: true } },
       },
     });
     if (!staff || staff.user.status !== AccountStatus.ACTIVE) {
       throw new ForbiddenException("صلاحيات التشغيل غير متاحة");
     }
     request.user.roleCode = staff.role.code;
-    request.user.permissions = staff.role.permissions.map((row) => row.permission.code);
+    request.user.permissions = effectivePermissionCodes(staff).codes;
     return true;
   }
 }

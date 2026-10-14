@@ -412,10 +412,11 @@ export const PACKAGE_POLICIES: Record<string, { duration: string; limits: string
 
 export interface OpsInboxItem {
   id: string;
-  kind: 'MEDIA' | 'RECEIPT' | 'PROVIDER' | 'CHANGE' | 'RATING' | 'COMPLAINT' | 'TICKET' | string;
+  kind: 'MEDIA' | 'RECEIPT' | 'AVATAR' | 'PROVIDER' | 'CHANGE' | 'RATING' | 'COMPLAINT' | 'TICKET' | string;
   title: string;
   subtitle: string;
   createdAt: string;
+  field?: string;
 }
 
 export interface OpsDashboard {
@@ -456,6 +457,7 @@ export interface OpsMediaItem {
   proofs: {
     id: string;
     opsStatus: string;
+    financeStatus?: string;
     amount: number;
     package: { code: string; nameAr: string; durationMonths: number };
   }[];
@@ -648,6 +650,7 @@ export interface OpsStaff {
   level: number;
   role: { id: string; code: string; nameAr: string; nameEn: string } | null;
   permissions: string[];
+  customPermissions?: boolean;
 }
 
 export interface OpsCatalogService {

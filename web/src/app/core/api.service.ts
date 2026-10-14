@@ -424,6 +424,10 @@ export class ApiService {
     return this.http.post<OpsMediaItem>(`${this.base}/ops/media/${id}/review`, body);
   }
 
+  opsEscalateReceipt(id: string) {
+    return this.http.post<OpsMediaItem>(`${this.base}/ops/media/${id}/escalate-finance`, {});
+  }
+
   opsPendingProviders() {
     return this.http.get<OpsPendingProvider[]>(`${this.base}/ops/providers/pending`);
   }
@@ -589,6 +593,10 @@ export class ApiService {
     },
   ) {
     return this.http.patch<OpsStaff>(`${this.base}/ops/staff/${id}`, body);
+  }
+
+  opsPatchStaffPermissions(id: string, body: { permissionCodes?: string[]; resetToRole?: boolean }) {
+    return this.http.patch<OpsStaff>(`${this.base}/ops/staff/${id}/permissions`, body);
   }
 
   opsOrg() {

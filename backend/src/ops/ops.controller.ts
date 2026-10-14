@@ -41,6 +41,7 @@ import {
   PatchBankDto,
   CreateBannedPhoneDto,
   PatchTicketDto,
+  PatchStaffPermissionsDto,
   CreateOpsTicketDto,
   CreateTicketCommentDto,
   PatchAccountDto,
@@ -91,24 +92,43 @@ export class OpsController {
   }
 
   @Get("media")
-  @RequirePermission(StaffPermission.MEDIA_REVIEW, StaffPermission.PAYMENTS_REVIEW)
+  @RequirePermission(
+    StaffPermission.MEDIA_REVIEW,
+    StaffPermission.PAYMENTS_REVIEW,
+    StaffPermission.PAYMENTS_CONFIRM,
+    StaffPermission.RATINGS_REVIEW,
+    StaffPermission.ESCALATE_FINANCE,
+  )
   media(
     @Query("status") status?: string,
     @Query("kind") kind?: string,
     @Query("purpose") purpose?: string,
     @Query("accountType") accountType?: string,
+    @CurrentUser() user?: AuthUser,
   ) {
-    return this.ops.media({ status, kind, purpose, accountType });
+    return this.ops.media({ status, kind, purpose, accountType }, user?.permissions ?? []);
   }
 
   @Post("media/:id/review")
-  @RequirePermission(StaffPermission.MEDIA_REVIEW, StaffPermission.PAYMENTS_REVIEW)
+  @RequirePermission(
+    StaffPermission.MEDIA_REVIEW,
+    StaffPermission.PAYMENTS_REVIEW,
+    StaffPermission.PAYMENTS_CONFIRM,
+    StaffPermission.RATINGS_REVIEW,
+    StaffPermission.ESCALATE_FINANCE,
+  )
   reviewMedia(
     @Param("id") id: string,
     @Body() dto: ReviewMediaDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.ops.reviewMedia(id, dto, user.sub);
+    return this.ops.reviewMedia(id, dto, user.sub, user.permissions ?? []);
+  }
+
+  @Post("media/:id/escalate-finance")
+  @RequirePermission(StaffPermission.ESCALATE_FINANCE)
+  escalateReceipt(@Param("id") id: string, @CurrentUser() user: AuthUser) {
+    return this.ops.escalateReceipt(id, user.sub);
   }
 
   @Get("providers/pending")
@@ -263,6 +283,16 @@ export class OpsController {
   @RequirePermission(StaffPermission.USERS_MANAGE)
   patchStaff(@Param("id") id: string, @Body() dto: PatchStaffDto, @CurrentUser() user: AuthUser) {
     return this.ops.patchStaff(id, dto, user.sub);
+  }
+
+  @Patch("staff/:id/permissions")
+  @RequirePermission(StaffPermission.USERS_MANAGE)
+  patchStaffPermissions(
+    @Param("id") id: string,
+    @Body() dto: PatchStaffPermissionsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.ops.patchStaffPermissions(id, dto, user.sub);
   }
 
   @Get("org")
