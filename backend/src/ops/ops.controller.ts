@@ -222,7 +222,7 @@ export class OpsController {
   @Post("profile-changes/:id/review")
   @RequirePermission(StaffPermission.RATINGS_REVIEW)
   reviewChange(@Param("id") id: string, @Body() dto: ReviewChangeDto) {
-    return this.ops.reviewChange(id, dto.approve !== false);
+    return this.ops.reviewChange(id, dto.approve !== false, dto.reopen === true);
   }
 
   @Get("ratings")

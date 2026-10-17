@@ -181,7 +181,7 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./ops/ops-dashboard.component').then((m) => m.OpsDashboardComponent) },
       { path: 'media', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
       { path: 'approvals', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
-      { path: 'accounts', loadComponent: () => import('./ops/ops-accounts.component').then((m) => m.OpsAccountsComponent) },
+      { path: 'accounts', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
       { path: 'clients', loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent) },
       { path: 'reviews', loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent) },
       { path: 'packages', loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent) },

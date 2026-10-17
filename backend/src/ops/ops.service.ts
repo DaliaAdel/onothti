@@ -157,7 +157,7 @@ export class OpsService {
     });
   }
 
-  async reviewChange(id: string, approve: boolean) {
+  async reviewChange(id: string, approve: boolean, reopen = false) {
     const change = await this.prisma.profileChangeRequest.findUnique({
       where: { id },
       include: { user: { include: { providerProfile: true, customerProfile: true } } },
@@ -165,7 +165,20 @@ export class OpsService {
     if (!change) {
       throw new NotFoundException("طلب التعديل غير موجود");
     }
-    if (change.status !== "PENDING") {
+    if (reopen) {
+      if (change.status === "APPROVED") {
+        throw new BadRequestException("لا يمكن إعادة عنصر معتمد للمراجعة");
+      }
+      if (change.status === "PENDING") {
+        return change;
+      }
+      await this.notifyOwner(change.userId, "أُعيد التعديل للمراجعة", "سيُراجع المشغّل التعديل مرة أخرى");
+      return this.prisma.profileChangeRequest.update({
+        where: { id },
+        data: { status: "PENDING", reviewedAt: null },
+      });
+    }
+    if (change.status !== "PENDING" && change.status !== "REJECTED") {
       throw new BadRequestException("الطلب تمت مراجعته");
     }
     if (approve) {
@@ -245,8 +258,26 @@ export class OpsService {
     if (!rating) {
       throw new NotFoundException("التقييم غير موجود");
     }
-    if (rating.status !== "PENDING") {
+    if (dto.reopen) {
+      if (rating.status === "APPROVED") {
+        throw new BadRequestException("لا يمكن إعادة عنصر معتمد للمراجعة");
+      }
+      if (rating.status === "PENDING") {
+        return rating;
+      }
+      const updated = await this.prisma.rating.update({
+        where: { id },
+        data: { status: "PENDING" },
+      });
+      await this.notifyOwner(rating.providerUserId, "أُعيد تقييم للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى");
+      await this.notifyOwner(rating.customerUserId, "أُعيد تقييمك للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى");
+      return updated;
+    }
+    if (rating.status !== "PENDING" && rating.status !== "REJECTED") {
       throw new BadRequestException("التقييم تمت مراجعته");
+    }
+    if (dto.approve !== true && dto.approve !== false) {
+      throw new BadRequestException("حددي الاعتماد أو الرفض");
     }
     const status = dto.approve ? "APPROVED" : "REJECTED";
     const updated = await this.prisma.rating.update({
@@ -2138,6 +2169,35 @@ export class OpsService {
     } else if (!this.canApproveContent(permissions)) {
       throw new ForbiddenException("ليست لديكِ صلاحية الاعتمادات");
     }
+    if (dto.reopen) {
+      if (file.status === "APPROVED") {
+        throw new BadRequestException("لا يمكن إعادة عنصر معتمد للمراجعة");
+      }
+      await this.prisma.mediaFile.update({
+        where: { id },
+        data: { status: "PENDING" },
+      });
+      if (file.portfolio.length) {
+        await this.prisma.portfolioItem.updateMany({
+          where: { fileId: id },
+          data: { approvalStatus: "PENDING" },
+        });
+      }
+      if (file.proofs.length) {
+        await this.prisma.paymentProof.updateMany({
+          where: { fileId: id, opsStatus: { not: "APPROVED" } },
+          data: { opsStatus: "PENDING" },
+        });
+      }
+      if (file.status !== "PENDING") {
+        await this.notifyOwner(
+          file.uploadedById,
+          "أُعيد الملف للمراجعة",
+          dto.note?.trim() || "سيُراجع المشغّل الملف مرة أخرى",
+        );
+      }
+      return this.mediaById(id);
+    }
     if (dto.requestClearer) {
       await this.prisma.mediaFile.update({
         where: { id },
@@ -2291,6 +2351,35 @@ export class OpsService {
     });
     if (!user?.providerProfile) {
       throw new NotFoundException("حساب الخبيرة غير موجود");
+    }
+    if (dto.reopen) {
+      if (user.status === AccountStatus.ACTIVE) {
+        throw new BadRequestException("لا يمكن إعادة حساب معتمد للمراجعة");
+      }
+      if (user.status === AccountStatus.PENDING_APPROVAL || user.status === AccountStatus.INACTIVE) {
+        return { ok: true, approve: false, reopen: true };
+      }
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          status: AccountStatus.PENDING_APPROVAL,
+          providerProfile: { update: { visibility: Visibility.HIDDEN } },
+          statusHistory: {
+            create: {
+              fromStatus: user.status,
+              toStatus: AccountStatus.PENDING_APPROVAL,
+              reason: dto.reason?.trim() || "ops-reopen",
+              actorId,
+            },
+          },
+        },
+      });
+      await this.notifyOwner(id, "أُعيد الحساب للمراجعة", dto.reason?.trim() || "سيُراجع المشغّل الحساب مرة أخرى");
+      await this.audit(actorId ?? null, "PROVIDER_REOPEN", "User", id);
+      return { ok: true, approve: false, reopen: true };
+    }
+    if (dto.approve !== true && dto.approve !== false) {
+      throw new BadRequestException("حددي الاعتماد أو الرفض");
     }
     if (dto.approve) {
       const live = user.subscriptions.length > 0;

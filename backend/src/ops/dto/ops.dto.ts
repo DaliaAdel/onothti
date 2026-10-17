@@ -211,6 +211,12 @@ export class ReviewChangeDto {
   @IsOptional()
   @IsBoolean()
   approve?: boolean;
+
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  reopen?: boolean;
 }
 
 export class ReviewMediaDto {
@@ -240,18 +246,31 @@ export class ReviewMediaDto {
   @IsOptional()
   @Type(() => Date)
   endAt?: Date;
+
+  @ApiPropertyOptional({ description: "إعادة العنصر للمراجعة" })
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  reopen?: boolean;
 }
 
 export class ReviewProviderDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
   @IsBoolean()
-  approve!: boolean;
+  approve?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  reopen?: boolean;
 }
 
 export class UpsertPackageDto {
@@ -506,15 +525,22 @@ export class CreateCampaignDto {
 }
 
 export class ReviewRatingDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
   @IsBoolean()
-  approve!: boolean;
+  approve?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  reopen?: boolean;
 }
 
 export class PatchComplaintDto {

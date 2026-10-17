@@ -109,13 +109,13 @@ import { opsDate } from './ops-ui';
         <h3>حالة العمل اليوم</h3>
         <a class="activity" routerLink="/ops/approvals">
           <span class="dot"></span>
-          <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) }} عنصر</span></div>
+          <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) + (dash?.pendingProviders ?? 0) }} عنصر</span></div>
         </a>
         <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
           <span class="dot"></span>
           <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
         </a>
-        <a class="activity" routerLink="/ops/accounts">
+        <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'accounts' }">
           <span class="dot"></span>
           <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
         </a>
@@ -131,7 +131,7 @@ import { opsDate } from './ops-ui';
       <article class="card">
         <h3>اختصارات الإدارة</h3>
         <div class="ops-shortcuts">
-          @if (session.hasAnyPermission('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE')) {
+          @if (session.hasAnyPermission('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE', 'PROVIDERS_APPROVE')) {
             <a class="btn ghost" routerLink="/ops/approvals">الاعتمادات</a>
           }
           <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
@@ -158,7 +158,7 @@ import { opsDate } from './ops-ui';
           }
         </div>
         <p class="notice" style="margin-top:16px">
-          الاسم والصورة والنبذة والتقييم والأعمال والإيصالات تُعتمد من شاشة واحدة.
+          حسابات الخبيرات والاسم والصورة والنبذة والتقييم والأعمال والإيصالات تُعتمد من شاشة واحدة.
         </p>
       </article>
     </div>
@@ -209,7 +209,7 @@ export class OpsDashboardComponent implements OnInit {
 
   inboxRoute(item: OpsInboxItem): string {
     if (item.kind === 'PROVIDER') {
-      return '/ops/accounts';
+      return '/ops/approvals';
     }
     if (item.kind === 'TICKET') {
       return '/ops/tickets';
@@ -221,6 +221,9 @@ export class OpsDashboardComponent implements OnInit {
   }
 
   inboxQuery(item: OpsInboxItem): Record<string, string> {
+    if (item.kind === 'PROVIDER') {
+      return { kind: 'accounts', account: item.id };
+    }
     if (item.kind === 'RATING') {
       return { kind: 'rating' };
     }

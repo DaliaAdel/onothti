@@ -419,7 +419,7 @@ export class ApiService {
 
   opsReviewMedia(
     id: string,
-    body: { approve?: boolean; requestClearer?: boolean; note?: string; startAt?: string; endAt?: string },
+    body: { approve?: boolean; requestClearer?: boolean; reopen?: boolean; note?: string; startAt?: string; endAt?: string },
   ) {
     return this.http.post<OpsMediaItem>(`${this.base}/ops/media/${id}/review`, body);
   }
@@ -432,8 +432,8 @@ export class ApiService {
     return this.http.get<OpsPendingProvider[]>(`${this.base}/ops/providers/pending`);
   }
 
-  opsReviewProvider(id: string, approve: boolean, reason?: string) {
-    return this.http.post<{ ok: boolean }>(`${this.base}/ops/providers/${id}/review`, { approve, reason });
+  opsReviewProvider(id: string, approve: boolean, reason?: string, reopen = false) {
+    return this.http.post<{ ok: boolean }>(`${this.base}/ops/providers/${id}/review`, reopen ? { reopen: true, reason } : { approve, reason });
   }
 
   opsPackages() {
@@ -475,8 +475,11 @@ export class ApiService {
     return this.http.get<OpsRating[]>(`${this.base}/ops/ratings`, { params: { status } });
   }
 
-  opsReviewRating(id: string, approve: boolean, note?: string) {
-    return this.http.post<OpsRating>(`${this.base}/ops/ratings/${id}/review`, { approve, note });
+  opsReviewRating(id: string, approve: boolean, note?: string, reopen = false) {
+    return this.http.post<OpsRating>(
+      `${this.base}/ops/ratings/${id}/review`,
+      reopen ? { reopen: true, note } : { approve, note },
+    );
   }
 
   opsComplaints(status?: string) {
@@ -495,8 +498,11 @@ export class ApiService {
     return this.http.get<OpsProfileChange[]>(`${this.base}/ops/profile-changes`, { params: { status } });
   }
 
-  opsReviewChange(id: string, approve: boolean) {
-    return this.http.post<OpsProfileChange>(`${this.base}/ops/profile-changes/${id}/review`, { approve });
+  opsReviewChange(id: string, approve: boolean, reopen = false) {
+    return this.http.post<OpsProfileChange>(
+      `${this.base}/ops/profile-changes/${id}/review`,
+      reopen ? { reopen: true } : { approve },
+    );
   }
 
   opsRegions() {
