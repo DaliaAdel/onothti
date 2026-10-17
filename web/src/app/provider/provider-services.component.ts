@@ -37,8 +37,11 @@ import { ToastService } from '../core/toast.service';
       </div>
       <div class="card add-service-section">
         <div class="section-title"><div><h3>اختاري الخدمة الرئيسية</h3><p class="small muted">يمكن اختيار خدمة رئيسية واحدة في كل مرة.</p></div></div>
+        @if (!selectableCatalog.length) {
+          <p class="muted small">باقتك الحالية لا تشمل خدمات رئيسية متاحة للإضافة.</p>
+        }
         <div class="add-service-grid">
-          @for (service of catalog; track service.id) {
+          @for (service of selectableCatalog; track service.id) {
             <button class="add-service-card" type="button" [class.selected]="serviceId === service.id" (click)="pickMain(service.id)">
               <img class="add-service-photo" [class.has-photo]="!!service.imageUrl" [src]="photoFor(service)" alt="" loading="lazy" decoding="async" />
               <span>{{ locale.localizedName(service) }}</span>
@@ -176,6 +179,14 @@ export class ProviderServicesPageComponent implements OnInit {
   dragIndex: number | null = null;
   overIndex: number | null = null;
   private orderBeforeDrag: string[] = [];
+
+  get selectableCatalog(): CatalogService[] {
+    const allowed = this.subscription?.package?.serviceIds;
+    if (!allowed) {
+      return this.catalog;
+    }
+    return this.catalog.filter((service) => allowed.includes(service.id));
+  }
 
   get subServices() {
     return this.catalog.find((item) => item.id === this.serviceId)?.subServices ?? [];

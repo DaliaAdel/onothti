@@ -184,6 +184,16 @@ export const routes: Routes = [
       { path: 'accounts', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
       { path: 'clients', loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent) },
       { path: 'reviews', loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent) },
+      {
+        path: 'packages/:id/services',
+        redirectTo: '/ops/packages/:id',
+        pathMatch: 'full',
+      },
+      {
+        path: 'packages/:id',
+        loadComponent: () =>
+          import('./ops/ops-package-services.component').then((m) => m.OpsPackageServicesComponent),
+      },
       { path: 'packages', loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent) },
       { path: 'geo', loadComponent: () => import('./ops/ops-geo.component').then((m) => m.OpsGeoComponent) },
       { path: 'settings', loadComponent: () => import('./ops/ops-settings.component').then((m) => m.OpsSettingsComponent) },

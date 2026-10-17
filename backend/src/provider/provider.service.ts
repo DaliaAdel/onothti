@@ -197,6 +197,9 @@ export class ProviderService {
     }
     this.assertPrices(dto.priceFrom, dto.priceTo);
     const limits = await this.packageLimits(userId);
+    if (limits.allowedServiceIds && !limits.allowedServiceIds.includes(dto.serviceId)) {
+      throw new ForbiddenException("هذه الخدمة غير متاحة في باقتك");
+    }
     const count = await this.prisma.providerService.count({ where: { providerUserId: userId } });
     if (limits.maxServices != null && count >= limits.maxServices) {
       throw new ForbiddenException("تجاوزتِ حد الخدمات في باقتك");
@@ -607,7 +610,11 @@ export class ProviderService {
     await this.requireProvider(userId);
     const [current, packages, bankAccounts, proofs] = await Promise.all([
       this.currentSubscription(userId),
-      this.prisma.package.findMany({ where: { isActive: true }, orderBy: { rank: "asc" } }),
+      this.prisma.package.findMany({
+        where: { isActive: true },
+        include: { services: true },
+        orderBy: { rank: "asc" },
+      }),
       this.prisma.bankAccount.findMany({ where: { isActive: true } }),
       this.listProofs(userId),
     ]);
@@ -653,7 +660,7 @@ export class ProviderService {
         endAt,
         status: "ACTIVE",
       },
-      include: { package: true, campaign: true },
+      include: { package: { include: { services: true } }, campaign: true },
     });
     await this.prisma.user.update({
       where: { id: userId },
@@ -829,7 +836,7 @@ export class ProviderService {
   private async currentSubscription(userId: string) {
     const row = await this.prisma.subscription.findFirst({
       where: { providerUserId: userId },
-      include: { package: true },
+      include: { package: { include: { services: true } } },
       orderBy: [{ status: "asc" }, { endAt: "desc" }],
     });
     if (!row) {
@@ -844,7 +851,7 @@ export class ProviderService {
               status: "ACTIVE",
               endAt: { gte: new Date() },
             },
-            include: { package: true },
+            include: { package: { include: { services: true } } },
             orderBy: { endAt: "desc" },
           });
     const chosen = active ?? row;
@@ -865,14 +872,19 @@ export class ProviderService {
         maxPhotos: current.package.maxPhotos,
         maxVideos: current.package.maxVideos,
         maxAlbums: current.package.maxAlbums,
+        allowedServiceIds: current.package.serviceIds ?? [],
       };
     }
-    const free = await this.prisma.package.findUnique({ where: { code: "FREE" } });
+    const free = await this.prisma.package.findUnique({
+      where: { code: "FREE" },
+      include: { services: true },
+    });
     return {
       maxServices: free?.maxServices ?? 5,
       maxPhotos: free?.maxPhotos ?? 5,
       maxVideos: free?.maxVideos ?? 0,
       maxAlbums: free?.maxAlbums ?? 1,
+      allowedServiceIds: free?.services.map((row) => row.serviceId) ?? [],
     };
   }
 

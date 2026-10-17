@@ -55,6 +55,8 @@ export function serializePackage(pkg: {
   allowRating?: boolean;
   hasBadge?: boolean;
   isActive?: boolean;
+  services?: { serviceId: string }[];
+  serviceIds?: string[];
 }) {
   const pricing = resolvePackagePricing({
     price: moneyOf(pkg.price),
@@ -80,5 +82,8 @@ export function serializePackage(pkg: {
     allowRating: pkg.allowRating ?? true,
     hasBadge: pkg.hasBadge ?? false,
     isActive: pkg.isActive ?? true,
+    serviceIds: Array.isArray(pkg.services)
+      ? pkg.services.map((row) => row.serviceId)
+      : pkg.serviceIds ?? [],
   };
 }

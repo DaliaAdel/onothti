@@ -211,6 +211,7 @@ export interface CatalogPackage {
   allowRating?: boolean;
   hasBadge?: boolean;
   isActive?: boolean;
+  serviceIds?: string[];
 }
 
 export interface NamedCity {

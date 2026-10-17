@@ -59,6 +59,7 @@ export class CatalogController {
   async packages() {
     const rows = await this.prisma.package.findMany({
       where: { isActive: true },
+      include: { services: true },
       orderBy: { rank: "asc" },
     });
     return rows.map(serializePackage);

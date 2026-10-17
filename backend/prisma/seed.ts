@@ -297,6 +297,23 @@ async function main() {
       create: pkg,
     });
   }
+  const visibleServices = await prisma.service.findMany({
+    where: { isVisible: true },
+    select: { id: true },
+  });
+  const packageRows = await prisma.package.findMany({ select: { id: true } });
+  for (const pkg of packageRows) {
+    const linked = await prisma.packageService.count({ where: { packageId: pkg.id } });
+    if (linked) {
+      continue;
+    }
+    if (!visibleServices.length) {
+      continue;
+    }
+    await prisma.packageService.createMany({
+      data: visibleServices.map((service) => ({ packageId: pkg.id, serviceId: service.id })),
+    });
+  }
 
   await prisma.setting.upsert({
     where: { key: "otp_ttl_seconds" },

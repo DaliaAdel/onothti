@@ -1,8 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import type { CatalogPackage, OpsCampaign } from '../core/models';
+import { type CatalogPackage, type CatalogService, type OpsCampaign } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -16,7 +17,7 @@ import { keepSelected } from './ops-ui';
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
-        <p>اضغطي على صف الباقة لتعديل الأسعار والحدود</p>
+        <p>اضغطي على صف الباقة لفتح شاشتها وتعديل الأسعار والخدمات</p>
       </div>
       <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
     </div>
@@ -46,12 +47,12 @@ import { keepSelected } from './ops-ui';
           <label>السعر بعد الخصم</label>
           <input class="input" [value]="afterOf(draft.priceBefore, draft.discountPercent)" readonly />
         </div>
-        <div class="field">
-          <label>الترتيب</label>
-          <input class="input" type="number" [(ngModel)]="draft.rank" />
+          <div class="field">
+            <label>الترتيب</label>
+            <input class="input" type="number" [(ngModel)]="draft.rank" />
+          </div>
         </div>
-      </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
     </app-ops-modal>
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
@@ -65,12 +66,13 @@ import { keepSelected } from './ops-ui';
               <th>المدة</th>
               <th>السعر</th>
               <th>الترتيب</th>
+              <th>خدمات</th>
               <th>الحالة</th>
             </tr>
           </thead>
           <tbody>
             @for (item of packages; track item.id) {
-              <tr [class.active]="selectedPackage?.id === item.id" (click)="selectedPackage = item">
+              <tr (click)="openPackage(item)">
                 <td><b>{{ item.nameAr }}</b></td>
                 <td>{{ item.code }}</td>
                 <td>{{ item.durationMonths }} شهر</td>
@@ -84,6 +86,19 @@ import { keepSelected } from './ops-ui';
                   }
                 </td>
                 <td>{{ item.rank }}</td>
+                <td class="pkg-tags-cell">
+                  <div class="pkg-tags">
+                    @for (name of previewServiceNames(item); track name) {
+                      <span class="pkg-tag">{{ name }}</span>
+                    }
+                    @if (extraServiceCount(item); as extra) {
+                      <span class="pkg-tag more">+{{ extra }}</span>
+                    }
+                    @if (!previewServiceNames(item).length) {
+                      <span class="pkg-tag more">بدون خدمات</span>
+                    }
+                  </div>
+                </td>
                 <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'مفعّلة' : 'متوقفة' }}</span></td>
               </tr>
             }
@@ -167,64 +182,6 @@ import { keepSelected } from './ops-ui';
     </div>
 
     <app-ops-drawer
-      [open]="!!selectedPackage"
-      [title]="selectedPackage?.nameAr || ''"
-      [kicker]="selectedPackage?.code || 'باقة'"
-      (closed)="selectedPackage = null"
-    >
-      @if (selectedPackage; as item) {
-        <div class="form-grid">
-          <div class="field">
-            <label>الاسم</label>
-            <input class="input" [(ngModel)]="item.nameAr" />
-          </div>
-          <div class="field">
-            <label>المدة بالشهور</label>
-            <input class="input" type="number" [(ngModel)]="item.durationMonths" />
-          </div>
-          <div class="field">
-            <label>السعر قبل الخصم</label>
-            <input class="input" type="number" min="0" step="0.01" [(ngModel)]="item.priceBefore" />
-          </div>
-          <div class="field">
-            <label>الخصم %</label>
-            <input class="input" type="number" min="0" max="100" step="0.01" [(ngModel)]="item.discountPercent" />
-          </div>
-          <div class="field">
-            <label>السعر بعد الخصم</label>
-            <input class="input" [value]="afterOf(item.priceBefore, item.discountPercent)" readonly />
-          </div>
-          <div class="field">
-            <label>ترتيب الظهور</label>
-            <input class="input" type="number" [(ngModel)]="item.rank" />
-          </div>
-          <div class="field">
-            <label>حد الخدمات</label>
-            <input class="input" type="number" [(ngModel)]="item.maxServices" />
-          </div>
-          <div class="field">
-            <label>حد الصور</label>
-            <input class="input" type="number" [(ngModel)]="item.maxPhotos" />
-          </div>
-          <div class="field">
-            <label>حد الفيديو</label>
-            <input class="input" type="number" [(ngModel)]="item.maxVideos" />
-          </div>
-          <div class="field">
-            <label>حد الألبومات</label>
-            <input class="input" type="number" [(ngModel)]="item.maxAlbums" />
-          </div>
-        </div>
-        <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="save(item)">حفظ</button>
-          <button class="btn ghost" type="button" (click)="toggle(item)">
-            {{ item.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
-          </button>
-        </div>
-      }
-    </app-ops-drawer>
-
-    <app-ops-drawer
       [open]="!!selectedCampaign"
       [title]="selectedCampaign?.nameAr || ''"
       kicker="حملة ترويجية"
@@ -302,12 +259,13 @@ import { keepSelected } from './ops-ui';
 })
 export class OpsPackagesComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
   packages: CatalogPackage[] = [];
+  catalogServices: CatalogService[] = [];
   campaigns: OpsCampaign[] = [];
-  selectedPackage: CatalogPackage | null = null;
   selectedCampaign: OpsCampaign | null = null;
   campaignDates: Record<string, { startDate: string; endDate: string }> = {};
   loading = true;
@@ -331,36 +289,8 @@ export class OpsPackagesComponent implements OnInit {
     this.load();
   }
 
-  save(item: CatalogPackage): void {
-    this.api
-      .opsPatchPackage(item.id, {
-        nameAr: item.nameAr,
-        durationMonths: Number(item.durationMonths),
-        priceBefore: Number(item.priceBefore ?? item.price),
-        discountPercent: Number(item.discountPercent ?? 0),
-        rank: Number(item.rank),
-        maxServices: this.numOrNull(item.maxServices),
-        maxPhotos: this.numOrNull(item.maxPhotos),
-        maxVideos: this.numOrNull(item.maxVideos),
-        maxAlbums: this.numOrNull(item.maxAlbums),
-      })
-      .subscribe({
-        next: (row) => {
-          Object.assign(item, row);
-          this.toast.show('تم حفظ الباقة');
-        },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الباقة')),
-      });
-  }
-
-  toggle(item: CatalogPackage): void {
-    this.api.opsPatchPackage(item.id, { isActive: !item.isActive }).subscribe({
-      next: (row) => {
-        item.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'الباقة ظاهرة للخبيرات' : 'تم إيقاف الباقة');
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحالة')),
-    });
+  openPackage(item: CatalogPackage): void {
+    void this.router.navigate(['/ops/packages', item.id]);
   }
 
   create(): void {
@@ -378,11 +308,11 @@ export class OpsPackagesComponent implements OnInit {
         rank: Number(this.draft.rank),
       })
       .subscribe({
-        next: () => {
-          this.toast.show('تمت إضافة الباقة');
+        next: (row) => {
+          this.toast.show('تمت إضافة الباقة. حددي خدماتها');
           this.draft = { code: '', nameAr: '', durationMonths: 1, priceBefore: 0, discountPercent: 0, rank: 5 };
           this.adding = false;
-          this.load();
+          void this.router.navigate(['/ops/packages', row.id]);
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
       });
@@ -479,20 +409,33 @@ export class OpsPackagesComponent implements OnInit {
       });
   }
 
-  private numOrNull(value: number | string | null | undefined): number | null {
-    if (value === null || value === undefined || value === '') {
-      return null;
+  previewServiceNames(item: CatalogPackage): string[] {
+    return this.namedServices(item).slice(0, 3);
+  }
+
+  extraServiceCount(item: CatalogPackage): number {
+    return Math.max(0, this.namedServices(item).length - 3);
+  }
+
+  private namedServices(item: CatalogPackage): string[] {
+    const ids = new Set(item.serviceIds ?? []);
+    const names = this.catalogServices.filter((service) => ids.has(service.id)).map((service) => service.nameAr);
+    if (names.length) {
+      return names;
     }
-    const next = Number(value);
-    return Number.isFinite(next) ? next : null;
+    return ids.size ? [`${ids.size} خدمة`] : [];
   }
 
   private load(): void {
     this.loading = true;
+    this.api.services().subscribe({
+      next: (services) => {
+        this.catalogServices = services;
+      },
+    });
     this.api.opsPackages().subscribe({
       next: (packages) => {
         this.packages = packages;
-        this.selectedPackage = keepSelected(this.packages, this.selectedPackage);
         this.loading = false;
       },
       error: (err) => {

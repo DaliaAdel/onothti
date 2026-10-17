@@ -1858,7 +1858,10 @@ export class OpsService {
   }
 
   async packages() {
-    const rows = await this.prisma.package.findMany({ orderBy: { rank: "asc" } });
+    const rows = await this.prisma.package.findMany({
+      include: { services: true },
+      orderBy: { rank: "asc" },
+    });
     return rows.map((row) => serializePackage(row));
   }
 
@@ -1890,7 +1893,8 @@ export class OpsService {
           isActive: dto.isActive ?? true,
         },
       });
-      return serializePackage(row);
+      await this.replacePackageServices(row.id, dto.serviceIds, true);
+      return this.packageById(row.id);
     } catch (error) {
       return this.rethrowUnique(error, "رمز الباقة مستخدم");
     }
@@ -1911,7 +1915,7 @@ export class OpsService {
           current,
         })
       : null;
-    const row = await this.prisma.package.update({
+    await this.prisma.package.update({
       where: { id },
       data: {
         ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
@@ -1936,7 +1940,51 @@ export class OpsService {
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
     });
+    if (dto.serviceIds !== undefined) {
+      await this.replacePackageServices(id, dto.serviceIds, false);
+    }
+    return this.packageById(id);
+  }
+
+  private async packageById(id: string) {
+    const row = await this.prisma.package.findUnique({
+      where: { id },
+      include: { services: true },
+    });
+    if (!row) {
+      throw new NotFoundException("الباقة غير موجودة");
+    }
     return serializePackage(row);
+  }
+
+  private async replacePackageServices(packageId: string, serviceIds: string[] | undefined, fallbackAll: boolean) {
+    let ids = [...new Set((serviceIds ?? []).map((id) => id.trim()).filter(Boolean))];
+    if (fallbackAll && serviceIds === undefined) {
+      const visible = await this.prisma.service.findMany({
+        where: { isVisible: true },
+        select: { id: true },
+      });
+      ids = visible.map((row) => row.id);
+    }
+    if (ids.length) {
+      const found = await this.prisma.service.findMany({
+        where: { id: { in: ids } },
+        select: { id: true },
+      });
+      if (found.length !== ids.length) {
+        throw new BadRequestException("خدمة غير موجودة ضمن اختيارات الباقة");
+      }
+    }
+    await this.prisma.$transaction([
+      this.prisma.packageService.deleteMany({ where: { packageId } }),
+      ...(ids.length
+        ? [
+            this.prisma.packageService.createMany({
+              data: ids.map((serviceId) => ({ packageId, serviceId })),
+            }),
+          ]
+        : []),
+    ]);
   }
 
   async createCampaign(dto: CreateCampaignDto) {
