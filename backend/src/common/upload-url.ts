@@ -22,7 +22,7 @@ export function publicUploadUrl(storageKey?: string | null): string | null {
   if (/^https?:\/\//i.test(key)) {
     return key;
   }
-  if (!/^(avatars|portfolio|proofs|proof|receipts)\//.test(key)) {
+  if (!/^(avatars|portfolio|proofs|proof|receipts|catalog)\//.test(key)) {
     return null;
   }
   return fileUrl(key);

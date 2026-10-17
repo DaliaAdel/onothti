@@ -22,10 +22,10 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
           <h2>الخدمات والخدمات الفرعية</h2>
           <p>اضغطي على صف الخدمة لعرض خدماتها الفرعية</p>
         </div>
-        <button class="btn primary" type="button" (click)="adding = true">+ إضافة خدمة</button>
+        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة خدمة</button>
       </div>
 
-      <app-ops-modal [open]="adding" title="إضافة خدمة رئيسية" kicker="كتالوج المنصة" (closed)="adding = false">
+      <app-ops-modal [open]="adding" title="إضافة خدمة رئيسية" kicker="كتالوج المنصة" (closed)="closeAdd()">
         <div class="form-grid">
           <div class="field">
             <label>الاسم *</label>
@@ -38,6 +38,15 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
           <div class="field">
             <label>الترتيب</label>
             <input class="input" type="number" [(ngModel)]="serviceDraft.sortOrder" />
+          </div>
+          <div class="field full">
+            <label>صورة الخدمة</label>
+            <div class="ops-service-image">
+              @if (draftPreview) {
+                <img class="ops-service-preview" [src]="draftPreview" alt="" />
+              }
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onDraftImage($event)" />
+            </div>
           </div>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createService()">إضافة الخدمة</button>
@@ -52,6 +61,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
           <table class="ops-table">
             <thead>
               <tr>
+                <th>الصورة</th>
                 <th>الاسم</th>
                 <th>الاسم الإنجليزي</th>
                 <th>فرعية</th>
@@ -62,6 +72,13 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
             <tbody>
               @for (service of services; track service.id) {
                 <tr (click)="openService(service)">
+                  <td>
+                    @if (service.imageUrl) {
+                      <img class="ops-thumb" [src]="service.imageUrl" alt="" />
+                    } @else {
+                      <span class="muted small">بدون صورة</span>
+                    }
+                  </td>
                   <td><b>{{ service.nameAr }}</b></td>
                   <td>{{ service.nameEn }}</td>
                   <td>{{ service.subServices.length }}</td>
@@ -99,6 +116,18 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
         <div class="field">
           <label>الترتيب</label>
           <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+        </div>
+        <div class="field full">
+          <label>صورة الخدمة</label>
+          <div class="ops-service-image">
+            @if (selected.imageUrl) {
+              <img class="ops-service-preview" [src]="selected.imageUrl" alt="" />
+            }
+            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedImage($event)" />
+            @if (selected.imageUrl) {
+              <button class="btn ghost" type="button" (click)="clearSelectedImage()">حذف الصورة</button>
+            }
+          </div>
         </div>
       </div>
       <div class="ops-drawer-actions" style="margin:0 0 22px">
@@ -208,6 +237,8 @@ export class OpsCatalogComponent implements OnInit {
   selectedSub: OpsSubService | null = null;
   serviceDraft = emptyServiceDraft();
   subDraft = emptySubDraft();
+  draftFile: File | null = null;
+  draftPreview: string | null = null;
 
   ngOnInit(): void {
     this.shell.set('الخدمات', 'الخدمات الرئيسية والفرعية الظاهرة في المنصة');
@@ -226,11 +257,23 @@ export class OpsCatalogComponent implements OnInit {
     this.shell.set('الخدمات', 'الخدمات الرئيسية والفرعية الظاهرة في المنصة');
   }
 
+  openAdd(): void {
+    this.serviceDraft = emptyServiceDraft();
+    this.resetDraftImage();
+    this.adding = true;
+  }
+
+  closeAdd(): void {
+    this.adding = false;
+    this.resetDraftImage();
+  }
+
   createService(): void {
     if (!this.hasNames(this.serviceDraft.nameAr, this.serviceDraft.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
     }
+    const file = this.draftFile;
     this.api
       .opsCreateService({
         nameAr: this.serviceDraft.nameAr.trim(),
@@ -239,14 +282,58 @@ export class OpsCatalogComponent implements OnInit {
         isVisible: true,
       })
       .subscribe({
-        next: () => {
-          this.toast.show('تمت إضافة الخدمة');
-          this.serviceDraft = emptyServiceDraft();
-          this.adding = false;
-          this.load();
+        next: (row) => {
+          if (!file) {
+            this.finishCreate('تمت إضافة الخدمة');
+            return;
+          }
+          this.api.opsUploadServiceImage(row.id, file).subscribe({
+            next: () => this.finishCreate('تمت إضافة الخدمة مع الصورة'),
+            error: (err) => {
+              this.toast.show(apiMessage(err, 'تمت إضافة الخدمة وتعذر رفع الصورة'));
+              this.finishCreate();
+            },
+          });
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الخدمة')),
       });
+  }
+
+  onDraftImage(event: Event): void {
+    const file = this.fileFrom(event);
+    if (!file) {
+      return;
+    }
+    this.resetDraftImage();
+    this.draftFile = file;
+    this.draftPreview = URL.createObjectURL(file);
+  }
+
+  onSelectedImage(event: Event): void {
+    const file = this.fileFrom(event);
+    if (!file || !this.selected) {
+      return;
+    }
+    this.api.opsUploadServiceImage(this.selected.id, file).subscribe({
+      next: (row) => {
+        this.applyService(row);
+        this.toast.show('تم رفع صورة الخدمة');
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الصورة')),
+    });
+  }
+
+  clearSelectedImage(): void {
+    if (!this.selected) {
+      return;
+    }
+    this.api.opsClearServiceImage(this.selected.id).subscribe({
+      next: (row) => {
+        this.applyService(row);
+        this.toast.show('تم حذف صورة الخدمة');
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الصورة')),
+    });
   }
 
   saveService(service: OpsCatalogService): void {
@@ -338,6 +425,42 @@ export class OpsCatalogComponent implements OnInit {
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
     });
+  }
+
+  private finishCreate(message?: string): void {
+    if (message) {
+      this.toast.show(message);
+    }
+    this.serviceDraft = emptyServiceDraft();
+    this.resetDraftImage();
+    this.adding = false;
+    this.load();
+  }
+
+  private applyService(row: OpsCatalogService): void {
+    this.services = this.services.map((item) => (item.id === row.id ? { ...item, ...row } : item));
+    if (this.selected?.id === row.id) {
+      this.selected = { ...this.selected, ...row };
+    }
+  }
+
+  private fileFrom(event: Event): File | null {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (file && !/^image\/(jpeg|png|webp|jpg)$/i.test(file.type)) {
+      this.toast.show('الصورة لازم تكون JPG أو PNG');
+      return null;
+    }
+    return file;
+  }
+
+  private resetDraftImage(): void {
+    if (this.draftPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.draftPreview);
+    }
+    this.draftFile = null;
+    this.draftPreview = null;
   }
 
   private hasNames(nameAr: string, nameEn: string): boolean {

@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../auth/current-user.decorator";
 import type { AuthUser } from "../auth/auth-user";
 import { StaffGuard, PermissionGuard, RequirePermission } from "./ops.guard";
@@ -49,6 +50,7 @@ import {
   BroadcastDto,
 } from "./dto/ops.dto";
 import { StaffPermission } from "../common/enums";
+import { catalogUpload } from "./catalog-upload";
 
 @ApiTags("ops")
 @ApiBearerAuth()
@@ -360,6 +362,31 @@ export class OpsController {
   @RequirePermission(StaffPermission.CATALOG_MANAGE)
   patchService(@Param("id") id: string, @Body() dto: PatchServiceDto) {
     return this.ops.patchService(id, dto);
+  }
+
+  @Post("catalog/:id/image")
+  @RequirePermission(StaffPermission.CATALOG_MANAGE)
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(FileInterceptor("file", catalogUpload))
+  uploadServiceImage(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file?: { filename: string; mimetype: string; size: number },
+  ) {
+    return this.ops.uploadServiceImage(id, file, user.sub);
+  }
+
+  @Delete("catalog/:id/image")
+  @RequirePermission(StaffPermission.CATALOG_MANAGE)
+  clearServiceImage(@Param("id") id: string) {
+    return this.ops.clearServiceImage(id);
   }
 
   @Post("catalog/:id/sub-services")

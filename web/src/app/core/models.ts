@@ -108,7 +108,10 @@ const SERVICE_ASSET_BY_CODE: Record<string, string> = {
   piercing: 'piercing',
 };
 
-export function servicePhoto(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+export function servicePhoto(service?: { imageUrl?: string | null; code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+  if (service && typeof service !== 'string' && service.imageUrl) {
+    return service.imageUrl;
+  }
   const key = serviceAssetKey(service);
   if (key) {
     return `/assets/service-photos/${key}.webp`;
@@ -147,6 +150,7 @@ export interface CatalogService {
   nameAr: string;
   nameEn: string;
   sortOrder?: number;
+  imageUrl?: string | null;
   subServices?: { id: string; nameAr: string; nameEn: string }[];
 }
 
@@ -660,6 +664,7 @@ export interface OpsCatalogService {
   nameEn: string;
   sortOrder: number;
   isVisible: boolean;
+  imageUrl?: string | null;
   subServices: OpsSubService[];
 }
 

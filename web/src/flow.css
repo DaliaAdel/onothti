@@ -126,6 +126,10 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
 .album-cover.has-photo span{background:#4d2815b8}
 .album-create-card{display:grid;place-items:center;min-height:148px;border:1.5px dashed var(--border);color:var(--primary);font-weight:800}
 .album-upload-trigger{border:0;cursor:pointer}
+.add-service-card .add-service-photo{width:44px;height:44px;object-fit:contain;flex:none;border-radius:12px;background:#f6ece7}
+.add-service-card .add-service-photo.has-photo{object-fit:cover}
+.service-row-photo,.service-edit-photo{width:42px;height:42px;border-radius:12px;object-fit:cover;flex:none;background:#f6ece7}
+.service-edit-photo{width:52px;height:52px;border-radius:16px}
 .list-row .drag-handle{color:var(--tertiary);cursor:grab;user-select:none;letter-spacing:-2px}
 .list-row[draggable="true"]{cursor:grab}
 .list-row.is-dragging{opacity:.45}

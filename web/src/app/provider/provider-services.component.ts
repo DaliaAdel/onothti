@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LocaleService } from '../core/locale.service';
 import { apiMessage } from '../core/phone';
-import { isLiveSubscription, serviceIcon, type CatalogService, type ProviderServiceRow, type ProviderSubscription } from '../core/models';
+import { isLiveSubscription, servicePhoto, type CatalogService, type ProviderServiceRow, type ProviderSubscription } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 
@@ -40,7 +40,7 @@ import { ToastService } from '../core/toast.service';
         <div class="add-service-grid">
           @for (service of catalog; track service.id) {
             <button class="add-service-card" type="button" [class.selected]="serviceId === service.id" (click)="pickMain(service.id)">
-              <img [src]="iconFor(service)" alt="" loading="lazy" decoding="async" />
+              <img class="add-service-photo" [class.has-photo]="!!service.imageUrl" [src]="photoFor(service)" alt="" loading="lazy" decoding="async" />
               <span>{{ locale.localizedName(service) }}</span>
               <i>✓</i>
             </button>
@@ -80,7 +80,7 @@ import { ToastService } from '../core/toast.service';
       </div>
       <div class="card edit-service-form">
         <div class="edit-service-heading">
-          <div class="service-edit-icon">✎</div>
+          <img class="service-edit-photo" [src]="photoFor(editing.service)" alt="" />
           <div>
             <h2>{{ locale.localizedName(editing.service) }}</h2>
             <p class="small muted">{{ editing.subService ? locale.localizedName(editing.subService) : 'الخدمة الرئيسية' }}</p>
@@ -132,6 +132,7 @@ import { ToastService } from '../core/toast.service';
                   (dragend)="onDragEnd()"
                 >
                   <b class="drag-handle" title="اسحبي لإعادة الترتيب">⋮⋮</b>
+                  <img class="service-row-photo" [src]="photoFor(item.service)" alt="" />
                   <div class="copy">
                     <b>{{ locale.localizedName(item.service) }}</b>
                     <p>{{ item.subService ? locale.localizedName(item.subService) : 'الخدمة الرئيسية' }}</p>
@@ -218,8 +219,8 @@ export class ProviderServicesPageComponent implements OnInit {
     this.reload();
   }
 
-  iconFor(service: CatalogService | string): string {
-    return serviceIcon(service);
+  photoFor(service: CatalogService): string {
+    return servicePhoto(service);
   }
 
   pickMain(id: string): void {

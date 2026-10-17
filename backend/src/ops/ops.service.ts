@@ -51,6 +51,7 @@ import {
 import { parseCityIds, replaceProviderCities } from "../common/geo";
 import { resolvePackagePricing, serializePackage } from "../common/package-price";
 import { fileUrl, publicUploadUrl } from "../common/upload-url";
+import { withServiceImageUrl, withServiceImageUrls } from "../common/service-image";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 
@@ -579,16 +580,17 @@ export class OpsService {
     });
   }
 
-  catalog() {
-    return this.prisma.service.findMany({
+  async catalog() {
+    const rows = await this.prisma.service.findMany({
       include: { subServices: { orderBy: { sortOrder: "asc" } } },
       orderBy: { sortOrder: "asc" },
     });
+    return withServiceImageUrls(this.prisma, rows);
   }
 
   async createService(dto: UpsertServiceDto) {
     const code = await this.uniqueCatalogCode("service", dto.nameEn, dto.code);
-    return this.prisma.service
+    const row = await this.prisma.service
       .create({
         data: {
           code,
@@ -600,6 +602,7 @@ export class OpsService {
         include: { subServices: true },
       })
       .catch((error: unknown) => this.rethrowUnique(error, "رمز الخدمة مستخدم"));
+    return withServiceImageUrl(this.prisma, row);
   }
 
   async patchService(id: string, dto: PatchServiceDto) {
@@ -607,7 +610,7 @@ export class OpsService {
     if (!row) {
       throw new NotFoundException("الخدمة غير موجودة");
     }
-    return this.prisma.service.update({
+    const updated = await this.prisma.service.update({
       where: { id },
       data: {
         ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
@@ -617,6 +620,50 @@ export class OpsService {
       },
       include: { subServices: { orderBy: { sortOrder: "asc" } } },
     });
+    return withServiceImageUrl(this.prisma, updated);
+  }
+
+  async uploadServiceImage(
+    id: string,
+    file: { filename: string; mimetype: string; size: number } | undefined,
+    actorId: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException("اختاري صورة للخدمة");
+    }
+    const row = await this.prisma.service.findUnique({ where: { id } });
+    if (!row) {
+      throw new NotFoundException("الخدمة غير موجودة");
+    }
+    const media = await this.prisma.mediaFile.create({
+      data: {
+        storageKey: `catalog/${file.filename}`,
+        mime: file.mimetype,
+        sizeBytes: file.size,
+        kind: "IMAGE",
+        status: "APPROVED",
+        uploadedById: actorId,
+      },
+    });
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data: { imageFileId: media.id },
+      include: { subServices: { orderBy: { sortOrder: "asc" } } },
+    });
+    return withServiceImageUrl(this.prisma, updated);
+  }
+
+  async clearServiceImage(id: string) {
+    const row = await this.prisma.service.findUnique({ where: { id } });
+    if (!row) {
+      throw new NotFoundException("الخدمة غير موجودة");
+    }
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data: { imageFileId: null },
+      include: { subServices: { orderBy: { sortOrder: "asc" } } },
+    });
+    return withServiceImageUrl(this.prisma, updated);
   }
 
   async createSubService(serviceId: string, dto: UpsertSubServiceDto) {
@@ -2150,6 +2197,7 @@ export class OpsService {
         ...(!query.purpose && canApprovals && !canReceipts ? { proofs: { none: {} } } : {}),
         ...(query.purpose === "PORTFOLIO" ? { portfolio: { some: {} } } : {}),
         ...(query.purpose === "AVATAR" ? { storageKey: { startsWith: "avatars/" } } : {}),
+        NOT: { storageKey: { startsWith: "catalog/" } },
       },
       include: {
         uploadedBy: {

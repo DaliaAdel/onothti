@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { liveCampaign } from "../common/account-rules";
 import { serializePackage } from "../common/package-price";
 import { idlePeriodFor, LIMIT_DEFAULTS, settingMaxChars } from "../common/platform-settings";
+import { withServiceImageUrls } from "../common/service-image";
 
 @ApiTags("catalog")
 @Controller("catalog")
@@ -40,8 +41,8 @@ export class CatalogController {
   }
 
   @Get("services")
-  services() {
-    return this.prisma.service.findMany({
+  async services() {
+    const rows = await this.prisma.service.findMany({
       where: { isVisible: true },
       include: {
         subServices: {
@@ -51,6 +52,7 @@ export class CatalogController {
       },
       orderBy: { sortOrder: "asc" },
     });
+    return withServiceImageUrls(this.prisma, rows);
   }
 
   @Get("packages")

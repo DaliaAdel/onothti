@@ -31,6 +31,7 @@ import {
 import { assertMaxChars } from "../common/platform-settings";
 import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, resolveCityIds, serializeCityIds } from "../common/geo";
 import { publicUploadUrl } from "../common/upload-url";
+import { withServiceImageUrls } from "../common/service-image";
 import { notifyStaffWithPermission } from "../common/notify";
 
 @Injectable()
@@ -168,11 +169,16 @@ export class ProviderService {
 
   async listServices(userId: string) {
     await this.requireProvider(userId);
-    return this.prisma.providerService.findMany({
+    const rows = await this.prisma.providerService.findMany({
       where: { providerUserId: userId },
       include: { service: true, subService: true },
       orderBy: { sortOrder: "asc" },
     });
+    const services = await withServiceImageUrls(
+      this.prisma,
+      rows.map((row) => row.service),
+    );
+    return rows.map((row, index) => ({ ...row, service: services[index] }));
   }
 
   async addService(userId: string, dto: AddProviderServiceDto) {
