@@ -489,7 +489,7 @@ export class OpsController {
   }
 
   @Patch("accounts/:id")
-  @RequirePermission(StaffPermission.CUSTOMERS_REVIEW, StaffPermission.PROVIDERS_APPROVE)
+  @RequirePermission(StaffPermission.ACCOUNTS_ACTION)
   patchAccount(@Param("id") id: string, @Body() dto: PatchAccountDto, @CurrentUser() user: AuthUser) {
     return this.ops.patchAccount(id, dto, user.sub);
   }

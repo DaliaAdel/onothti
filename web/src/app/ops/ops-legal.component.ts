@@ -43,9 +43,9 @@ const emptyDraft = () => ({
           <label>النوع</label>
           <select class="input" [(ngModel)]="draft.kind">
             <option value="TERMS">شروط وأحكام</option>
-            <option value="POLICIES">سياسة</option>
+            <!-- <option value="POLICIES">سياسة</option> -->
             <option value="PRIVACY">سياسة الخصوصية</option>
-            <option value="OTHER">أخرى</option>
+            <!-- <option value="OTHER">أخرى</option> -->
           </select>
         </div>
         <div class="field">

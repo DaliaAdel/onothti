@@ -889,7 +889,7 @@ export class OpsService {
           where: { status: "ACTIVE" },
           orderBy: { endAt: "desc" },
           take: 1,
-          include: { package: { select: { id: true, code: true, nameAr: true } } },
+          include: { package: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -925,7 +925,7 @@ export class OpsService {
           where: { status: "ACTIVE" },
           orderBy: { endAt: "desc" },
           take: 1,
-          include: { package: { select: { id: true, code: true, nameAr: true } } },
+          include: { package: true },
         },
       },
     });
@@ -962,7 +962,22 @@ export class OpsService {
           subService?: { nameAr: string } | null;
         }[];
       } | null;
-      subscriptions?: { endAt: Date; package: { id: string; code: string; nameAr: string } }[];
+      subscriptions?: {
+        startAt: Date;
+        endAt: Date;
+        status: string;
+        package: {
+          id: string;
+          code: string;
+          nameAr: string;
+          nameEn?: string;
+          durationMonths: number;
+          rank: number;
+          price: { toString(): string } | number;
+          priceBefore?: { toString(): string } | number;
+          discountPercent?: { toString(): string } | number;
+        };
+      }[];
     },
     detail: boolean,
   ) {
@@ -974,6 +989,7 @@ export class OpsService {
       const file = await this.prisma.mediaFile.findUnique({ where: { id: user.avatarFileId } });
       avatarUrl = publicUploadUrl(file?.storageKey);
     }
+    const pack = pkg?.package;
     return {
       id: user.id,
       displayName: user.displayName,
@@ -983,8 +999,22 @@ export class OpsService {
       accountType: user.accountType,
       status: user.status,
       createdAt: user.createdAt,
-      package: pkg?.package ?? null,
+      package: pack
+        ? {
+            id: pack.id,
+            code: pack.code,
+            nameAr: pack.nameAr,
+            nameEn: pack.nameEn,
+            durationMonths: pack.durationMonths,
+            rank: pack.rank,
+            price: Number(pack.price),
+            priceBefore: pack.priceBefore != null ? Number(pack.priceBefore) : null,
+            discountPercent: pack.discountPercent != null ? Number(pack.discountPercent) : null,
+          }
+        : null,
+      subscriptionStartAt: pkg?.startAt ?? null,
       subscriptionEndAt: pkg?.endAt ?? null,
+      subscriptionStatus: pkg?.status ?? null,
       avatarUrl,
       bio: provider?.bio ?? customer?.bio ?? null,
       whatsapp: provider?.whatsapp || (user.accountType === AccountType.PROVIDER ? user.mobile : null),

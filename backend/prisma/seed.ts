@@ -25,6 +25,7 @@ async function main() {
   const permissions = [
     { code: "PROVIDERS_APPROVE", nameAr: "اعتماد صانعات الجمال", nameEn: "Approve beauty providers" },
     { code: "CUSTOMERS_REVIEW", nameAr: "استعراض حسابات المنصة", nameEn: "View platform accounts" },
+    { code: "ACCOUNTS_ACTION", nameAr: "إجراء الحساب", nameEn: "Account actions" },
     { code: "PAYMENTS_REVIEW", nameAr: "مراجعة الإيصالات", nameEn: "Review payment proofs" },
     { code: "PAYMENTS_CONFIRM", nameAr: "تأكيد المالية", nameEn: "Confirm finance" },
     { code: "ESCALATE_FINANCE", nameAr: "تصعيد للمالية", nameEn: "Escalate to finance" },
@@ -425,6 +426,7 @@ async function main() {
     OPERATOR: [
       "PROVIDERS_APPROVE",
       "CUSTOMERS_REVIEW",
+      "ACCOUNTS_ACTION",
       "PAYMENTS_REVIEW",
       "ESCALATE_FINANCE",
       "TICKETS_MANAGE",
@@ -438,6 +440,7 @@ async function main() {
     OPS_LEAD: [
       "PROVIDERS_APPROVE",
       "CUSTOMERS_REVIEW",
+      "ACCOUNTS_ACTION",
       "PAYMENTS_REVIEW",
       "ESCALATE_FINANCE",
       "TICKETS_MANAGE",

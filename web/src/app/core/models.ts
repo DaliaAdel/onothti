@@ -741,8 +741,20 @@ export interface OpsManagedAccount {
   accountType: AccountType;
   status: string;
   createdAt: string;
-  package?: { id: string; code: string; nameAr: string } | null;
+  package?: {
+    id: string;
+    code: string;
+    nameAr: string;
+    nameEn?: string;
+    durationMonths?: number;
+    rank?: number;
+    price?: number | string | null;
+    priceBefore?: number | string | null;
+    discountPercent?: number | string | null;
+  } | null;
+  subscriptionStartAt?: string | null;
   subscriptionEndAt?: string | null;
+  subscriptionStatus?: string | null;
   avatarUrl?: string | null;
   bio?: string | null;
   whatsapp?: string | null;

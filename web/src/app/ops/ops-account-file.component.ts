@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { mediaUrl } from '../core/media';
 import type { OpsManagedAccount } from '../core/models';
+import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-account-file',
@@ -28,12 +29,6 @@ import type { OpsManagedAccount } from '../core/models';
           <label>الجوال</label>
           <input class="input" dir="ltr" [value]="account.mobile" readonly />
         </div>
-        @if (account.accountType === 'PROVIDER') {
-          <div class="field">
-            <label>واتساب</label>
-            <input class="input" dir="ltr" [value]="account.whatsapp || account.mobile" readonly />
-          </div>
-        }
         @if (account.email) {
           <div class="field">
             <label>البريد</label>
@@ -44,6 +39,28 @@ import type { OpsManagedAccount } from '../core/models';
           <label>المدينة</label>
           <input class="input" [value]="cityLine" readonly />
         </div>
+        @if (account.accountType === 'PROVIDER') {
+          <div class="field">
+            <label>الباقة</label>
+            <input class="input" [value]="packageName" readonly />
+          </div>
+          <div class="field">
+            <label>مدة الباقة</label>
+            <input class="input" [value]="packageDuration" readonly />
+          </div>
+          <div class="field">
+            <label>سعر الباقة</label>
+            <input class="input" [value]="packagePrice" readonly />
+          </div>
+          <div class="field">
+            <label>بداية الاشتراك</label>
+            <input class="input" [value]="packageStart" readonly />
+          </div>
+          <div class="field">
+            <label>انتهاء الاشتراك</label>
+            <input class="input" [value]="packageEnd" readonly />
+          </div>
+        }
       </div>
       <div class="field" style="margin-top:14px">
         <label>نبذة عني</label>
@@ -76,6 +93,39 @@ export class OpsAccountFileComponent {
 
   get typeLabel(): string {
     return this.account.accountType === 'PROVIDER' ? 'الخبيرة' : 'العميلة';
+  }
+
+  get packageName(): string {
+    const pack = this.account.package;
+    if (!pack) {
+      return 'لا توجد باقة نشطة';
+    }
+    return pack.code ? `${pack.nameAr} · ${pack.code}` : pack.nameAr;
+  }
+
+  get packageDuration(): string {
+    const months = this.account.package?.durationMonths;
+    return months ? `${months} شهر` : '—';
+  }
+
+  get packagePrice(): string {
+    const price = this.account.package?.price;
+    if (price == null || price === '') {
+      return '—';
+    }
+    const before = this.account.package?.priceBefore;
+    if (before != null && before !== '' && Number(before) > Number(price)) {
+      return `${price} ر.س (قبل الخصم ${before} ر.س)`;
+    }
+    return `${price} ر.س`;
+  }
+
+  get packageStart(): string {
+    return this.account.subscriptionStartAt ? opsDate(this.account.subscriptionStartAt) : '—';
+  }
+
+  get packageEnd(): string {
+    return this.account.subscriptionEndAt ? opsDate(this.account.subscriptionEndAt) : '—';
   }
 
   get cityLine(): string {

@@ -84,7 +84,16 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                   <td>{{ item.accountCode }}</td>
                   <td dir="ltr">{{ item.mobile }}</td>
                   <td>{{ item.customerProfile?.city?.nameAr || item.providerProfile?.city?.nameAr || '—' }}</td>
-                  <td>{{ item.package?.nameAr || '—' }}</td>
+                  <td>
+                    @if (item.accountType === 'PROVIDER') {
+                      {{ item.package?.nameAr || 'بدون باقة' }}
+                      @if (item.subscriptionEndAt) {
+                        <div class="muted small">حتى {{ opsDate(item.subscriptionEndAt) }}</div>
+                      }
+                    } @else {
+                      —
+                    }
+                  </td>
                   <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
                   <td>{{ opsDate(item.createdAt) }}</td>
                   @if (showNotifyColumn) {
@@ -116,50 +125,56 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       }
       <app-ops-account-file [account]="selected" />
 
-      <div class="section-head">
-        <div>
-          <h2>إجراء الحساب</h2>
-          <p>تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
+      @if (hasAccountsAction()) {
+        <div class="section-head">
+          <div>
+            <h2>إجراء الحساب</h2>
+            <p>تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
+          </div>
         </div>
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label>الحالة</label>
-          <select class="input" [(ngModel)]="nextStatus[selected.id]">
-            <option value="ACTIVE">نشط</option>
-            <option value="RESTRICTED">مقيّد</option>
-            <option value="SUSPENDED">موقوف</option>
-            <option value="CANCELLED">ملغى</option>
-            <option value="DELETED">حذف</option>
-          </select>
-        </div>
-        @if (selected.accountType === 'PROVIDER') {
+        <div class="form-grid">
           <div class="field">
-            <label>باقة الخبيرة</label>
-            <select class="input" [(ngModel)]="nextPackage[selected.id]">
-              <option value="">بدون تغيير</option>
-              @for (pkg of packages; track pkg.id) {
-                <option [value]="pkg.id">{{ pkg.nameAr }}</option>
-              }
+            <label>الحالة</label>
+            <select class="input" [(ngModel)]="nextStatus[selected.id]">
+              <option value="ACTIVE">نشط</option>
+              <option value="RESTRICTED">مقيّد</option>
+              <option value="SUSPENDED">موقوف</option>
+              <option value="CANCELLED">ملغى</option>
+              <option value="DELETED">حذف</option>
             </select>
           </div>
+          @if (selected.accountType === 'PROVIDER') {
+            <div class="field">
+              <label>باقة الخبيرة</label>
+              <select class="input" [(ngModel)]="nextPackage[selected.id]">
+                <option value="">بدون تغيير</option>
+                @for (pkg of packages; track pkg.id) {
+                  <option [value]="pkg.id">{{ pkg.nameAr }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+        @if (selected.accountType === 'PROVIDER' && selected.package) {
+          <p class="muted small">
+            الحالية: {{ selected.package.nameAr }}@if (selected.subscriptionEndAt) { · حتى {{ opsDate(selected.subscriptionEndAt) }} }
+          </p>
         }
-      </div>
-      @if (selected.accountType === 'PROVIDER' && selected.package) {
-        <p class="muted small">
-          الحالية: {{ selected.package.nameAr }}@if (selected.subscriptionEndAt) { · حتى {{ opsDate(selected.subscriptionEndAt) }} }
-        </p>
+        <div class="field" style="margin-top:14px">
+          <label>سبب التعديل</label>
+          <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
+        </div>
       }
-      <div class="field" style="margin-top:14px">
-        <label>سبب التعديل</label>
-        <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
-      </div>
-      <div class="ops-drawer-actions" style="margin-top:16px">
-        <button class="btn primary" type="button" (click)="applyAccount(selected)">حفظ الإجراء</button>
-        @if (canNotify(selected)) {
-          <button class="btn ghost" type="button" (click)="openNotify(selected)">{{ notifyLabel(selected) }}</button>
-        }
-      </div>
+      @if (hasAccountsAction() || canNotify(selected)) {
+        <div class="ops-drawer-actions" style="margin-top:16px">
+          @if (hasAccountsAction()) {
+            <button class="btn primary" type="button" (click)="applyAccount(selected)">حفظ الإجراء</button>
+          }
+          @if (canNotify(selected)) {
+            <button class="btn ghost" type="button" (click)="openNotify(selected)">{{ notifyLabel(selected) }}</button>
+          }
+        </div>
+      }
     }
 
     <app-ops-modal
@@ -335,7 +350,15 @@ export class OpsClientsComponent implements OnInit {
     });
   }
 
+  hasAccountsAction(): boolean {
+    return this.session.hasPermission('ACCOUNTS_ACTION');
+  }
+
   applyAccount(item: OpsManagedAccount): void {
+    if (!this.hasAccountsAction()) {
+      this.toast.show('ليست لديكِ صلاحية إجراء الحساب');
+      return;
+    }
     const reason = (this.reasons[item.id] || '').trim();
     if (reason.length < 4) {
       this.toast.show('أدخلي سبب التعديل (4 أحرف على الأقل). يُحفظ في سجل الأحداث');

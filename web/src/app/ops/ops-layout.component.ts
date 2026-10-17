@@ -45,12 +45,15 @@ export class OpsLayoutComponent implements OnInit {
     if (can('TICKETS_MANAGE')) {
       items.push({ icon: 'support', label: 'الطلبات', route: '/ops/tickets' });
     }
+    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+      items.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
+    }
+    if (can('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+      items.push({ icon: 'bell', label: 'إشعارات المنصة', route: '/ops/notices' });
+    }
     const settingsChildren: NavItem[] = [];
     if (can('SETTINGS_MANAGE')) {
       settingsChildren.push({ icon: 'services', label: 'إعدادات التشغيل', route: '/ops/settings' });
-    }
-    if (can('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
-      settingsChildren.push({ icon: 'bell', label: 'إشعارات المنصة', route: '/ops/notices' });
     }
     if (can('LEGAL_MANAGE')) {
       settingsChildren.push({ icon: 'about', label: 'اعدادات الشروط', route: '/ops/legal' });
@@ -63,9 +66,6 @@ export class OpsLayoutComponent implements OnInit {
     }
     if (can('PACKAGES_MANAGE')) {
       settingsChildren.push({ icon: 'package', label: 'اعدادات الباقات', route: '/ops/packages' });
-    }
-    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
-      settingsChildren.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
     }
     if (can('USERS_MANAGE')) {
       settingsChildren.push({ icon: 'profile', label: 'الهيكل التنظيمي', route: '/ops/org' });
