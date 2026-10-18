@@ -8,6 +8,7 @@ import { ToastService } from '../core/toast.service';
 import { SessionService } from '../core/session.service';
 import { IconComponent } from '../shared/icon.component';
 import { opsDate } from './ops-ui';
+import { canOpenOpsPage, type OpsPage } from './ops-access';
 
 @Component({
   selector: 'app-ops-dashboard',
@@ -20,36 +21,73 @@ import { opsDate } from './ops-ui';
       </div>
     </div>
     <div class="stats stats-6">
-      <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
-        <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
-        <b>{{ dash?.customers ?? '—' }}</b>
-        <span>حساب عميلة مسجّل</span>
-      </a>
-      <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
-        <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
-        <b>{{ dash?.activeProviders ?? '—' }}</b>
-        <span>حساب خبيرة نشط</span>
-      </a>
+      @if (canPage('clients')) {
+        <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
+          <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.customers ?? '—' }}</b>
+          <span>حساب عميلة مسجّل</span>
+        </a>
+        <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
+          <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
+          <b>{{ dash?.activeProviders ?? '—' }}</b>
+          <span>حساب خبيرة نشط</span>
+        </a>
+      } @else {
+        <article class="stat">
+          <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.customers ?? '—' }}</b>
+          <span>حساب عميلة مسجّل</span>
+        </article>
+        <article class="stat">
+          <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
+          <b>{{ dash?.activeProviders ?? '—' }}</b>
+          <span>حساب خبيرة نشط</span>
+        </article>
+      }
       <article class="stat">
         <div class="top"><span>الحسابات النشطة</span><span class="head-icon"><app-icon name="home" /></span></div>
         <b>{{ dash?.activeAccounts ?? '—' }}</b>
         <span>عميلات وخبيرات</span>
       </article>
-      <a class="stat" routerLink="/ops/staff">
-        <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
-        <b>{{ dash?.staffCount ?? '—' }}</b>
-        <span>حسابات تشغيل ومالية</span>
-      </a>
-      <a class="stat" routerLink="/ops/tickets" [queryParams]="{ priority: '1' }">
-        <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
-        <b>{{ dash?.escalatedTickets ?? 0 }}</b>
-        <span>تحتاج مراجعة إدارية</span>
-      </a>
-      <a class="stat" routerLink="/ops/events">
-        <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
-        <b>{{ dash?.eventsToday ?? 0 }}</b>
-        <span>مسجّلة في السجل</span>
-      </a>
+      @if (canPage('staff')) {
+        <a class="stat" routerLink="/ops/staff">
+          <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.staffCount ?? '—' }}</b>
+          <span>حسابات تشغيل ومالية</span>
+        </a>
+      } @else {
+        <article class="stat">
+          <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.staffCount ?? '—' }}</b>
+          <span>حسابات تشغيل ومالية</span>
+        </article>
+      }
+      @if (canPage('tickets')) {
+        <a class="stat" routerLink="/ops/tickets" [queryParams]="{ priority: '1' }">
+          <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <b>{{ dash?.escalatedTickets ?? 0 }}</b>
+          <span>تحتاج مراجعة إدارية</span>
+        </a>
+      } @else {
+        <article class="stat">
+          <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <b>{{ dash?.escalatedTickets ?? 0 }}</b>
+          <span>تحتاج مراجعة إدارية</span>
+        </article>
+      }
+      @if (canPage('events')) {
+        <a class="stat" routerLink="/ops/events">
+          <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
+          <b>{{ dash?.eventsToday ?? 0 }}</b>
+          <span>مسجّلة في السجل</span>
+        </a>
+      } @else {
+        <article class="stat">
+          <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
+          <b>{{ dash?.eventsToday ?? 0 }}</b>
+          <span>مسجّلة في السجل</span>
+        </article>
+      }
     </div>
 
     <div class="section-head">
@@ -107,53 +145,67 @@ import { opsDate } from './ops-ui';
     <div class="grid two" style="margin-top:22px">
       <article class="card">
         <h3>حالة العمل اليوم</h3>
-        <a class="activity" routerLink="/ops/approvals">
-          <span class="dot"></span>
-          <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) + (dash?.pendingProviders ?? 0) }} عنصر</span></div>
-        </a>
-        <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
-          <span class="dot"></span>
-          <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
-        </a>
-        <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'accounts' }">
-          <span class="dot"></span>
-          <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
-        </a>
-        <a class="activity" routerLink="/ops/reviews">
-          <span class="dot"></span>
-          <div><b>بلاغات</b><span>{{ dash?.openComplaints ?? 0 }} بلاغ</span></div>
-        </a>
-        <a class="activity" routerLink="/ops/packages">
-          <span class="dot"></span>
-          <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ dash?.expiringSubscriptions ?? 0 }} باقة</span></div>
-        </a>
+        @if (canPage('approvals')) {
+          <a class="activity" routerLink="/ops/approvals">
+            <span class="dot"></span>
+            <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) + (dash?.pendingProviders ?? 0) }} عنصر</span></div>
+          </a>
+          <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
+            <span class="dot"></span>
+            <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
+          </a>
+          <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'accounts' }">
+            <span class="dot"></span>
+            <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
+          </a>
+        }
+        @if (canPage('reviews')) {
+          <a class="activity" routerLink="/ops/reviews">
+            <span class="dot"></span>
+            <div><b>بلاغات</b><span>{{ dash?.openComplaints ?? 0 }} بلاغ</span></div>
+          </a>
+        }
+        @if (canPage('packages')) {
+          <a class="activity" routerLink="/ops/packages">
+            <span class="dot"></span>
+            <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ dash?.expiringSubscriptions ?? 0 }} باقة</span></div>
+          </a>
+        }
       </article>
       <article class="card">
         <h3>اختصارات الإدارة</h3>
         <div class="ops-shortcuts">
-          @if (session.hasAnyPermission('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE', 'PROVIDERS_APPROVE')) {
+          @if (canPage('approvals')) {
             <a class="btn ghost" routerLink="/ops/approvals">الاعتمادات</a>
           }
-          <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
-          <a class="btn ghost" routerLink="/ops/geo">المناطق</a>
-          <a class="btn ghost" routerLink="/ops/packages">الباقات</a>
-          @if (session.user()?.permissions?.includes('SETTINGS_MANAGE')) {
+          @if (canPage('catalog')) {
+            <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
+          }
+          @if (canPage('geo')) {
+            <a class="btn ghost" routerLink="/ops/geo">المناطق</a>
+          }
+          @if (canPage('packages')) {
+            <a class="btn ghost" routerLink="/ops/packages">الباقات</a>
+          }
+          @if (canPage('settings')) {
             <a class="btn ghost" routerLink="/ops/settings">الإعدادات</a>
           }
-          @if (session.hasAnyPermission('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+          @if (canPage('notices')) {
             <a class="btn ghost" routerLink="/ops/notices">إشعارات المنصة</a>
           }
-          @if (session.hasAnyPermission('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE')) {
+          @if (canPage('clients')) {
             <a class="btn ghost" routerLink="/ops/clients">عملاء المنصة</a>
           }
-          @if (session.user()?.permissions?.includes('USERS_MANAGE')) {
+          @if (canPage('org')) {
             <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
+          }
+          @if (canPage('staff')) {
             <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>
           }
-          @if (session.user()?.permissions?.includes('LEGAL_MANAGE')) {
+          @if (canPage('legal')) {
             <a class="btn ghost" routerLink="/ops/legal">الشروط</a>
           }
-          @if (session.user()?.permissions?.includes('REPORTS_VIEW')) {
+          @if (canPage('activity')) {
             <a class="btn ghost" routerLink="/ops/activity">نشاط الفريق</a>
           }
         </div>
@@ -174,6 +226,10 @@ export class OpsDashboardComponent implements OnInit {
 
   dash: OpsDashboard | null = null;
   loading = true;
+
+  canPage(page: OpsPage): boolean {
+    return canOpenOpsPage(this.session, page);
+  }
 
   get inbox(): OpsInboxItem[] {
     return this.dash?.inbox ?? [];
@@ -208,16 +264,13 @@ export class OpsDashboardComponent implements OnInit {
   }
 
   inboxRoute(item: OpsInboxItem): string {
-    if (item.kind === 'PROVIDER') {
-      return '/ops/approvals';
-    }
     if (item.kind === 'TICKET') {
-      return '/ops/tickets';
+      return this.canPage('tickets') ? '/ops/tickets' : '/ops';
     }
     if (item.kind === 'COMPLAINT') {
-      return '/ops/reviews';
+      return this.canPage('reviews') ? '/ops/reviews' : '/ops';
     }
-    return '/ops/approvals';
+    return this.canPage('approvals') ? '/ops/approvals' : '/ops';
   }
 
   inboxQuery(item: OpsInboxItem): Record<string, string> {

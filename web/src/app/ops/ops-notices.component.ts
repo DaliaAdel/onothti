@@ -120,23 +120,23 @@ export class OpsNoticesComponent implements OnInit {
   direct = { titleAr: '', bodyAr: '' };
 
   get canBroadcastAll(): boolean {
-    return this.session.hasPermission('BROADCAST_ALL');
+    return this.session.hasPermission('NOT-02');
   }
 
   get canBroadcastProvider(): boolean {
-    return this.session.hasPermission('BROADCAST_PROVIDER');
+    return this.session.hasPermission('NOT-04');
   }
 
   get canBroadcastCustomer(): boolean {
-    return this.session.hasPermission('BROADCAST_CUSTOMER');
+    return this.session.hasPermission('NOT-03');
   }
 
   get canNotifyProvider(): boolean {
-    return this.session.hasPermission('NOTIFY_PROVIDER');
+    return this.session.hasPermission('NOT-01');
   }
 
   get canNotifyCustomer(): boolean {
-    return this.session.hasPermission('NOTIFY_CUSTOMER');
+    return this.session.hasPermission('NOT-01');
   }
 
   get canBroadcast(): boolean {

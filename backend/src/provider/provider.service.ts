@@ -33,6 +33,9 @@ import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, r
 import { publicUploadUrl } from "../common/upload-url";
 import { withServiceImageUrls } from "../common/service-image";
 import { notifyStaffWithPermission } from "../common/notify";
+import { ensureTicketTypes } from "../common/ticket-types";
+import { existsSync } from "fs";
+import { join } from "path";
 
 @Injectable()
 export class ProviderService {
@@ -684,11 +687,30 @@ export class ProviderService {
     };
   }
 
+  async uploadProof(
+    userId: string,
+    file?: { filename: string; mimetype: string; size: number },
+  ) {
+    await this.requireProvider(userId);
+    if (!file) {
+      throw new BadRequestException("اختاري صورة الإيصال أو ملف PDF");
+    }
+    const storageKey = `proofs/${file.filename}`;
+    return {
+      storageKey,
+      mime: file.mimetype,
+      sizeBytes: file.size,
+      kind: file.mimetype.includes("pdf") ? "PDF" : "IMAGE",
+      url: publicUploadUrl(storageKey),
+    };
+  }
+
   async submitProof(userId: string, dto: SubmitPaymentProofDto) {
     await this.requireProvider(userId);
     if (!dto.transferText && !dto.storageKey) {
       throw new BadRequestException("أرسلي صورة الإيصال أو نص رسالة التحويل");
     }
+    const storedKey = this.assertProofStorageKey(dto.storageKey);
     const pkg = await this.prisma.package.findFirst({
       where: { id: dto.packageId, isActive: true },
     });
@@ -735,9 +757,7 @@ export class ProviderService {
       .filter(Boolean)
       .join("\n\n");
     const storageKey = (
-      dto.storageKey
-        ? [dto.storageKey, reference ? `ref:${reference}` : ""].filter(Boolean).join(" | ")
-        : transferText || `proof/${userId}/${Date.now()}`
+      storedKey ?? transferText ?? `proof/${userId}/${Date.now()}`
     ).slice(0, 400);
     const file = await this.prisma.mediaFile.create({
       data: {
@@ -783,6 +803,7 @@ export class ProviderService {
   }
 
   async ticketTypes() {
+    await ensureTicketTypes(this.prisma);
     return this.prisma.ticketType.findMany({
       where: { audience: AccountType.PROVIDER },
       orderBy: { code: "asc" },
@@ -888,6 +909,20 @@ export class ProviderService {
     };
   }
 
+  private assertProofStorageKey(storageKey?: string): string | null {
+    if (!storageKey?.trim()) {
+      return null;
+    }
+    const key = storageKey.split(" | ")[0].trim().replace(/^\/?uploads\//, "");
+    if (!/^(proofs|proof|receipts)\/[0-9a-fA-F-]{16,}\.(jpe?g|png|webp|pdf)$/i.test(key)) {
+      throw new BadRequestException("ملف الإيصال غير صالح، ارفعي الصورة مرة أخرى");
+    }
+    if (!existsSync(join(process.cwd(), "uploads", key))) {
+      throw new BadRequestException("ملف الإيصال غير موجود، ارفعي الصورة مرة أخرى");
+    }
+    return key;
+  }
+
   private toProof(proof: {
     id: string;
     amount: { toString(): string } | number;
@@ -922,8 +957,9 @@ export class ProviderService {
       createdAt: proof.createdAt,
       file: {
         kind: proof.file.kind,
-        storageKey: proof.file.kind === "TEXT" ? proof.file.storageKey : proof.file.storageKey,
+        storageKey: proof.file.storageKey,
         mime: proof.file.mime,
+        url: proof.file.kind === "TEXT" ? null : publicUploadUrl(proof.file.storageKey),
       },
       subscription: {
         id: proof.subscription.id,

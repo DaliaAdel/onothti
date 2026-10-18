@@ -2,8 +2,16 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileChangeField, Visibility, AccountStatus, AccountType, StaffPermission } from "../common/enums";
-import { effectivePermissionCodes } from "../common/staff-permissions";
+import {
+  ACC_CREATE,
+  accCodeForRole,
+  effectivePermissionCodes,
+  permForStaffPermissions,
+  staffHas,
+  staffHasExact,
+} from "../common/staff-permissions";
 import { notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
+import { ensureTicketTypes } from "../common/ticket-types";
 import { assertUniqueDisplayName, assertUniqueEmail } from "../common/account-rules";
 import {
   CreateCityDto,
@@ -158,7 +166,7 @@ export class OpsService {
     });
   }
 
-  async reviewChange(id: string, approve: boolean, reopen = false) {
+  async reviewChange(id: string, approve: boolean, reopen = false, permissions: string[] = []) {
     const change = await this.prisma.profileChangeRequest.findUnique({
       where: { id },
       include: { user: { include: { providerProfile: true, customerProfile: true } } },
@@ -166,6 +174,8 @@ export class OpsService {
     if (!change) {
       throw new NotFoundException("طلب التعديل غير موجود");
     }
+    const needed = this.permForProfileChange(change.field, change.user.accountType);
+    this.assertPerm(permissions, needed);
     if (reopen) {
       if (change.status === "APPROVED") {
         throw new BadRequestException("لا يمكن إعادة عنصر معتمد للمراجعة");
@@ -389,9 +399,10 @@ export class OpsService {
     });
   }
 
-  async teamActivity() {
+  async teamActivity(actorId: string, permissions: string[] = []) {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
+    const scope = await this.orgScope(actorId, permissions);
     const logs = await this.prisma.auditLog.findMany({
       where: { createdAt: { gte: start }, actorId: { not: null } },
       select: { actorId: true, action: true },
@@ -402,17 +413,24 @@ export class OpsService {
         id: true,
         displayName: true,
         accountCode: true,
-        staff: { select: { team: true } },
+        staff: { select: { team: true, teamId: true, orgTeam: { select: { id: true, nameAr: true, departmentId: true } } } },
       },
     });
+    const visible = staff.filter((row) =>
+      this.staffMatchesScope(scope, {
+        userId: row.id,
+        teamId: row.staff?.teamId ?? row.staff?.orgTeam?.id ?? null,
+        departmentId: row.staff?.orgTeam?.departmentId ?? null,
+      }),
+    );
     const byId = new Map(
-      staff.map((row) => [
+      visible.map((row) => [
         row.id,
         {
           actorId: row.id,
           displayName: row.displayName,
           accountCode: row.accountCode,
-          team: row.staff?.team || "OPS",
+          team: row.staff?.orgTeam?.nameAr || row.staff?.team || "OPS",
           media: 0,
           tickets: 0,
           accounts: 0,
@@ -454,10 +472,10 @@ export class OpsService {
   }
 
   permissionsCatalog() {
-    return this.prisma.permission.findMany({ orderBy: { nameAr: "asc" } });
+    return this.prisma.permission.findMany({ orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }] });
   }
 
-  async patchRolePermissions(id: string, dto: PatchRolePermissionsDto) {
+  async patchRolePermissions(id: string, dto: PatchRolePermissionsDto, permissions: string[] = []) {
     const role = await this.prisma.role.findUnique({
       where: { id },
       include: { permissions: { include: { permission: true } } },
@@ -465,6 +483,7 @@ export class OpsService {
     if (!role) {
       throw new NotFoundException("الدور غير موجود");
     }
+    this.assertPerm(permissions, permForStaffPermissions(role.code));
     const uniqueCodes = [...new Set(dto.permissionCodes.map((code) => code.trim()).filter(Boolean))];
     const catalog = await this.prisma.permission.findMany({
       where: { code: { in: uniqueCodes } },
@@ -472,13 +491,16 @@ export class OpsService {
     if (catalog.length !== uniqueCodes.length) {
       throw new BadRequestException("صلاحية غير معروفة");
     }
-    const nextHasUsers = uniqueCodes.includes(StaffPermission.USERS_MANAGE);
-    const currentlyHasUsers = role.permissions.some((row) => row.permission.code === StaffPermission.USERS_MANAGE);
+    const nextHasUsers = this.isStaffManager(uniqueCodes);
+    const currentlyHasUsers = this.isStaffManager(role.permissions.map((row) => row.permission.code));
     if (currentlyHasUsers && !nextHasUsers) {
       const managers = await this.prisma.staffUser.count({
         where: {
           user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE },
-          role: { permissions: { some: { permission: { code: StaffPermission.USERS_MANAGE } } } },
+          OR: [
+            { role: { permissions: { some: { permission: { code: { in: ACC_CREATE } } } } } },
+            { grants: { some: { permission: { code: { in: ACC_CREATE } } } } },
+          ],
           roleId: { not: id },
         },
       });
@@ -702,9 +724,10 @@ export class OpsService {
     });
   }
 
-  ticketTypes() {
+  async ticketTypes() {
+    await ensureTicketTypes(this.prisma);
     return this.prisma.ticketType.findMany({
-      where: { audience: AccountType.STAFF, code: { in: ["OP-SUPPORT", "OP-SUGGEST"] } },
+      where: { audience: AccountType.STAFF },
       orderBy: { code: "asc" },
     });
   }
@@ -734,14 +757,32 @@ export class OpsService {
     return this.ticketById(created.id);
   }
 
-  tickets(query: { status?: string; priority?: string; queue?: string; mine?: string; actorId?: string }) {
+  tickets(
+    query: {
+      status?: string;
+      priority?: string;
+      queue?: string;
+      mine?: string;
+      accountType?: string;
+      actorId?: string;
+    },
+    permissions: string[] = [],
+  ) {
     const priorityNum = query.priority ? Number(query.priority) : NaN;
+    const closedOnly = this.hasPerm(permissions, "TKT-03") && !this.hasPerm(permissions, "TKT-01");
+    const accountType =
+      query.accountType === AccountType.CUSTOMER ||
+      query.accountType === AccountType.PROVIDER ||
+      query.accountType === AccountType.STAFF
+        ? query.accountType
+        : undefined;
     return this.prisma.ticket.findMany({
       where: {
-        ...(query.status ? { status: query.status } : {}),
+        ...(query.status ? { status: query.status } : closedOnly ? { status: "CLOSED" } : {}),
         ...(Number.isFinite(priorityNum) ? { priority: priorityNum } : {}),
         ...(query.queue ? { queue: query.queue } : {}),
         ...(query.mine === "1" && query.actorId ? { assigneeId: query.actorId } : {}),
+        ...(accountType ? { owner: { accountType } } : {}),
       },
       include: this.ticketInclude,
       orderBy: { createdAt: "desc" },
@@ -749,10 +790,15 @@ export class OpsService {
     });
   }
 
-  async patchTicket(id: string, dto: PatchTicketDto, actorId: string) {
+  async patchTicket(id: string, dto: PatchTicketDto, actorId: string, permissions: string[] = []) {
     const ticket = await this.prisma.ticket.findUnique({ where: { id } });
     if (!ticket) {
       throw new NotFoundException("الطلب غير موجود");
+    }
+    if (dto.status === "CLOSED" || dto.status === "RESOLVED") {
+      this.assertPerm(permissions, "TKT-02");
+    } else {
+      this.assertPerm(permissions, "TKT-01");
     }
     if (dto.status == null && dto.priority == null && dto.queue == null && !dto.claim && !dto.note) {
       throw new BadRequestException("حددي الحالة أو التوجيه أو الإسناد");
@@ -1089,7 +1135,7 @@ export class OpsService {
     };
   }
 
-  async patchAccount(id: string, dto: PatchAccountDto, actorId: string) {
+  async patchAccount(id: string, dto: PatchAccountDto, actorId: string, permissions: string[] = []) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -1116,6 +1162,16 @@ export class OpsService {
     const packageChanged = Boolean(nextPackageId && nextPackageId !== currentPackageId);
     if (!statusChanged && !packageChanged) {
       throw new BadRequestException("لا يوجد تغيير للحفظ. أدخلي سببًا مع تغيير الحالة أو الباقة");
+    }
+    if (packageChanged) {
+      this.assertPerm(permissions, "USR-01", "PKG-04");
+    }
+    if (statusChanged && nextStatus === AccountStatus.DELETED) {
+      this.assertPerm(permissions, "USR-06");
+    } else if (statusChanged && nextStatus === AccountStatus.RESTRICTED) {
+      this.assertPerm(permissions, "USR-05");
+    } else if (statusChanged) {
+      this.assertPerm(permissions, "USR-01");
     }
 
     let assignedPackage: { id: string; code: string; nameAr: string } | null = null;
@@ -1187,9 +1243,9 @@ export class OpsService {
     }
     const needed =
       user.accountType === AccountType.PROVIDER
-        ? StaffPermission.NOTIFY_PROVIDER
-        : StaffPermission.NOTIFY_CUSTOMER;
-    if (!permissions.includes(needed)) {
+        ? StaffPermission.NOT_01
+        : StaffPermission.NOT_01;
+    if (!this.hasPerm(permissions, needed)) {
       throw new ForbiddenException(
         user.accountType === AccountType.PROVIDER
           ? "ليست لديكِ صلاحية إشعار فردي للخبيرة"
@@ -1220,11 +1276,11 @@ export class OpsService {
   async broadcast(dto: BroadcastDto, permissions: string[] = []) {
     const needed =
       dto.audience === "ALL"
-        ? StaffPermission.BROADCAST_ALL
+        ? StaffPermission.NOT_02
         : dto.audience === AccountType.PROVIDER
-          ? StaffPermission.BROADCAST_PROVIDER
-          : StaffPermission.BROADCAST_CUSTOMER;
-    if (!permissions.includes(needed)) {
+          ? StaffPermission.NOT_04
+          : StaffPermission.NOT_03;
+    if (!this.hasPerm(permissions, needed)) {
       throw new ForbiddenException("ليست لديكِ صلاحية الإرسال لهذا الجمهور");
     }
     const users = await this.prisma.user.findMany({
@@ -1254,7 +1310,8 @@ export class OpsService {
     return { sent: users.length };
   }
 
-  async staffUsers() {
+  async staffUsers(actorId: string, permissions: string[] = []) {
+    const scope = await this.orgScope(actorId, permissions);
     const rows = await this.prisma.user.findMany({
       where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
       include: {
@@ -1266,16 +1323,41 @@ export class OpsService {
       },
       orderBy: { createdAt: "desc" },
     });
-    return rows.filter((row) => row.staff).map((row) => this.toStaff(row));
+    return rows
+      .filter((row) => row.staff && this.staffMatchesScope(scope, this.staffOrgRef(row.staff, row.id)))
+      .map((row) => this.toStaff(row));
   }
 
-  async createStaff(dto: CreateStaffDto) {
+  async staffByIdScoped(id: string, actorId: string, permissions: string[] = []) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      include: { staff: { include: this.staffDetailInclude } },
+    });
+    if (!user?.staff) {
+      throw new NotFoundException("حساب التشغيل غير موجود");
+    }
+    const scope = await this.orgScope(actorId, permissions);
+    if (!this.staffMatchesScope(scope, this.staffOrgRef(user.staff, user.id))) {
+      throw new ForbiddenException("هذا الحساب خارج نطاق قسمك أو فريقك");
+    }
+    return this.toStaff(user);
+  }
+
+  async createStaff(dto: CreateStaffDto, actorId: string, permissions: string[] = []) {
     const role = await this.prisma.role.findUnique({
       where: { id: dto.roleId },
       include: { permissions: { include: { permission: true } } },
     });
     if (!role) {
       throw new NotFoundException("الدور غير موجود");
+    }
+    this.assertCanManageRole(permissions, role.code);
+    const scope = await this.orgScope(actorId, permissions);
+    let teamId = dto.teamId;
+    if (teamId) {
+      this.assertPerm(permissions, "ACC-12");
+    } else if (scope.mode !== "all" && scope.teamId) {
+      teamId = scope.teamId;
     }
     const existing = await this.prisma.user.findUnique({ where: { mobile: dto.mobile } });
     if (existing) {
@@ -1287,7 +1369,11 @@ export class OpsService {
     }
     const displayName = await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName);
     const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
-    const orgTeam = await this.resolveOrgTeam(dto.teamId, this.teamForRole(role.code, dto.team));
+    const orgTeam = await this.resolveOrgTeam(teamId, this.teamForRole(role.code, dto.team));
+    if (!orgTeam && scope.mode !== "all") {
+      throw new BadRequestException("اختاري فريقاً ضمن نطاقك");
+    }
+    this.assertTeamInScope(scope, orgTeam);
     const accountCode = await this.prisma.allocateAccountCode(AccountType.STAFF);
     const user = await this.prisma.user
       .create({
@@ -1319,14 +1405,14 @@ export class OpsService {
       },
     })
       .catch((error: unknown) => this.rethrowUnique(error, "رقم الجوال أو رمز الحساب مستخدم"));
-    await this.audit(user.id, "STAFF_CREATE", "User", user.id, {
+    await this.audit(actorId, "STAFF_CREATE", "User", user.id, {
       role: role.code,
       team: user.staff?.team,
     });
     return this.toStaff(user);
   }
 
-  async patchStaff(id: string, dto: PatchStaffDto, actorId: string) {
+  async patchStaff(id: string, dto: PatchStaffDto, actorId: string, permissions: string[] = []) {
     const user = await this.prisma.user.findFirst({
       where: { id, accountType: AccountType.STAFF },
       include: {
@@ -1340,8 +1426,20 @@ export class OpsService {
     if (!user?.staff) {
       throw new NotFoundException("حساب التشغيل غير موجود");
     }
+    const scope = await this.orgScope(actorId, permissions);
+    this.assertStaffInScope(scope, this.staffOrgRef(user.staff, user.id));
+    if (id === actorId && (dto.roleId || dto.status) && !this.hasPerm(permissions, "SEC-01")) {
+      throw new ForbiddenException("لا يمكن تعديل منصب أو حالة حسابكِ");
+    }
     if (dto.status === "SUSPENDED" && id === actorId) {
       throw new BadRequestException("لا يمكن إيقاف حسابكِ الحالي");
+    }
+    if (dto.status) {
+      this.assertPerm(permissions, "ACC-16");
+    }
+    const changingRole = Boolean(dto.roleId && dto.roleId !== user.staff.roleId);
+    if (changingRole || dto.displayName || dto.resetPassword || dto.titleAr !== undefined) {
+      this.assertCanManageRole(permissions, user.staff.role.code);
     }
     let roleId = user.staff.roleId;
     if (dto.roleId && dto.roleId !== user.staff.roleId) {
@@ -1352,7 +1450,8 @@ export class OpsService {
       if (!role) {
         throw new NotFoundException("الدور غير موجود");
       }
-      if (!role.permissions.some((row) => row.permission.code === StaffPermission.USERS_MANAGE)) {
+      this.assertCanManageRole(permissions, role.code);
+      if (!this.isStaffManager(role.permissions.map((row) => row.permission.code))) {
         await this.assertNotLastManager(id);
       }
       roleId = role.id;
@@ -1364,10 +1463,16 @@ export class OpsService {
     const displayName = dto.displayName
       ? await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName, id)
       : user.displayName;
+    if (dto.teamId !== undefined && dto.teamId !== user.staff.teamId) {
+      this.assertPerm(permissions, "ACC-13");
+    }
     const orgTeam =
       dto.teamId !== undefined
         ? await this.resolveOrgTeam(dto.teamId || undefined, dto.team || user.staff.team)
         : null;
+    if (orgTeam) {
+      this.assertTeamInScope(scope, orgTeam);
+    }
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
@@ -1401,7 +1506,7 @@ export class OpsService {
     return this.toStaff(updated);
   }
 
-  async patchStaffPermissions(id: string, dto: PatchStaffPermissionsDto, actorId: string) {
+  async patchStaffPermissions(id: string, dto: PatchStaffPermissionsDto, actorId: string, permissions: string[] = []) {
     const user = await this.prisma.user.findFirst({
       where: { id, accountType: AccountType.STAFF },
       include: { staff: { include: this.staffDetailInclude } },
@@ -1409,12 +1514,16 @@ export class OpsService {
     if (!user?.staff) {
       throw new NotFoundException("حساب التشغيل غير موجود");
     }
+    const scope = await this.orgScope(actorId, permissions);
+    this.assertStaffInScope(scope, this.staffOrgRef(user.staff, user.id));
+    if (id === actorId && !this.hasPerm(permissions, "SEC-01")) {
+      throw new ForbiddenException("لا يمكن تعديل صلاحيات حسابكِ");
+    }
+    this.assertPerm(permissions, permForStaffPermissions(user.staff.role.code));
     if (dto.resetToRole) {
       const current = effectivePermissionCodes(user.staff);
-      if (current.codes.includes(StaffPermission.USERS_MANAGE)) {
-        const roleHasUsers = user.staff.role.permissions.some(
-          (row) => row.permission.code === StaffPermission.USERS_MANAGE,
-        );
+      if (this.isStaffManager(current.codes)) {
+        const roleHasUsers = this.isStaffManager(user.staff.role.permissions.map((row) => row.permission.code));
         if (!roleHasUsers) {
           await this.assertNotLastManager(id);
         }
@@ -1432,7 +1541,7 @@ export class OpsService {
       throw new BadRequestException("صلاحية غير معروفة");
     }
     const current = effectivePermissionCodes(user.staff);
-    if (current.codes.includes(StaffPermission.USERS_MANAGE) && !uniqueCodes.includes(StaffPermission.USERS_MANAGE)) {
+    if (this.isStaffManager(current.codes) && !this.isStaffManager(uniqueCodes)) {
       await this.assertNotLastManager(id);
     }
     await this.prisma.staffUserPermission.deleteMany({ where: { userId: id } });
@@ -1454,7 +1563,7 @@ export class OpsService {
     return this.toStaff(user);
   }
 
-  async orgDepartments() {
+  async orgDepartments(actorId?: string, permissions: string[] = []) {
     const rows = await this.prisma.staffDepartment.findMany({
       include: {
         teams: {
@@ -1475,10 +1584,18 @@ export class OpsService {
       },
       orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
     });
-    return rows.map((department) => this.serializeDepartment(department));
+    const mapped = rows.map((department) => this.serializeDepartment(department));
+    if (!actorId) {
+      return mapped;
+    }
+    return this.filterOrg(mapped, await this.orgScope(actorId, permissions));
   }
 
-  async createDepartment(dto: UpsertStaffDepartmentDto) {
+  async createDepartment(dto: UpsertStaffDepartmentDto, actorId: string, permissions: string[] = []) {
+    const scope = await this.orgScope(actorId, permissions);
+    if (scope.mode !== "all") {
+      throw new ForbiddenException("إنشاء قسم جديد لكل الأقسام فقط");
+    }
     const code = await this.uniqueCatalogCode("department", dto.nameEn, dto.code);
     return this.prisma.staffDepartment
       .create({
@@ -1495,10 +1612,14 @@ export class OpsService {
       .catch((error: unknown) => this.rethrowUnique(error, "رمز القسم مستخدم"));
   }
 
-  async patchDepartment(id: string, dto: PatchStaffDepartmentDto) {
+  async patchDepartment(id: string, dto: PatchStaffDepartmentDto, actorId: string, permissions: string[] = []) {
     const row = await this.prisma.staffDepartment.findUnique({ where: { id } });
     if (!row) {
       throw new NotFoundException("القسم غير موجود");
+    }
+    const scope = await this.orgScope(actorId, permissions);
+    if (scope.mode !== "all" && row.id !== scope.departmentId) {
+      throw new ForbiddenException("هذا القسم خارج نطاقك");
     }
     const updated = await this.prisma.staffDepartment.update({
       where: { id },
@@ -1513,11 +1634,13 @@ export class OpsService {
     return tree.find((item) => item.id === updated.id) ?? updated;
   }
 
-  async createTeam(dto: UpsertStaffTeamDto) {
+  async createTeam(dto: UpsertStaffTeamDto, actorId: string, permissions: string[] = []) {
     const department = await this.prisma.staffDepartment.findUnique({ where: { id: dto.departmentId } });
     if (!department) {
       throw new NotFoundException("القسم غير موجود");
     }
+    const scope = await this.orgScope(actorId, permissions);
+    this.assertTeamInScope(scope, { id: "", departmentId: department.id });
     if (dto.leadUserId) {
       await this.assertStaffUser(dto.leadUserId);
     }
@@ -1549,16 +1672,24 @@ export class OpsService {
     return parent?.teams.find((team) => team.id === row.id) ?? row;
   }
 
-  async patchTeam(id: string, dto: PatchStaffTeamDto) {
+  async patchTeam(id: string, dto: PatchStaffTeamDto, actorId: string, permissions: string[] = []) {
     const team = await this.prisma.staffTeam.findUnique({ where: { id }, include: { department: true } });
     if (!team) {
       throw new NotFoundException("الفريق غير موجود");
+    }
+    const scope = await this.orgScope(actorId, permissions);
+    this.assertTeamInScope(scope, team);
+    if (dto.leadUserId !== undefined) {
+      this.assertPerm(permissions, "ACC-11");
+    } else {
+      this.assertPerm(permissions, "ACC-10");
     }
     if (dto.departmentId && dto.departmentId !== team.departmentId) {
       const department = await this.prisma.staffDepartment.findUnique({ where: { id: dto.departmentId } });
       if (!department) {
         throw new NotFoundException("القسم غير موجود");
       }
+      this.assertTeamInScope(scope, { id: "", departmentId: department.id });
     }
     if (dto.leadUserId) {
       await this.assertStaffUser(dto.leadUserId);
@@ -1676,6 +1807,126 @@ export class OpsService {
     };
   }
 
+  private async orgScope(actorId: string, permissions: string[]) {
+    const staff = await this.prisma.staffUser.findUnique({
+      where: { userId: actorId },
+      include: { orgTeam: true },
+    });
+    const teamId = staff?.teamId ?? staff?.orgTeam?.id ?? null;
+    const departmentId = staff?.orgTeam?.departmentId ?? null;
+    const mode = staffHasExact(permissions, "ACC-18")
+      ? "all"
+      : staffHasExact(permissions, "ACC-19")
+        ? "department"
+        : staffHasExact(permissions, "ACC-20")
+          ? "team"
+          : "self";
+    return { mode, departmentId, teamId, userId: actorId } as const;
+  }
+
+  private staffOrgRef(
+    staff: {
+      teamId?: string | null;
+      orgTeam?: { id: string; departmentId?: string; department?: { id: string } } | null;
+    },
+    userId: string,
+  ) {
+    return {
+      userId,
+      teamId: staff.teamId ?? staff.orgTeam?.id ?? null,
+      departmentId: staff.orgTeam?.department?.id ?? staff.orgTeam?.departmentId ?? null,
+    };
+  }
+
+  private staffMatchesScope(
+    scope: { mode: "all" | "department" | "team" | "self"; departmentId: string | null; teamId: string | null; userId: string },
+    row: { userId: string; teamId: string | null; departmentId: string | null },
+  ) {
+    if (row.userId === scope.userId) {
+      return true;
+    }
+    if (scope.mode === "all") {
+      return true;
+    }
+    if (scope.mode === "self") {
+      return false;
+    }
+    if (scope.mode === "department") {
+      return Boolean(scope.departmentId && row.departmentId === scope.departmentId);
+    }
+    return Boolean(scope.teamId && row.teamId === scope.teamId);
+  }
+
+  private assertStaffInScope(
+    scope: { mode: "all" | "department" | "team" | "self"; departmentId: string | null; teamId: string | null; userId: string },
+    row: { userId: string; teamId: string | null; departmentId: string | null },
+  ) {
+    if (!this.staffMatchesScope(scope, row)) {
+      throw new ForbiddenException("هذا الحساب خارج نطاق قسمك أو فريقك");
+    }
+  }
+
+  private assertTeamInScope(
+    scope: { mode: "all" | "department" | "team" | "self"; departmentId: string | null; teamId: string | null },
+    team: { id?: string | null; departmentId?: string | null } | null,
+  ) {
+    if (scope.mode === "all") {
+      return;
+    }
+    if (!team?.departmentId && !team?.id) {
+      throw new BadRequestException("اختاري فريقاً ضمن نطاقك");
+    }
+    if (scope.mode === "department") {
+      if (team.departmentId !== scope.departmentId) {
+        throw new ForbiddenException("هذا الفريق خارج قسمك");
+      }
+      return;
+    }
+    if (!team.id || team.id !== scope.teamId) {
+      throw new ForbiddenException("هذا الفريق خارج نطاق فريقك");
+    }
+  }
+
+  private filterOrg<T extends { id: string; teams: { id: string }[] }>(
+    departments: T[],
+    scope: { mode: "all" | "department" | "team" | "self"; departmentId: string | null; teamId: string | null },
+  ): T[] {
+    if (scope.mode === "all") {
+      return departments;
+    }
+    const inDepartment = departments.filter((department) => department.id === scope.departmentId);
+    if (scope.mode === "department") {
+      return inDepartment;
+    }
+    return inDepartment
+      .map((department) => ({
+        ...department,
+        teams: department.teams.filter((team) => team.id === scope.teamId),
+      }))
+      .filter((department) => department.teams.length);
+  }
+
+  private hasPerm(permissions: string[], ...codes: string[]) {
+    return staffHas(permissions, ...codes);
+  }
+
+  private assertPerm(permissions: string[], ...codes: string[]) {
+    if (!this.hasPerm(permissions, ...codes)) {
+      throw new ForbiddenException("ليست لديكِ صلاحية هذا الإجراء");
+    }
+  }
+
+  private assertCanManageRole(permissions: string[], roleCode: string) {
+    const needed = accCodeForRole(roleCode);
+    if (!needed || !this.hasPerm(permissions, needed)) {
+      throw new ForbiddenException("ليست لديكِ صلاحية إدارة هذا المنصب");
+    }
+  }
+
+  private isStaffManager(codes: string[]) {
+    return this.hasPerm(codes, ...ACC_CREATE, "ACC-14", "ACC-15", "ACC-16");
+  }
+
   private async assertNotLastManager(userId: string) {
     const rows = await this.prisma.staffUser.findMany({
       where: { user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE } },
@@ -1684,9 +1935,7 @@ export class OpsService {
         role: { include: { permissions: { include: { permission: true } } } },
       },
     });
-    const managers = rows.filter((row) =>
-      effectivePermissionCodes(row).codes.includes(StaffPermission.USERS_MANAGE),
-    );
+    const managers = rows.filter((row) => this.isStaffManager(effectivePermissionCodes(row).codes));
     if (managers.length <= 1 && managers.some((row) => row.userId === userId)) {
       throw new BadRequestException("لا يمكن تعديل آخر حساب يملك إدارة المستخدمين");
     }
@@ -1865,7 +2114,8 @@ export class OpsService {
     return rows.map((row) => serializePackage(row));
   }
 
-  async createPackage(dto: UpsertPackageDto) {
+  async createPackage(dto: UpsertPackageDto, permissions: string[] = []) {
+    this.assertPerm(permissions, "PKG-04", "PKG-05");
     const pricing = resolvePackagePricing({
       price: dto.price,
       priceBefore: dto.priceBefore,
@@ -1900,13 +2150,33 @@ export class OpsService {
     }
   }
 
-  async patchPackage(id: string, dto: PatchPackageDto) {
+  async patchPackage(id: string, dto: PatchPackageDto, permissions: string[] = []) {
     const current = await this.prisma.package.findUnique({ where: { id } });
     if (!current) {
       throw new NotFoundException("الباقة غير موجودة");
     }
     const pricingChanged =
       dto.price !== undefined || dto.priceBefore !== undefined || dto.discountPercent !== undefined;
+    if (pricingChanged || dto.vatPercent !== undefined) {
+      this.assertPerm(permissions, "PKG-05");
+    }
+    const featureChanged =
+      dto.nameAr !== undefined ||
+      dto.nameEn !== undefined ||
+      dto.durationMonths !== undefined ||
+      dto.rank !== undefined ||
+      dto.maxServices !== undefined ||
+      dto.maxPhotos !== undefined ||
+      dto.maxVideos !== undefined ||
+      dto.maxAlbums !== undefined ||
+      dto.allowWhatsApp !== undefined ||
+      dto.allowRating !== undefined ||
+      dto.hasBadge !== undefined ||
+      dto.isActive !== undefined ||
+      dto.serviceIds !== undefined;
+    if (featureChanged) {
+      this.assertPerm(permissions, "PKG-04");
+    }
     const pricing = pricingChanged
       ? resolvePackagePricing({
           price: dto.price,
@@ -2286,14 +2556,16 @@ export class OpsService {
     const isReceipt = file.proofs.length > 0;
     if (isReceipt) {
       if (dto.requestClearer) {
-        if (!this.canSeeReceipts(permissions)) {
-          throw new ForbiddenException("ليست لديكِ صلاحية مراجعة الإيصالات");
-        }
-      } else if (!permissions.includes(StaffPermission.PAYMENTS_CONFIRM)) {
-        throw new ForbiddenException("اعتماد الإيصال للمالية فقط. حوّليه للمالية أولاً");
+        this.assertPerm(permissions, "FIN-06");
+      } else if (dto.reopen) {
+        this.assertPerm(permissions, "FIN-01", "FIN-02", "FIN-03");
+      } else if (dto.approve === false) {
+        this.assertPerm(permissions, "FIN-05");
+      } else {
+        this.assertPerm(permissions, "FIN-03");
       }
-    } else if (!this.canApproveContent(permissions)) {
-      throw new ForbiddenException("ليست لديكِ صلاحية الاعتمادات");
+    } else {
+      this.assertPerm(permissions, this.permForMediaFile(file));
     }
     if (dto.reopen) {
       if (file.status === "APPROVED") {
@@ -2362,7 +2634,7 @@ export class OpsService {
       },
     });
     if (avatarChange) {
-      await this.reviewChange(avatarChange.id, dto.approve);
+      await this.reviewChange(avatarChange.id, dto.approve, false, permissions);
     } else if (dto.approve && file.storageKey.startsWith("avatars/")) {
       await this.prisma.user.update({
         where: { id: file.uploadedById },
@@ -2755,18 +3027,35 @@ export class OpsService {
   }
 
   private canApproveContent(permissions: string[]) {
-    return (
-      permissions.includes(StaffPermission.RATINGS_REVIEW) ||
-      permissions.includes(StaffPermission.MEDIA_REVIEW)
-    );
+    return this.hasPerm(permissions, "PRO-02", "PRO-03", "PRO-05", "PRO-06", "PRO-07", "PRO-08", "PRO-09", "PRO-10");
   }
 
   private canSeeReceipts(permissions: string[]) {
-    return (
-      permissions.includes(StaffPermission.PAYMENTS_REVIEW) ||
-      permissions.includes(StaffPermission.PAYMENTS_CONFIRM) ||
-      permissions.includes(StaffPermission.ESCALATE_FINANCE)
-    );
+    return this.hasPerm(permissions, "FIN-01", "FIN-02", "FIN-03", "FIN-05", "FIN-06", "PKG-02");
+  }
+
+  private permForProfileChange(field: string, accountType: string) {
+    const provider = accountType === AccountType.PROVIDER;
+    if (field === ProfileChangeField.DISPLAY_NAME) {
+      return provider ? "PRO-05" : "PRO-02";
+    }
+    if (field === ProfileChangeField.AVATAR) {
+      return provider ? "PRO-06" : "PRO-03";
+    }
+    if (field === ProfileChangeField.BIO) {
+      return provider ? "PRO-07" : "PRO-02";
+    }
+    return provider ? "PRO-05" : "PRO-02";
+  }
+
+  private permForMediaFile(file: { mime?: string | null; storageKey: string; portfolio: unknown[]; uploadedBy?: { accountType?: string } }) {
+    if (file.storageKey.startsWith("avatars/")) {
+      return file.uploadedBy?.accountType === AccountType.CUSTOMER ? "PRO-03" : "PRO-06";
+    }
+    if (file.portfolio.length) {
+      return file.mime?.startsWith("video/") ? "PRO-09" : "PRO-08";
+    }
+    return "PRO-08";
   }
 
   private notifyStaffWithPermission(

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth.guard';
 import { LandingComponent } from './landing/landing.component';
+import { opsPermissionGuard } from './ops/ops-permission.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: LandingComponent, canActivate: [guestGuard] },
@@ -179,11 +180,36 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard('STAFF')],
     children: [
       { path: '', loadComponent: () => import('./ops/ops-dashboard.component').then((m) => m.OpsDashboardComponent) },
-      { path: 'media', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
-      { path: 'approvals', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
-      { path: 'accounts', loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent) },
-      { path: 'clients', loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent) },
-      { path: 'reviews', loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent) },
+      {
+        path: 'media',
+        loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'approvals' },
+      },
+      {
+        path: 'approvals',
+        loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'approvals' },
+      },
+      {
+        path: 'accounts',
+        loadComponent: () => import('./ops/ops-approvals.component').then((m) => m.OpsApprovalsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'approvals' },
+      },
+      {
+        path: 'clients',
+        loadComponent: () => import('./ops/ops-clients.component').then((m) => m.OpsClientsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'clients' },
+      },
+      {
+        path: 'reviews',
+        loadComponent: () => import('./ops/ops-reviews.component').then((m) => m.OpsReviewsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'reviews' },
+      },
       {
         path: 'packages/:id/services',
         redirectTo: '/ops/packages/:id',
@@ -193,18 +219,87 @@ export const routes: Routes = [
         path: 'packages/:id',
         loadComponent: () =>
           import('./ops/ops-package-services.component').then((m) => m.OpsPackageServicesComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'packages' },
       },
-      { path: 'packages', loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent) },
-      { path: 'geo', loadComponent: () => import('./ops/ops-geo.component').then((m) => m.OpsGeoComponent) },
-      { path: 'settings', loadComponent: () => import('./ops/ops-settings.component').then((m) => m.OpsSettingsComponent) },
-      { path: 'notices', loadComponent: () => import('./ops/ops-notices.component').then((m) => m.OpsNoticesComponent) },
-      { path: 'staff', loadComponent: () => import('./ops/ops-staff.component').then((m) => m.OpsStaffComponent) },
-      { path: 'org', loadComponent: () => import('./ops/ops-org.component').then((m) => m.OpsOrgComponent) },
-      { path: 'legal', loadComponent: () => import('./ops/ops-legal.component').then((m) => m.OpsLegalComponent) },
-      { path: 'catalog', loadComponent: () => import('./ops/ops-catalog.component').then((m) => m.OpsCatalogComponent) },
-      { path: 'tickets', loadComponent: () => import('./ops/ops-tickets.component').then((m) => m.OpsTicketsComponent) },
-      { path: 'events', loadComponent: () => import('./ops/ops-events.component').then((m) => m.OpsEventsComponent) },
-      { path: 'activity', loadComponent: () => import('./ops/ops-activity.component').then((m) => m.OpsActivityComponent) },
+      {
+        path: 'packages',
+        loadComponent: () => import('./ops/ops-packages.component').then((m) => m.OpsPackagesComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'packages' },
+      },
+      {
+        path: 'geo',
+        loadComponent: () => import('./ops/ops-geo.component').then((m) => m.OpsGeoComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'geo' },
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./ops/ops-settings.component').then((m) => m.OpsSettingsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'settings' },
+      },
+      {
+        path: 'notices',
+        loadComponent: () => import('./ops/ops-notices.component').then((m) => m.OpsNoticesComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'notices' },
+      },
+      {
+        path: 'staff',
+        loadComponent: () => import('./ops/ops-staff.component').then((m) => m.OpsStaffComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'staff' },
+      },
+      {
+        path: 'permissions/staff/:id',
+        loadComponent: () => import('./ops/ops-permissions.component').then((m) => m.OpsPermissionsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'permissions' },
+      },
+      {
+        path: 'permissions',
+        loadComponent: () => import('./ops/ops-permissions.component').then((m) => m.OpsPermissionsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'permissions' },
+      },
+      {
+        path: 'org',
+        loadComponent: () => import('./ops/ops-org.component').then((m) => m.OpsOrgComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'org' },
+      },
+      {
+        path: 'legal',
+        loadComponent: () => import('./ops/ops-legal.component').then((m) => m.OpsLegalComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'legal' },
+      },
+      {
+        path: 'catalog',
+        loadComponent: () => import('./ops/ops-catalog.component').then((m) => m.OpsCatalogComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'catalog' },
+      },
+      {
+        path: 'tickets',
+        loadComponent: () => import('./ops/ops-tickets.component').then((m) => m.OpsTicketsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'tickets' },
+      },
+      {
+        path: 'events',
+        loadComponent: () => import('./ops/ops-events.component').then((m) => m.OpsEventsComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'events' },
+      },
+      {
+        path: 'activity',
+        loadComponent: () => import('./ops/ops-activity.component').then((m) => m.OpsActivityComponent),
+        canActivate: [opsPermissionGuard],
+        data: { opsPage: 'activity' },
+      },
       { path: 'notifications', loadComponent: () => import('./ops/ops-notifications.component').then((m) => m.OpsNotificationsComponent) },
       { path: 'profile', loadComponent: () => import('./ops/ops-profile.component').then((m) => m.OpsProfileComponent) },
       { path: 'about', loadComponent: () => import('./ops/ops-about.component').then((m) => m.OpsAboutComponent) },

@@ -284,12 +284,12 @@ export class OpsClientsComponent implements OnInit {
   }
 
   get showNotifyColumn(): boolean {
-    return this.session.hasAnyPermission('NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER');
+    return this.session.hasAnyPermission('NOT-01');
   }
 
   get notifyColumnLabel(): string {
-    const provider = this.session.hasPermission('NOTIFY_PROVIDER');
-    const customer = this.session.hasPermission('NOTIFY_CUSTOMER');
+    const provider = this.session.hasPermission('NOT-01');
+    const customer = this.session.hasPermission('NOT-01');
     if (provider && !customer) {
       return 'إشعار فردى للخبيرة';
     }
@@ -301,10 +301,10 @@ export class OpsClientsComponent implements OnInit {
 
   canNotify(item: OpsManagedAccount): boolean {
     if (item.accountType === 'PROVIDER') {
-      return this.session.hasPermission('NOTIFY_PROVIDER');
+      return this.session.hasPermission('NOT-01');
     }
     if (item.accountType === 'CUSTOMER') {
-      return this.session.hasPermission('NOTIFY_CUSTOMER');
+      return this.session.hasPermission('NOT-01');
     }
     return false;
   }
@@ -351,7 +351,7 @@ export class OpsClientsComponent implements OnInit {
   }
 
   hasAccountsAction(): boolean {
-    return this.session.hasPermission('ACCOUNTS_ACTION');
+    return this.session.hasAnyPermission('USR-01', 'USR-05', 'USR-06');
   }
 
   applyAccount(item: OpsManagedAccount): void {

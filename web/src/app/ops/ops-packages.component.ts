@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import { type CatalogPackage, type CatalogService, type OpsCampaign } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -19,7 +20,9 @@ import { keepSelected } from './ops-ui';
         <h2>الباقات</h2>
         <p>اضغطي على صف الباقة لفتح شاشتها وتعديل الأسعار والخدمات</p>
       </div>
-      <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
+        @if (canEditPackage) {
+          <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
+        }
     </div>
     <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
       <div class="form-grid">
@@ -112,7 +115,9 @@ import { keepSelected } from './ops-ui';
         <h2>الحملات الترويجية</h2>
         <p>اربطي الحملة بباقة (مثل المجانية) ثم حددي المدة والتشغيل</p>
       </div>
-      <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة حملة</button>
+      @if (canCampaign) {
+        <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة حملة</button>
+      }
     </div>
     <app-ops-modal [open]="addingCampaign" title="إضافة حملة" kicker="ترويج الباقة" (closed)="addingCampaign = false">
       <div class="form-grid">
@@ -260,8 +265,17 @@ import { keepSelected } from './ops-ui';
 export class OpsPackagesComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canEditPackage(): boolean {
+    return this.session.hasAnyPermission('PKG-04', 'PKG-05');
+  }
+
+  get canCampaign(): boolean {
+    return this.session.hasAnyPermission('PKG-03');
+  }
 
   packages: CatalogPackage[] = [];
   catalogServices: CatalogService[] = [];

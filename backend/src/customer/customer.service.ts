@@ -22,6 +22,7 @@ import {
 import { assertMaxChars } from "../common/platform-settings";
 import { orderedCitiesFromRows, replaceCustomerCities, resolveCityIds } from "../common/geo";
 import { notifyStaffWithPermission } from "../common/notify";
+import { ensureTicketTypes } from "../common/ticket-types";
 
 @Injectable()
 export class CustomerService {
@@ -198,6 +199,7 @@ export class CustomerService {
   }
 
   async ticketTypes() {
+    await ensureTicketTypes(this.prisma);
     return this.prisma.ticketType.findMany({
       where: { audience: AccountType.CUSTOMER },
       orderBy: { code: "asc" },

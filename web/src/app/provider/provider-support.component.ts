@@ -121,7 +121,10 @@ export class ProviderSupportComponent implements OnInit {
 
   ngOnInit(): void {
     this.shell.set('الطلبات');
-    this.api.ticketTypes().subscribe({ next: (types) => (this.types = types) });
+    this.api.ticketTypes().subscribe({
+      next: (types) => (this.types = types),
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل أنواع الطلب')),
+    });
     this.reload();
   }
 

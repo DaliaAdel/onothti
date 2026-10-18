@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import { servicePhoto, type CatalogPackage, type CatalogService } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 
@@ -24,7 +25,9 @@ import { ToastService } from '../core/toast.service';
           <p>{{ pkg.code }} · {{ pkg.durationMonths }} شهر</p>
         </div>
         <div class="ops-drawer-actions" style="margin:0">
-          <button class="btn primary" type="button" [disabled]="saving" (click)="save()">حفظ الباقة</button>
+          @if (canSavePackage) {
+            <button class="btn primary" type="button" [disabled]="saving" (click)="save()">حفظ الباقة</button>
+          }
           <button class="btn ghost" type="button" [disabled]="saving" (click)="toggle()">
             {{ pkg.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
           </button>
@@ -108,8 +111,13 @@ export class OpsPackageServicesComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canSavePackage(): boolean {
+    return this.session.hasAnyPermission('PKG-04', 'PKG-05');
+  }
 
   pkg: CatalogPackage | null = null;
   services: CatalogService[] = [];

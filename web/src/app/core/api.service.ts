@@ -333,6 +333,18 @@ export class ApiService {
     return this.http.post(`${this.base}/provider/subscription/campaign`, packageId ? { packageId } : {});
   }
 
+  uploadPaymentProof(file: File) {
+    const data = new FormData();
+    data.append('file', file);
+    return this.http.post<{
+      storageKey: string;
+      mime: string;
+      sizeBytes: number;
+      kind: 'IMAGE' | 'PDF';
+      url: string | null;
+    }>(`${this.base}/provider/payment-proofs/file`, data);
+  }
+
   submitPaymentProof(body: {
     packageId: string;
     amount?: number;
@@ -575,6 +587,10 @@ export class ApiService {
     return this.http.get<OpsStaff[]>(`${this.base}/ops/staff`);
   }
 
+  opsStaffById(id: string) {
+    return this.http.get<OpsStaff>(`${this.base}/ops/staff/${id}`);
+  }
+
   opsCreateStaff(body: {
     mobile: string;
     displayName: string;
@@ -715,7 +731,7 @@ export class ApiService {
     return this.http.post<OpsTicket>(`${this.base}/ops/tickets`, body);
   }
 
-  opsTickets(query: { status?: string; priority?: number | string; queue?: string; mine?: boolean } = {}) {
+  opsTickets(query: { status?: string; priority?: number | string; queue?: string; mine?: boolean; accountType?: string } = {}) {
     let params = new HttpParams();
     if (query.status) {
       params = params.set('status', query.status);
@@ -728,6 +744,9 @@ export class ApiService {
     }
     if (query.mine) {
       params = params.set('mine', '1');
+    }
+    if (query.accountType) {
+      params = params.set('accountType', query.accountType);
     }
     return this.http.get<OpsTicket[]>(`${this.base}/ops/tickets`, { params });
   }

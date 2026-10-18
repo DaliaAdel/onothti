@@ -62,10 +62,14 @@ import { ToastService } from '../core/toast.service';
           @if (tab === 'file') {
             <label class="upload" [class.drag]="dragging" (dragenter)="onDrag($event, true)" (dragover)="onDrag($event, true)" (dragleave)="onDrag($event, false)" (drop)="onDrop($event)">
               <input type="file" accept="image/*,.pdf" (change)="onFile($event)" />
-              <div class="upload-icon">⇧</div>
+              @if (previewUrl) {
+                <img class="proof-preview" [src]="previewUrl" alt="معاينة الإيصال" />
+              } @else {
+                <div class="upload-icon">⇧</div>
+              }
               <h3>{{ fileName || 'اسحبي صورة الإيصال هنا' }}</h3>
               <p class="muted small">أو اضغطي للاختيار · JPG أو PNG أو PDF — حتى 5MB</p>
-              <span class="btn secondary">اختيار الملف</span>
+              <span class="btn secondary">{{ uploading ? 'جاري رفع الملف...' : 'اختيار الملف' }}</span>
             </label>
           } @else {
             <div class="field">
@@ -88,9 +92,9 @@ import { ToastService } from '../core/toast.service';
             <div class="summary-line"><span>الخصم</span><b>{{ money(pkg?.discountPercent) }}%</b></div>
           }
           <div class="summary-line total"><span>المبلغ المطلوب</span><b>{{ money(pkg?.price) }} ر.س</b></div>
-          <button class="btn primary" type="button" [disabled]="loading || !ready" (click)="submit()">إرسال الإثبات للمراجعة</button>
+          <button class="btn primary" type="button" [disabled]="loading || uploading || !ready" (click)="submit()">إرسال الإثبات للمراجعة</button>
           @if (!ready) {
-            <p class="proof-hint">ارفعي الإيصال أو اكتبي رسالة التحويل (8 أحرف على الأقل) لتفعيل زر الإرسال.</p>
+            <p class="proof-hint">{{ uploading ? 'جاري رفع الإيصال...' : 'ارفعي الإيصال أو اكتبي رسالة التحويل (8 أحرف على الأقل) لتفعيل زر الإرسال.' }}</p>
           }
           <a class="btn ghost" routerLink="/p/package">العودة للباقات</a>
         </div>
@@ -110,12 +114,15 @@ export class ProviderPaymentComponent implements OnInit {
   tab: 'file' | 'text' = 'file';
   dragging = false;
   loading = false;
+  uploading = false;
   transferText = '';
   reference = '';
   fileName = '';
   storageKey = '';
   mime = '';
   sizeBytes = 0;
+  previewUrl = '';
+  private previewObject = '';
   packageId = '';
   data: ProviderSubscriptionResponse | null = null;
 
@@ -128,7 +135,7 @@ export class ProviderPaymentComponent implements OnInit {
   }
 
   get ready(): boolean {
-    return this.tab === 'text' ? this.transferText.trim().length >= 8 : Boolean(this.storageKey);
+    return this.tab === 'text' ? this.transferText.trim().length >= 8 : Boolean(this.storageKey) && !this.uploading;
   }
 
   money(value: number | string | null | undefined): number {
@@ -208,8 +215,32 @@ export class ProviderPaymentComponent implements OnInit {
 
   private useFile(file: File): void {
     this.fileName = file.name;
-    this.storageKey = `proofs/${file.name}`;
+    this.storageKey = '';
     this.mime = file.type || 'image/jpeg';
     this.sizeBytes = file.size;
+    if (this.previewObject) {
+      URL.revokeObjectURL(this.previewObject);
+      this.previewObject = '';
+    }
+    if (file.type.startsWith('image/')) {
+      this.previewObject = URL.createObjectURL(file);
+      this.previewUrl = this.previewObject;
+    } else {
+      this.previewUrl = '';
+    }
+    this.uploading = true;
+    this.api.uploadPaymentProof(file).subscribe({
+      next: (res) => {
+        this.storageKey = res.storageKey;
+        this.mime = res.mime;
+        this.sizeBytes = res.sizeBytes;
+        this.uploading = false;
+      },
+      error: (err) => {
+        this.uploading = false;
+        this.storageKey = '';
+        this.toast.show(apiMessage(err, 'تعذر رفع الإيصال'));
+      },
+    });
   }
 }

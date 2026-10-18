@@ -1,0 +1,1221 @@
+{
+  "roles": [
+    {
+      "code": "AM",
+      "nameAr": "المدير الإداري",
+      "nameEn": "Admin manager"
+    },
+    {
+      "code": "OM",
+      "nameAr": "مدير التشغيل",
+      "nameEn": "Operations manager"
+    },
+    {
+      "code": "FM",
+      "nameAr": "المدير المالي",
+      "nameEn": "Finance manager"
+    },
+    {
+      "code": "AL",
+      "nameAr": "رئيس فريق إداري",
+      "nameEn": "Admin lead"
+    },
+    {
+      "code": "OL",
+      "nameAr": "رئيس فريق تشغيل",
+      "nameEn": "Operations lead"
+    },
+    {
+      "code": "FL",
+      "nameAr": "رئيس فريق مالي",
+      "nameEn": "Finance lead"
+    },
+    {
+      "code": "AE",
+      "nameAr": "موظف إداري",
+      "nameEn": "Admin officer"
+    },
+    {
+      "code": "OE",
+      "nameAr": "موظف تشغيل",
+      "nameEn": "Operations officer"
+    },
+    {
+      "code": "FE",
+      "nameAr": "موظف مالي",
+      "nameEn": "Finance officer"
+    }
+  ],
+  "permissions": [
+    {
+      "code": "ACC-01",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب مدير إداري",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المالك أو صاحب الصلاحية الأعلى خارج الأعمدة التسعة",
+      "note": "تعيين أعلى مستوى إداري يتطلب جهة أعلى مستقلة؛ لا ينشئ المدير حسابًا لنفسه."
+    },
+    {
+      "code": "ACC-02",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب مدير تشغيل",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "جميع فرق التشغيل",
+      "note": "إنشاء مستوى مدير محصور بالمدير الإداري في التوزيع المقترح."
+    },
+    {
+      "code": "ACC-03",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب مدير مالي",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "القطاع المالي",
+      "note": ""
+    },
+    {
+      "code": "ACC-04",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب رئيس فريق إداري",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "الفرق الإدارية",
+      "note": "رئيس الفريق الإداري مستوى جديد وفق الهيكل المطلوب."
+    },
+    {
+      "code": "ACC-05",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب رئيس فريق تشغيل",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "فرق التشغيل المسموح بها",
+      "note": "توزيع مقترح: الموظف الإداري ينشئ موظفي التشغيل فقط؛ الرئيس ينشئ رؤساء وموظفي التشغيل."
+    },
+    {
+      "code": "ACC-06",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب رئيس فريق مالي",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "الفرق المالية",
+      "note": ""
+    },
+    {
+      "code": "ACC-07",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب موظف إداري",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير: كل الفرق الإدارية؛ الرئيس: فريقه",
+      "note": "تفويض رئيس الفريق لإنشاء موظفي فريقه مقترح، وليس نصًا صريحًا."
+    },
+    {
+      "code": "ACC-08",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب موظف تشغيل",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "فرق التشغيل المخولة للمنشئ",
+      "note": "طلب مدير التشغيل أو رئيسه إضافة موظف لا يمنحهما صلاحية الإنشاء."
+    },
+    {
+      "code": "ACC-09",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة حساب موظف مالي",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "جميع الفرق المالية",
+      "note": "مدير المالية ورئيس الفريق يطلبان الإنشاء؛ ينفذه إداري مخول."
+    },
+    {
+      "code": "ACC-10",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إنشاء و إدارة فريق إداري أو تشغيلي أو مالي",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "كل الأقسام",
+      "note": "إنشاء سجل فريق مستقل؛ لا يستلزم إنشاء دور صلاحيات جديد لكل فريق."
+    },
+    {
+      "code": "ACC-11",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "تعيين مدير قسم أو رئيس فريق وتغييره",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المناصب التابعة؛ لا يشمل تعيين نفسه",
+      "note": ""
+    },
+    {
+      "code": "ACC-12",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "ربط موظف بفريق عند إنشاء حسابه",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "ضمن نوع الحساب الذي يحق للمنشئ إنشاؤه",
+      "note": "لا يسمح ربط موظف إداري بفريق مالي مع الاحتفاظ بصلاحيات دور غير مناسب."
+    },
+    {
+      "code": "ACC-13",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "نقل موظف بين الفرق أو الأقسام",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "جميع الأقسام؛ مع إعادة ضبط الدور والنطاق",
+      "note": "المدير المختص يطلب النقل؛ التنفيذ الإداري يسجل أثره على الطلبات المسندة."
+    },
+    {
+      "code": "ACC-14",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "تعديل صلاحيات موظف تشغيل",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "الموظف الإداري: موظفو التشغيل؛ الرئيس: دون مستوى مدير",
+      "note": "لا يمنح المنفذ صلاحية غير مخول بمنحها؛ الاستثناء يحتاج موافقة أعلى."
+    },
+    {
+      "code": "ACC-15",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "تعديل صلاحيات حساب إداري أو مالي",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "الحسابات التابعة فقط؛ لا تعديل ذاتي",
+      "note": ""
+    },
+    {
+      "code": "ACC-16",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "إيقاف أو إنهاء حساب موظف",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "كل الأقسام؛ مع حفظ سجل الإجراءات",
+      "note": "المدير أو الرئيس الآخر يرفع طلبًا موثقًا؛ لا يلغي حسابًا بنفسه."
+    },
+    {
+      "code": "ACC-18",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "عرض قائمة موظفي جميع الأقسام",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المنصة كاملة",
+      "note": ""
+    },
+    {
+      "code": "ACC-19",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "عرض موظفي القسم وأنشطتهم",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "كل فرق القسم؛ المدير الإداري حسب نطاق إشرافه",
+      "note": ""
+    },
+    {
+      "code": "ACC-20",
+      "groupAr": "حسابات الموظفين",
+      "nameAr": "عرض موظفي الفريق وأنشطتهم",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير: قسمه؛ الرئيس: فريقه فقط",
+      "note": ""
+    },
+    {
+      "code": "PRO-01",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "عرض بيانات العميلة اللازمة للمراجعة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "الملفات المسندة؛ الرئيس لفريقه والمدير لقسمه",
+      "note": "وصول الإدارة للمراجعة دعمًا لمعالجة التصعيد، وليس وصولًا ماليًا."
+    },
+    {
+      "code": "PRO-02",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض اسم عرض العميلة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "نطاق المراجعة المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-03",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض صورة حساب العميلة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "نطاق المراجعة المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-05",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض اسم عرض الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "نطاق المراجعة المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-06",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض صورة حساب الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "نطاق المراجعة المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-07",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض نبذة الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "نطاق المراجعة المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-08",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "اعتماد أو رفض صور ألبومات الأعمال",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "حسب الباقة والطلب المسند",
+      "note": ""
+    },
+    {
+      "code": "PRO-09",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "مراجعة واعتماد فيديوهات الأعمال",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "حسب الباقة والمحتوى المسند",
+      "note": "اعتماد الفيديو بنفس مسار مراجعة المحتوى توزيع مقترح؛ لا يتجاوز عدد الفيديوهات المسموح."
+    },
+    {
+      "code": "PRO-10",
+      "groupAr": "اعتماد الملفات والمحتوى",
+      "nameAr": "تعديل ملف الخبيرة ( اسم العرض - صورة العرض - النبذة - صور الأبومات )",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "",
+      "note": ""
+    },
+    {
+      "code": "USR-01",
+      "groupAr": "قرارات حسابات المستخدمين",
+      "nameAr": "تعطيل وتفعيل حسابات الخبيرة والعميلة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "الملفات أو الشكاوى ضمن النطاق",
+      "note": ""
+    },
+    {
+      "code": "USR-04",
+      "groupAr": "قرارات حسابات المستخدمين",
+      "nameAr": "إضافة أو إزالة رقم في قائمة الحظر",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "المنصة؛ مع سبب وقرار إداري",
+      "note": "أثر حظر الرقم المشترك بين حسابي العميلة والخبيرة يحتاج اعتمادًا قبل التنفيذ."
+    },
+    {
+      "code": "USR-05",
+      "groupAr": "قرارات حسابات المستخدمين",
+      "nameAr": "تقييد بعض صلاحيات المستخدم أو رفع القيد",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير الإداري: قرار نهائي؛ التشغيل: قيد تشغيلي مفوض",
+      "note": "ليس انتهاء باقة؛ لا يمنح الموظف قرار إيقاف شامل."
+    },
+    {
+      "code": "USR-06",
+      "groupAr": "قرارات حسابات المستخدمين",
+      "nameAr": "اعتماد حذف حساب وبياناته وفق السياسة",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "بعد التحقق من شروط الاحتفاظ والقرار",
+      "note": "اعتماد الحذف منفصل عن تنفيذه التقني؛ مدد الاحتفاظ المتعارضة لا تحسم بهذه الصلاحية."
+    },
+    {
+      "code": "CAT-01",
+      "groupAr": "خدمات المنصة والمدن",
+      "nameAr": "إدارة الخدمت الرئيسية أو الفرعية",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "قائمة المنصة؛ مقترح لا ينشر مباشرة",
+      "note": ""
+    },
+    {
+      "code": "CAT-02",
+      "groupAr": "خدمات المنصة والمدن",
+      "nameAr": "إدارة المناطق والمدن في المنصة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "القائمة العامة؛ حفظ الأكواد والارتباطات",
+      "note": "يشمل الاعتماد الإداري؛ إعداد المقترح بواسطة التشغيل."
+    },
+    {
+      "code": "PKG-01",
+      "groupAr": "الباقات والحملات",
+      "nameAr": "عرض الباقات والحسابات النشطة على كل باقة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "الحد الأدنى اللازم للطلب؛ ليس كشف كل التحويلات",
+      "note": ""
+    },
+    {
+      "code": "PKG-02",
+      "groupAr": "الباقات والحملات",
+      "nameAr": "تحويل إثبات السداد للمسؤول المالي",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "بعد اكتمال بيانات الحساب والباقة والإثبات",
+      "note": ""
+    },
+    {
+      "code": "PKG-03",
+      "groupAr": "الباقات والحملات",
+      "nameAr": "تشغيل أو إيقاف حملة مجانية وتحديد مدتها",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "إعدادات عامة؛ حفظ تاريخ التغييرات",
+      "note": "AD-07 يوجه للمدير المالي؛ التوزيع هنا يرجح صاحب صلاحية الإدارة الوارد في ملحق الباقات، ويحتاج اعتمادًا."
+    },
+    {
+      "code": "PKG-04",
+      "groupAr": "الباقات والحملات",
+      "nameAr": "تعديل مزايا الباقات وحدود الخدمات والوسائط",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "الباقات؛ مع توثيق أثر التعديل على المشتركين",
+      "note": ""
+    },
+    {
+      "code": "PKG-05",
+      "groupAr": "الباقات والحملات",
+      "nameAr": "تعديل أسعار الباقات والخصومات",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير الإداري أو المالك حسب الملحق",
+      "note": "المدير المالي لا يكتسب هذه الصلاحية بمجرد منصبه."
+    },
+    {
+      "code": "FIN-01",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "عرض إثبات التحويل وبيانات طلب الباقة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "الطلبات المسندة أو المحالة؛ دون كشف حساب البنك العام",
+      "note": ""
+    },
+    {
+      "code": "FIN-02",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "التحقق من وصول مبلغ الحوالة في البنك",
+      "grants": {
+        "AM": false,
+        "OM": false,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": true
+      },
+      "scope": "الموظف: المسند؛ الرئيس: فريقه؛ المدير: المالية",
+      "note": "التحقق من البنك وفق إجراء العمل؛ ليس ربطًا بنكيًا آليًا منصوصًا عليه."
+    },
+    {
+      "code": "FIN-03",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "مطابقة مبلغ الحوالة مع الباقة وتنشيط الباقة",
+      "grants": {
+        "AM": false,
+        "OM": false,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": true
+      },
+      "scope": "الطلب المالي المسند أو المشرف عليه",
+      "note": ""
+    },
+    {
+      "code": "FIN-04",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "إدخال رقم الفاتورة الضريبية وإرفاق صورتها",
+      "grants": {
+        "AM": false,
+        "OM": false,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": true
+      },
+      "scope": "الفاتورة مصدرة خارج نظام المنصة",
+      "note": "لا يتضمن الملف صلاحية نظام لإصدار فاتورة ضريبية من داخل المنصة."
+    },
+    {
+      "code": "FIN-05",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "رفض طلب السداد بسبب عدم مطابقة المبلغ",
+      "grants": {
+        "AM": false,
+        "OM": false,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": true
+      },
+      "scope": "سبب رفض محدد وإشعار الأطراف المعنية",
+      "note": ""
+    },
+    {
+      "code": "FIN-06",
+      "groupAr": "التحويلات والفواتير",
+      "nameAr": "طلب استكمال أو تصحيح إثبات أو فاتورة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "عبر مسار الطلب دون تعديل نص مقدم الطلب",
+      "note": ""
+    },
+    {
+      "code": "RAT-01",
+      "groupAr": "التقييمات والاعتراضات",
+      "nameAr": "عرض قائمة التقييمات المطلوب مراجعتها",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "ضمن النطاق المسند",
+      "note": ""
+    },
+    {
+      "code": "RAT-02",
+      "groupAr": "التقييمات والاعتراضات",
+      "nameAr": "اعتماد أو رفض تقييم قبل النشر",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "مع تسجيل القرار وأسباب الرفض",
+      "note": ""
+    },
+    {
+      "code": "RAT-03",
+      "groupAr": "التقييمات والاعتراضات",
+      "nameAr": "إعتماد أو رفض نص التقييم",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "",
+      "note": ""
+    },
+    {
+      "code": "RAT-04",
+      "groupAr": "التقييمات والاعتراضات",
+      "nameAr": "تعديل نص التقييم أو درجته نيابة عن العميلة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "محظور على الجميع",
+      "note": "القرار اعتماد أو حجب أو رفض؛ لا تغيير كلمات العميلة أو النجوم."
+    },
+    {
+      "code": "RAT-05",
+      "groupAr": "التقييمات والاعتراضات",
+      "nameAr": "تغيير إعدادات أهلية التقييم والتكرار وعرض التاريخ",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "إعدادات معتمدة بعد حسم الأرقام والسياسة",
+      "note": "100/200 حرف و30 يومًا/12 تقييمًا نقاط غير محسومة بالمصدر."
+    },
+    {
+      "code": "TKT-01",
+      "groupAr": "الطلبات ومسار العمل",
+      "nameAr": "عرض طلبات المستخدمين المسندة والرد عليها",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "الموظف: المسند؛ الرئيس: فريقه؛ المدير: قسمه",
+      "note": ""
+    },
+    {
+      "code": "TKT-02",
+      "groupAr": "الطلبات ومسار العمل",
+      "nameAr": "إغلاق طلب دعم مستخدم بعد تسجيل الحل",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "الرئيس: فريقه؛ الإداري: الطلبات المخول بها",
+      "note": "الموظف التشغيلي لا يغلق افتراضيًا لحسم التعارض مع ملحق الحسابات؛ يرفع لقائد الفريق."
+    },
+    {
+      "code": "TKT-03",
+      "groupAr": "الطلبات ومسار العمل",
+      "nameAr": "عرض الطلبات المغلقة وسجل إجراءاتها",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "ضمن الصلاحية والإسناد أو الإشراف",
+      "note": ""
+    },
+    {
+      "code": "NOT-01",
+      "groupAr": "الإشعارات والتواصل",
+      "nameAr": "إرسال إشعار فردي لحساب العميلة أو الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "الحساب المرتبط بالعمل أو الطلب ضمن النطاق",
+      "note": "إرسال يدوي باسم الموظف؛ لا يمنح حق كشف بيانات الحساب بلا حاجة."
+    },
+    {
+      "code": "NOT-02",
+      "groupAr": "الإشعارات والتواصل",
+      "nameAr": "إرسال إشعار جماعي لحساب العميلة أو الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "",
+      "note": ""
+    },
+    {
+      "code": "NOT-03",
+      "groupAr": "الإشعارات والتواصل",
+      "nameAr": "إرسال إشعار جماعي لحساب العميلة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "",
+      "note": ""
+    },
+    {
+      "code": "NOT-04",
+      "groupAr": "الإشعارات والتواصل",
+      "nameAr": "إرسال إشعال جماعي لحساب الخبيرة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": true,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "",
+      "note": ""
+    },
+    {
+      "code": "REP-01",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض لوحة الأحداث العامة للمنصة",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "المدير الإداري والإداري المخول ومدير التشغيل",
+      "note": "الوصول للوحة لا يمنح الاطلاع على كل البيانات البنكية أو تعديلها."
+    },
+    {
+      "code": "REP-02",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض تقارير التشغيل والطلبات والتقييمات",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": true,
+        "OE": true,
+        "FE": true
+      },
+      "scope": "الإدارة ضمن التفويض؛ التشغيل حسب القسم أو الفريق",
+      "note": ""
+    },
+    {
+      "code": "REP-03",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض تقارير السداد وأداء فريق المالية",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": false,
+        "OL": false,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير: جميع المالية؛ الرئيس: فريقه",
+      "note": "المدير الإداري يطلب التقرير المالي عند الحاجة؛ لا يحصل افتراضيًا على كشف بنكي كامل."
+    },
+    {
+      "code": "REP-04",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض إحصاءات الخدمات والمدن والظهور",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": false,
+        "AL": true,
+        "OL": true,
+        "FL": false,
+        "AE": true,
+        "OE": true,
+        "FE": false
+      },
+      "scope": "بيانات مجمعة وفق الصلاحية",
+      "note": ""
+    },
+    {
+      "code": "REP-05",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض تقارير حسابات الخبيرة والعميلة",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": true,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير: المنصة؛ الرئيس: فريقه والقرارات المحالة",
+      "note": ""
+    },
+    {
+      "code": "REP-06",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "عرض سجل إجراءات القسم أو الفريق",
+      "grants": {
+        "AM": true,
+        "OM": true,
+        "FM": true,
+        "AL": true,
+        "OL": true,
+        "FL": true,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "المدير: قسمه؛ الرئيس: فريقه",
+      "note": ""
+    },
+    {
+      "code": "REP-07",
+      "groupAr": "التقارير وسجل التدقيق",
+      "nameAr": "تعديل أو حذف سجل التدقيق",
+      "grants": {
+        "AM": false,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "قراءة فقط للجميع",
+      "note": "تطبق دورة الاحتفاظ النظامية دون زر محو يدوي للموظف."
+    },
+    {
+      "code": "SEC-01",
+      "groupAr": "ضوابط لا تمنح كصلاحيات",
+      "nameAr": "تعديل نوع الحساب أو مستوى أو صلاحيات نفسه",
+      "grants": {
+        "AM": true,
+        "OM": false,
+        "FM": false,
+        "AL": false,
+        "OL": false,
+        "FL": false,
+        "AE": false,
+        "OE": false,
+        "FE": false
+      },
+      "scope": "لا تعديل ذاتي",
+      "note": "يشمل المدراء ورؤساء الفرق والموظفين."
+    }
+  ]
+}

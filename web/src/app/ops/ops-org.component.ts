@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsOrgDepartment, OpsOrgTeam, OpsStaff } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -25,7 +26,9 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <a class="btn ghost" routerLink="/ops/staff">حسابات الموظفين</a>
-          <button class="btn primary" type="button" (click)="addingDept = true">+ إضافة قسم</button>
+          @if (canEditOrg) {
+            <button class="btn primary" type="button" (click)="addingDept = true">+ إضافة قسم</button>
+          }
         </div>
       </div>
 
@@ -88,29 +91,33 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
           <h2>{{ selected.nameAr }}</h2>
           <p>كل فريق تشغيل يحتوي على مدير وموظفات، ويمكن تحديد صلاحيات مستقلة لكل حساب.</p>
         </div>
-        <button class="btn primary" type="button" (click)="openAddTeam()">+ إضافة فريق</button>
+        @if (canEditOrg) {
+          <button class="btn primary" type="button" (click)="openAddTeam()">+ إضافة فريق</button>
+        }
       </div>
 
-      <div class="form-grid" style="margin-bottom:18px">
-        <div class="field">
-          <label>الاسم *</label>
-          <input class="input" [(ngModel)]="selected.nameAr" />
+      @if (canEditOrg) {
+        <div class="form-grid" style="margin-bottom:18px">
+          <div class="field">
+            <label>الاسم *</label>
+            <input class="input" [(ngModel)]="selected.nameAr" />
+          </div>
+          <div class="field">
+            <label>الاسم الإنجليزي *</label>
+            <input class="input" [(ngModel)]="selected.nameEn" />
+          </div>
+          <div class="field">
+            <label>الترتيب</label>
+            <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+          </div>
         </div>
-        <div class="field">
-          <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="selected.nameEn" />
+        <div class="ops-drawer-actions" style="margin:0 0 22px">
+          <button class="btn primary" type="button" (click)="saveDepartment(selected)">حفظ القسم</button>
+          <button class="btn ghost" type="button" (click)="toggleDepartment(selected)">
+            {{ selected.isActive ? 'إخفاء' : 'إظهار' }}
+          </button>
         </div>
-        <div class="field">
-          <label>الترتيب</label>
-          <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
-        </div>
-      </div>
-      <div class="ops-drawer-actions" style="margin:0 0 22px">
-        <button class="btn primary" type="button" (click)="saveDepartment(selected)">حفظ القسم</button>
-        <button class="btn ghost" type="button" (click)="toggleDepartment(selected)">
-          {{ selected.isActive ? 'إخفاء' : 'إظهار' }}
-        </button>
-      </div>
+      }
 
       @if (!selected.teams.length) {
         <p class="page-empty">لا توجد فرق في هذا القسم بعد.</p>
@@ -165,30 +172,34 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
       (closed)="selectedTeam = null"
     >
       @if (selectedTeam; as team) {
-        <div class="form-grid">
-          <div class="field">
-            <label>الاسم *</label>
-            <input class="input" [(ngModel)]="team.nameAr" />
+        @if (canEditOrg) {
+          <div class="form-grid">
+            <div class="field">
+              <label>الاسم *</label>
+              <input class="input" [(ngModel)]="team.nameAr" />
+            </div>
+            <div class="field">
+              <label>الاسم الإنجليزي *</label>
+              <input class="input" [(ngModel)]="team.nameEn" />
+            </div>
+            <div class="field">
+              <label>مديرة الفريق</label>
+              <select class="input" [(ngModel)]="team.leadUserId">
+                <option [ngValue]="null">بدون تحديد</option>
+                @for (item of staff; track item.id) {
+                  <option [value]="item.id">{{ item.displayName }}</option>
+                }
+              </select>
+            </div>
           </div>
-          <div class="field">
-            <label>الاسم الإنجليزي *</label>
-            <input class="input" [(ngModel)]="team.nameEn" />
-          </div>
-          <div class="field">
-            <label>مديرة الفريق</label>
-            <select class="input" [(ngModel)]="team.leadUserId">
-              <option [ngValue]="null">بدون تحديد</option>
-              @for (item of staff; track item.id) {
-                <option [value]="item.id">{{ item.displayName }}</option>
-              }
-            </select>
-          </div>
-        </div>
+        }
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveTeam(team)">حفظ الفريق</button>
-          <button class="btn ghost" type="button" (click)="toggleTeam(team)">
-            {{ team.isActive ? 'إخفاء' : 'إظهار' }}
-          </button>
+          @if (canEditOrg) {
+            <button class="btn primary" type="button" (click)="saveTeam(team)">حفظ الفريق</button>
+            <button class="btn ghost" type="button" (click)="toggleTeam(team)">
+              {{ team.isActive ? 'إخفاء' : 'إظهار' }}
+            </button>
+          }
           <a class="btn ghost" routerLink="/ops/staff" [queryParams]="{ teamId: team.id }">حسابات الفريق</a>
         </div>
       }
@@ -197,8 +208,13 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
 })
 export class OpsOrgComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canEditOrg(): boolean {
+    return this.session.hasAnyPermission('ACC-10');
+  }
 
   loading = true;
   addingDept = false;

@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { SessionService } from '../core/session.service';
 import { AppShellComponent, NavItem } from '../shared/app-shell.component';
+import { canOpenOpsPage, type OpsPage } from './ops-access';
 
 @Component({
   selector: 'app-ops-layout',
@@ -27,6 +28,8 @@ export class OpsLayoutComponent implements OnInit {
           permissions: me.permissions,
           roleCode: me.role?.code,
           roleNameAr: me.role?.nameAr,
+          teamId: me.teamId,
+          orgTeam: me.orgTeam,
         });
         this.items = this.buildItems();
       },
@@ -34,48 +37,49 @@ export class OpsLayoutComponent implements OnInit {
   }
 
   private buildItems(): NavItem[] {
-    const can = (...codes: string[]) => this.session.hasAnyPermission(...codes);
+    const can = (page: OpsPage) => canOpenOpsPage(this.session, page);
     const items: NavItem[] = [{ icon: 'home', label: 'لوحة  المعلومات', route: '/ops', exact: true }];
-    if (can('RATINGS_REVIEW', 'MEDIA_REVIEW', 'PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE', 'PROVIDERS_APPROVE')) {
+    if (can('approvals')) {
       items.push({ icon: 'ratings', label: 'الاعتمادات', route: '/ops/approvals' });
     }
-    if (can('TICKETS_MANAGE', 'RATINGS_REVIEW')) {
-      items.push({ icon: 'ratings', label: 'المراجعات', route: '/ops/reviews' });
-    }
-    if (can('TICKETS_MANAGE')) {
+    if (can('tickets')) {
       items.push({ icon: 'support', label: 'الطلبات', route: '/ops/tickets' });
     }
-    if (can('CUSTOMERS_REVIEW', 'PROVIDERS_APPROVE', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+    if (can('clients')) {
       items.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
     }
-    if (can('BROADCAST_ALL', 'BROADCAST_PROVIDER', 'BROADCAST_CUSTOMER', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+    if (can('notices')) {
       items.push({ icon: 'bell', label: 'إشعارات المنصة', route: '/ops/notices' });
     }
     const settingsChildren: NavItem[] = [];
-    if (can('SETTINGS_MANAGE')) {
+    if (can('settings')) {
       settingsChildren.push({ icon: 'services', label: 'إعدادات التشغيل', route: '/ops/settings' });
     }
-    if (can('LEGAL_MANAGE')) {
+    if (can('legal')) {
       settingsChildren.push({ icon: 'about', label: 'اعدادات الشروط', route: '/ops/legal' });
     }
-    if (can('GEO_MANAGE')) {
+    if (can('geo')) {
       settingsChildren.push({ icon: 'location', label: 'اعدادات المناطق', route: '/ops/geo' });
     }
-    if (can('CATALOG_MANAGE')) {
+    if (can('catalog')) {
       settingsChildren.push({ icon: 'services', label: 'اعدادات الخدمات', route: '/ops/catalog' });
     }
-    if (can('PACKAGES_MANAGE')) {
+    if (can('packages')) {
       settingsChildren.push({ icon: 'package', label: 'اعدادات الباقات', route: '/ops/packages' });
     }
-    if (can('USERS_MANAGE')) {
+    if (can('org')) {
       settingsChildren.push({ icon: 'profile', label: 'الهيكل التنظيمي', route: '/ops/org' });
+    }
+    if (can('staff')) {
       settingsChildren.push({ icon: 'profile', label: 'حسابات موظفى المنصة', route: '/ops/staff' });
+    }
+    if (can('permissions')) {
+      settingsChildren.push({ icon: 'profile', label: 'إعدادات الصلاحيات', route: '/ops/permissions' });
     }
     if (settingsChildren.length) {
       items.push({ icon: 'services', label: 'الإعدادات', children: settingsChildren });
     }
-    if (can('REPORTS_VIEW')) {
-      items.push({ icon: 'views', label: 'سجل الأحداث', route: '/ops/events' });
+    if (can('activity')) {
       items.push({ icon: 'views', label: 'نشاط الفريق', route: '/ops/activity' });
     }
     items.push({ icon: 'bell', label: 'التنبيهات', route: '/ops/notifications' });

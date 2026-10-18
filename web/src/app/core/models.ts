@@ -14,6 +14,13 @@ export interface SessionUser {
   roleCode?: string | null;
   roleNameAr?: string | null;
   permissions?: string[];
+  teamId?: string | null;
+  orgTeam?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+    department: { id: string; code: string; nameAr: string; nameEn: string };
+  } | null;
 }
 
 export interface AuthResponse {
@@ -586,6 +593,8 @@ export interface OpsPermission {
   code: string;
   nameAr: string;
   nameEn?: string;
+  groupAr?: string;
+  sortOrder?: number;
 }
 
 export type LegalAudience = 'CUSTOMER' | 'PROVIDER' | 'STAFF';

@@ -20,6 +20,7 @@ import type { AuthUser } from "../auth/auth-user";
 import { ProviderService } from "./provider.service";
 import { avatarUpload } from "./avatar-upload";
 import { portfolioUpload } from "./portfolio-upload";
+import { proofUpload } from "./proof-upload";
 import {
   AddPortfolioDto,
   AddProviderServiceDto,
@@ -195,6 +196,23 @@ export class ProviderController {
   @Get("payment-proofs")
   proofs(@CurrentUser() user: AuthUser) {
     return this.provider.listProofs(user.sub);
+  }
+
+  @Post("payment-proofs/file")
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(FileInterceptor("file", proofUpload))
+  uploadProofFile(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file?: { filename: string; mimetype: string; size: number },
+  ) {
+    return this.provider.uploadProof(user.sub, file);
   }
 
   @Post("payment-proofs")

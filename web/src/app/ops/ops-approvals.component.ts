@@ -26,6 +26,7 @@ type ApprovalItem = {
   summary: string;
   previewUrl?: string;
   isVideo?: boolean;
+  isPdf?: boolean;
   rating?: OpsRating;
   change?: OpsProfileChange;
   media?: OpsMediaItem;
@@ -181,7 +182,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   <td>
                     <div class="appr-account">
                       <div class="appr-avatar">
-                        @if (item.previewUrl && !item.isVideo) {
+                        @if (item.previewUrl && !item.isVideo && !item.isPdf) {
                           <img [src]="item.previewUrl" alt="" />
                         } @else {
                           {{ item.accountName.slice(0, 1) }}
@@ -312,9 +313,11 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                 }
               }
               @if (item.media) {
-                <div class="appr-value" [class.appr-photo-value]="!item.isVideo && item.previewUrl">
+                <div class="appr-value" [class.appr-photo-value]="!item.isVideo && !item.isPdf && item.previewUrl">
                   @if (item.isVideo && item.previewUrl) {
                     <video [src]="item.previewUrl" controls style="width:100%;border-radius:12px"></video>
+                  } @else if (item.isPdf && item.previewUrl) {
+                    <a class="appr-btn ghost" [href]="item.previewUrl" target="_blank" rel="noopener">فتح ملف الإيصال</a>
                   } @else if (item.previewUrl) {
                     <img class="appr-photo" [src]="item.previewUrl" alt="معاينة" (click)="openLightbox(item.previewUrl)" />
                     <div class="appr-photo-copy">
@@ -339,13 +342,13 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                 }
                 <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="notes[item.media.id]"></textarea>
                 <div class="appr-card-actions" style="margin-top:10px">
+                  @if (canEscalate(item.media)) {
+                    <button class="appr-btn finance" type="button" (click)="escalate(item)">تحويل للمالية</button>
+                  }
                   @if (canApproveMedia(item.media) && canDecide(item)) {
                     <button class="appr-btn approve" type="button" (click)="reviewMedia(item, true)">اعتماد</button>
                     <button class="appr-btn reject" type="button" (click)="reviewMedia(item, false)">رفض</button>
                     <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
-                  }
-                  @if (canEscalate(item.media)) {
-                    <button class="appr-btn primary" type="button" (click)="escalate(item)">تحويل للمالية</button>
                   }
                   @if (item.media.purpose === 'RECEIPT' && canSeeReceipts && itemTone(item) === 'pending') {
                     <button class="appr-btn ghost" type="button" (click)="clearer(item)">طلب صورة أوضح</button>
@@ -411,19 +414,19 @@ export class OpsApprovalsComponent implements OnInit {
   kindTabs: { id: ApprovalKind; label: string; visible: boolean }[] = [];
 
   get canSeeProfile(): boolean {
-    return this.session.hasPermission('RATINGS_REVIEW');
+    return this.session.hasAnyPermission('PRO-02', 'PRO-05', 'PRO-07', 'RAT-01');
   }
 
   get canSeeContent(): boolean {
-    return this.session.hasAnyPermission('RATINGS_REVIEW', 'MEDIA_REVIEW');
+    return this.session.hasAnyPermission('PRO-03', 'PRO-06', 'PRO-08', 'PRO-09');
   }
 
   get canSeeReceipts(): boolean {
-    return this.session.hasAnyPermission('PAYMENTS_REVIEW', 'PAYMENTS_CONFIRM', 'ESCALATE_FINANCE');
+    return this.session.hasAnyPermission('FIN-01', 'FIN-02', 'FIN-03', 'FIN-05', 'FIN-06', 'PKG-02');
   }
 
   get canApproveAccounts(): boolean {
-    return this.session.hasPermission('PROVIDERS_APPROVE');
+    return this.session.hasAnyPermission('PROVIDERS_APPROVE', 'PRO-05', 'PRO-06', 'PRO-07');
   }
 
   get pendingCount(): number {
@@ -669,7 +672,7 @@ export class OpsApprovalsComponent implements OnInit {
 
   canApproveMedia(file: OpsMediaItem): boolean {
     if (file.purpose === 'RECEIPT') {
-      return this.session.hasPermission('PAYMENTS_CONFIRM');
+      return this.session.hasPermission('FIN-03');
     }
     return this.canSeeContent;
   }
@@ -679,7 +682,7 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   canEscalate(file: OpsMediaItem): boolean {
-    if (file.purpose !== 'RECEIPT' || !this.session.hasPermission('ESCALATE_FINANCE')) {
+    if (file.purpose !== 'RECEIPT' || !this.session.hasPermission('PKG-02')) {
       return false;
     }
     const opsStatus = file.proofs[0]?.opsStatus;
@@ -893,7 +896,7 @@ export class OpsApprovalsComponent implements OnInit {
 
   private loadAccountFile(group: AccountGroup): void {
     this.accountFile = null;
-    if (!this.canApproveAccounts && !this.session.hasAnyPermission('CUSTOMERS_REVIEW', 'NOTIFY_PROVIDER', 'NOTIFY_CUSTOMER')) {
+    if (!this.canApproveAccounts && !this.session.hasAnyPermission('PRO-01', 'NOT-01', 'USR-01')) {
       return;
     }
     if (!group.items.some((item) => item.kind === 'account')) {
@@ -1000,7 +1003,7 @@ export class OpsApprovalsComponent implements OnInit {
       const current = map.get(item.accountId);
       if (current) {
         current.items.push(item);
-        if (!current.previewUrl && item.previewUrl && !item.isVideo) {
+        if (!current.previewUrl && item.previewUrl && !item.isVideo && !item.isPdf) {
           current.previewUrl = item.previewUrl;
         }
         if (Date.parse(item.createdAt) > Date.parse(current.createdAt)) {
@@ -1015,7 +1018,7 @@ export class OpsApprovalsComponent implements OnInit {
         name: item.accountName,
         code: item.accountCode,
         type: item.accountType || 'PROVIDER',
-        previewUrl: item.isVideo ? undefined : item.previewUrl,
+        previewUrl: item.isVideo || item.isPdf ? undefined : item.previewUrl,
         createdAt: item.createdAt,
         items: [item],
       });
@@ -1069,6 +1072,7 @@ export class OpsApprovalsComponent implements OnInit {
             : 'صورة الحساب بانتظار الاعتماد',
       previewUrl: mediaUrl(file.url) || undefined,
       isVideo: file.kind === 'VIDEO',
+      isPdf: file.kind === 'PDF' || (file.mime || '').toLowerCase().includes('pdf'),
       media: file,
     };
   }

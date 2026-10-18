@@ -20,7 +20,9 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
         <h2>الطلبات</h2>
         <p>اختاري النوع ثم اكتبي عنوان المشكلة</p>
       </div>
-      <button class="btn primary" type="button" (click)="openAdd()">+ إضافة طلب</button>
+      @if (canReply) {
+        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة طلب</button>
+      }
     </div>
 
     <div class="filters">
@@ -34,6 +36,9 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
       <button class="chip" type="button" [class.active]="queue === 'OPS'" (click)="setQueue('OPS')">التشغيل</button>
       <button class="chip" type="button" [class.active]="queue === 'FINANCE'" (click)="setQueue('FINANCE')">المالية</button>
       <button class="chip" type="button" [class.active]="queue === 'ADMIN'" (click)="setQueue('ADMIN')">الإدارة</button>
+      <button class="chip" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="setAccountType('CUSTOMER')">عميلة</button>
+      <button class="chip" type="button" [class.active]="accountType === 'PROVIDER'" (click)="setAccountType('PROVIDER')">خبيرة</button>
+      <button class="chip" type="button" [class.active]="accountType === 'STAFF'" (click)="setAccountType('STAFF')">موظفة</button>
     </div>
 
     @if (loading) {
@@ -46,9 +51,10 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
           <thead>
             <tr>
               <th>الرقم</th>
-              <th>النوع</th>
+              <th>نوع الطلب</th>
               <th>عنوان المشكلة</th>
               <th>المرسلة</th>
+              <th>نوع الحساب</th>
               <th>الملخص</th>
               <th>الحالة</th>
               <th>الفريق</th>
@@ -60,9 +66,10 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
             @for (item of items; track item.id) {
               <tr [class.active]="selected?.id === item.id" (click)="selected = item">
                 <td><b>{{ item.refNo }}</b></td>
-                <td>{{ item.type.nameAr }}</td>
+                <td><span class="request-type">{{ item.type.nameAr }}</span></td>
                 <td>{{ ticketTitle(item) }}</td>
                 <td>{{ item.owner.displayName }}</td>
+                <td><span class="appr-role">{{ accountTypeLabel(item.owner.accountType) }}</span></td>
                 <td class="clip">{{ clip(item.body) }}</td>
                 <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
                 <td>{{ queueLabel(item.queue) }}</td>
@@ -78,13 +85,13 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
     <app-ops-drawer
       [open]="!!selected"
       [title]="selected ? ticketTitle(selected) : ''"
-      [kicker]="selected?.type?.nameAr || 'طلب دعم'"
+      [kicker]="selected ? (selected.type.nameAr + ' · ' + accountTypeLabel(selected.owner.accountType)) : 'طلب دعم'"
       (closed)="selected = null"
     >
       @if (selected; as item) {
-        <p class="muted small">{{ item.refNo }}</p>
+        <p class="muted small">{{ item.refNo }} · {{ item.type.nameAr }}</p>
         <p class="muted small">
-          {{ item.owner.displayName }} · {{ item.owner.accountCode }} ·
+          {{ item.owner.displayName }} · {{ accountTypeLabel(item.owner.accountType) }} · {{ item.owner.accountCode }} ·
           <span dir="ltr">{{ item.owner.mobile }}</span>
         </p>
         <p class="muted small">
@@ -105,20 +112,24 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
         }
         <textarea class="input" rows="3" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>
-          @if (item.status !== 'IN_PROGRESS') {
+          @if (canReply) {
+            <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>
+          }
+          @if (canReply && item.status !== 'IN_PROGRESS') {
             <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'IN_PROGRESS')">معالجة</button>
           }
-          @if (item.status !== 'RESOLVED') {
+          @if (canClose && item.status !== 'RESOLVED') {
             <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'RESOLVED')">تم الحل</button>
           }
-          @if (item.status !== 'CLOSED') {
+          @if (canClose && item.status !== 'CLOSED') {
             <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">إغلاق</button>
           }
-          @if (item.assignee?.id !== meId) {
+          @if (canReply && item.assignee?.id !== meId) {
             <button class="btn ghost" type="button" (click)="claim(item)">هذه لي</button>
           }
-          <button class="btn ghost" type="button" (click)="openRoute(item)">توجيه الطلب</button>
+          @if (canReply) {
+            <button class="btn ghost" type="button" (click)="openRoute(item)">توجيه الطلب</button>
+          }
         </div>
       }
     </app-ops-drawer>
@@ -142,9 +153,9 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">حفظ وتوجيه الطلب</button>
     </app-ops-modal>
-    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="دعم وصيانة أو مقترحات" (closed)="adding = false">
+    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="اختاري نوع الطلب ثم عنوان المشكلة" (closed)="adding = false">
       <div class="field">
-        <label>النوع *</label>
+        <label>نوع الطلب *</label>
         <select class="input" [(ngModel)]="draft.typeCode">
           <option value="">اختاري النوع</option>
           @for (type of types; track type.id) {
@@ -177,12 +188,21 @@ export class OpsTicketsComponent implements OnInit {
   readonly ticketTitle = ticketTitle;
   readonly meId = this.session.user()?.id ?? '';
 
+  get canReply(): boolean {
+    return this.session.hasAnyPermission('TKT-01');
+  }
+
+  get canClose(): boolean {
+    return this.session.hasAnyPermission('TKT-02');
+  }
+
   loading = true;
   adding = false;
   status = 'SENT';
   escalatedOnly = false;
   mineOnly = false;
   queue = '';
+  accountType = '';
   types: TicketType[] = [];
   items: OpsTicket[] = [];
   selected: OpsTicket | null = null;
@@ -235,6 +255,25 @@ export class OpsTicketsComponent implements OnInit {
     this.queue = queue;
     this.selected = null;
     this.load();
+  }
+
+  setAccountType(accountType: string): void {
+    this.accountType = this.accountType === accountType ? '' : accountType;
+    this.selected = null;
+    this.load();
+  }
+
+  accountTypeLabel(value?: string): string {
+    if (value === 'PROVIDER') {
+      return 'خبيرة';
+    }
+    if (value === 'STAFF') {
+      return 'موظفة';
+    }
+    if (value === 'CUSTOMER') {
+      return 'عميلة';
+    }
+    return 'حساب';
   }
 
   openAdd(): void {
@@ -364,6 +403,7 @@ export class OpsTicketsComponent implements OnInit {
     if (
       (this.status && row.status !== this.status) ||
       (this.queue && row.queue !== this.queue) ||
+      (this.accountType && row.owner.accountType !== this.accountType) ||
       (this.mineOnly && row.assignee?.id !== this.meId) ||
       (this.escalatedOnly && row.priority !== 1)
     ) {
@@ -381,6 +421,7 @@ export class OpsTicketsComponent implements OnInit {
       priority: this.escalatedOnly ? 1 : undefined,
       queue: this.queue || undefined,
       mine: this.mineOnly || undefined,
+      accountType: this.accountType || undefined,
     }).subscribe({
       next: (items) => {
         this.items = newestFirst(items);

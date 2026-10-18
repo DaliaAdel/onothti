@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { applyDatabaseUrl, createMariaAdapter } from "../src/database-url";
@@ -52,6 +54,50 @@ async function main() {
       update: permission,
       create: permission,
     });
+  }
+
+  const matrix = JSON.parse(readFileSync(join(__dirname, "permission-matrix.json"), "utf8")) as {
+    roles: { code: string; nameAr: string; nameEn: string }[];
+    permissions: {
+      code: string;
+      groupAr: string;
+      nameAr: string;
+      grants: Record<string, boolean>;
+    }[];
+  };
+  for (const role of matrix.roles) {
+    await prisma.role.upsert({
+      where: { code: role.code },
+      update: { nameAr: role.nameAr, nameEn: role.nameEn },
+      create: role,
+    });
+  }
+  for (const [index, perm] of matrix.permissions.entries()) {
+    await prisma.permission.upsert({
+      where: { code: perm.code },
+      update: { nameAr: perm.nameAr, nameEn: perm.code, groupAr: perm.groupAr, sortOrder: index + 1 },
+      create: { code: perm.code, nameAr: perm.nameAr, nameEn: perm.code, groupAr: perm.groupAr, sortOrder: index + 1 },
+    });
+  }
+  const matrixRoleRows = await prisma.role.findMany({ where: { code: { in: matrix.roles.map((row) => row.code) } } });
+  const matrixPermRows = await prisma.permission.findMany({
+    where: { code: { in: matrix.permissions.map((row) => row.code) } },
+  });
+  const roleId = Object.fromEntries(matrixRoleRows.map((row) => [row.code, row.id]));
+  const permId = Object.fromEntries(matrixPermRows.map((row) => [row.code, row.id]));
+  for (const role of matrix.roles) {
+    const existing = await prisma.rolePermission.count({
+      where: { roleId: roleId[role.code], permissionId: { in: Object.values(permId) } },
+    });
+    if (existing) {
+      continue;
+    }
+    const data = matrix.permissions
+      .filter((perm) => perm.grants[role.code])
+      .map((perm) => ({ roleId: roleId[role.code], permissionId: permId[perm.code] }));
+    if (data.length) {
+      await prisma.rolePermission.createMany({ data });
+    }
   }
 
   const regions = [
