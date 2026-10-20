@@ -68,7 +68,24 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>الجوال</label>
-          <input class="input" name="staffMobile" dir="ltr" [(ngModel)]="draft.mobile" placeholder="05xxxxxxxx" [ngModelOptions]="{standalone: true}" />
+          <input
+            class="input"
+            name="staffMobile"
+            dir="ltr"
+            [class.invalid]="!!draftMobileError"
+            [ngModel]="draft.mobile"
+            (ngModelChange)="onDraftMobileChange($event)"
+            (paste)="onDraftMobilePaste($event)"
+            (blur)="onDraftMobileBlur()"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="05xxxxxxxx"
+            autocomplete="tel"
+            [ngModelOptions]="{standalone: true}"
+          />
+          @if (draftMobileError) {
+            <p class="field-error">{{ draftMobileError }}</p>
+          }
         </div>
         <div class="field">
           <label>نوع الحساب</label>
@@ -235,13 +252,29 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         <h2>أرقام محظورة</h2>
         <p>الرقم المحظور لا يستطيع إنشاء حساب جديد أو الدخول.</p>
       </div>
-      <button class="btn primary" type="button" (click)="addingBan = true">+ حظر رقم</button>
+      <button class="btn primary" type="button" (click)="openBan()">+ حظر رقم</button>
     </div>
-    <app-ops-modal [open]="addingBan" title="حظر رقم جوال" kicker="منع الدخول والتسجيل" (closed)="addingBan = false">
+    <app-ops-modal [open]="addingBan" title="حظر رقم جوال" kicker="منع الدخول والتسجيل" (closed)="closeBan()">
       <div class="form-grid">
         <div class="field">
           <label>الجوال</label>
-          <input class="input" dir="ltr" [(ngModel)]="banDraft.mobile" placeholder="05xxxxxxxx" />
+          <input
+            class="input"
+            dir="ltr"
+            [class.invalid]="!!banMobileError"
+            [ngModel]="banDraft.mobile"
+            (ngModelChange)="onBanMobileChange($event)"
+            (paste)="onBanMobilePaste($event)"
+            (blur)="onBanMobileBlur()"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="05xxxxxxxx"
+            autocomplete="tel"
+            [ngModelOptions]="{standalone: true}"
+          />
+          @if (banMobileError) {
+            <p class="field-error">{{ banMobileError }}</p>
+          }
         </div>
         <div class="field">
           <label>السبب</label>
@@ -318,12 +351,22 @@ export class OpsStaffComponent implements OnInit {
   adding = false;
   creating = false;
   addingBan = false;
+  mobileTouched = false;
+  banMobileTouched = false;
   banDraft = { mobile: '', reason: '' };
   banned: OpsBannedPhone[] = [];
   meId = this.session.user()?.id ?? '';
 
   get selectedRole(): OpsRole | undefined {
     return this.roles.find((role) => role.id === this.draft.roleId);
+  }
+
+  get draftMobileError(): string {
+    return this.mobileErrorText(this.draft.mobile, this.mobileTouched);
+  }
+
+  get banMobileError(): string {
+    return this.mobileErrorText(this.banDraft.mobile, this.banMobileTouched);
   }
 
   get canCreateStaff(): boolean {
@@ -427,6 +470,7 @@ export class OpsStaffComponent implements OnInit {
   }
 
   openAdd(): void {
+    this.mobileTouched = false;
     this.draft.displayName = '';
     this.draft.mobile = '';
     this.draft.roleId = this.creatableRoles[0]?.id ?? this.roles[0]?.id ?? '';
@@ -505,7 +549,43 @@ export class OpsStaffComponent implements OnInit {
     });
   }
 
+  onDraftMobileChange(value: string): void {
+    this.draft.mobile = toMobile(value);
+  }
+
+  onDraftMobilePaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.draft.mobile = toMobile(event.clipboardData?.getData('text') ?? '');
+  }
+
+  onDraftMobileBlur(): void {
+    this.mobileTouched = true;
+  }
+
+  onBanMobileChange(value: string): void {
+    this.banDraft.mobile = toMobile(value);
+  }
+
+  onBanMobilePaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.banDraft.mobile = toMobile(event.clipboardData?.getData('text') ?? '');
+  }
+
+  onBanMobileBlur(): void {
+    this.banMobileTouched = true;
+  }
+
+  openBan(): void {
+    this.banMobileTouched = false;
+    this.addingBan = true;
+  }
+
+  closeBan(): void {
+    this.addingBan = false;
+  }
+
   create(): void {
+    this.mobileTouched = true;
     const name = this.draft.displayName.trim();
     const mobile = toMobile(this.draft.mobile);
     if (name.length < 2) {
@@ -513,7 +593,6 @@ export class OpsStaffComponent implements OnInit {
       return;
     }
     if (!isSaudiMobile(mobile)) {
-      this.toast.show('أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05');
       return;
     }
     if (!this.draft.roleId) {
@@ -599,9 +678,13 @@ export class OpsStaffComponent implements OnInit {
   }
 
   ban(): void {
+    this.banMobileTouched = true;
     const mobile = toMobile(this.banDraft.mobile);
-    if (!isSaudiMobile(mobile) || this.banDraft.reason.trim().length < 4) {
-      this.toast.show('أدخلي جوالًا سعوديًا وسبب الحظر');
+    if (!isSaudiMobile(mobile)) {
+      return;
+    }
+    if (this.banDraft.reason.trim().length < 4) {
+      this.toast.show('أدخلي سبب الحظر');
       return;
     }
     this.api.opsBanPhone({ mobile, reason: this.banDraft.reason }).subscribe({
@@ -624,6 +707,20 @@ export class OpsStaffComponent implements OnInit {
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الحظر')),
     });
+  }
+
+  private mobileErrorText(raw: string, touched: boolean): string {
+    const mobile = toMobile(raw);
+    if (!mobile) {
+      return touched ? 'أدخلي رقم الجوال' : '';
+    }
+    if (isSaudiMobile(mobile)) {
+      return '';
+    }
+    if (touched || mobile.length >= 10 || !mobile.startsWith('05')) {
+      return 'أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05';
+    }
+    return '';
   }
 
   private load(): void {
