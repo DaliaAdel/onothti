@@ -179,6 +179,10 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           <p class="notice">عند أول دخول تؤكد رقمها بـ OTP ثم تضع كلمة مرور جديدة.</p>
         }
         <div class="field">
+          <label>الاسم</label>
+          <input class="input" [name]="'staffName-' + item.id" [(ngModel)]="nameById[item.id]" />
+        </div>
+        <div class="field">
           <label>نوع الحساب</label>
           <select class="input" [(ngModel)]="roleById[item.id]" [disabled]="!canManageRole(item)">
             @for (role of rolesFor(item); track role.id) {
@@ -208,7 +212,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="ops-drawer-actions">
           @if (canManageRole(item) || canMoveStaff) {
-            <button class="btn primary" type="button" (click)="saveRole(item)">حفظ نوع الحساب والفريق</button>
+            <button class="btn primary" type="button" (click)="saveRole(item)">حفظ البيانات</button>
           }
           @if (canEditPerms(item)) {
             <button class="btn ghost" type="button" (click)="openPermissions($event, item)">صلاحيات الحساب</button>
@@ -307,6 +311,7 @@ export class OpsStaffComponent implements OnInit {
   teamById: Record<string, string> = {};
   departmentById: Record<string, string> = {};
   titleById: Record<string, string> = {};
+  nameById: Record<string, string> = {};
   draft = { displayName: '', mobile: '', roleId: '', departmentId: '', teamId: '', titleAr: '' };
   departmentFilter = '';
   teamFilter = '';
@@ -552,8 +557,14 @@ export class OpsStaffComponent implements OnInit {
     if (!roleId) {
       return;
     }
+    const displayName = (this.nameById[item.id] ?? item.displayName ?? '').trim();
+    if (displayName.length < 2) {
+      this.toast.show('أدخلي الاسم (حرفين على الأقل)');
+      return;
+    }
     this.api
       .opsPatchStaff(item.id, {
+        displayName,
         roleId,
         teamId: this.teamById[item.id] || item.teamId || undefined,
         titleAr: this.titleById[item.id] ?? item.titleAr ?? '',
@@ -561,12 +572,18 @@ export class OpsStaffComponent implements OnInit {
       .subscribe({
       next: (row) => {
         this.applyStaffRow(item, row);
-        this.toast.show('تم تحديث نوع الحساب والفريق');
+        this.nameById[row.id] = row.displayName;
+        this.toast.show('تم حفظ بيانات الحساب');
         if (item.id === this.meId) {
-          this.session.patchUser({ permissions: row.permissions, roleCode: row.role?.code, roleNameAr: row.role?.nameAr });
+          this.session.patchUser({
+            displayName: row.displayName,
+            permissions: row.permissions,
+            roleCode: row.role?.code,
+            roleNameAr: row.role?.nameAr,
+          });
         }
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث نوع الحساب')),
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ بيانات الحساب')),
     });
   }
 
@@ -626,6 +643,7 @@ export class OpsStaffComponent implements OnInit {
           this.teamById[row.id] = row.teamId ?? '';
           this.departmentById[row.id] = row.orgTeam?.department.id ?? '';
           this.titleById[row.id] = row.titleAr ?? '';
+          this.nameById[row.id] = row.displayName ?? '';
         }
         this.applyScopeFilters();
         this.loading = false;

@@ -125,50 +125,10 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       }
       <app-ops-account-file [account]="selected" />
 
-      @if (hasAccountsAction()) {
-        <div class="section-head">
-          <div>
-            <h2>إجراء الحساب</h2>
-            <p>تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label>الحالة</label>
-            <select class="input" [(ngModel)]="nextStatus[selected.id]">
-              <option value="ACTIVE">نشط</option>
-              <option value="RESTRICTED">مقيّد</option>
-              <option value="SUSPENDED">موقوف</option>
-              <option value="CANCELLED">ملغى</option>
-              <option value="DELETED">حذف</option>
-            </select>
-          </div>
-          @if (selected.accountType === 'PROVIDER') {
-            <div class="field">
-              <label>باقة الخبيرة</label>
-              <select class="input" [(ngModel)]="nextPackage[selected.id]">
-                <option value="">بدون تغيير</option>
-                @for (pkg of packages; track pkg.id) {
-                  <option [value]="pkg.id">{{ pkg.nameAr }}</option>
-                }
-              </select>
-            </div>
-          }
-        </div>
-        @if (selected.accountType === 'PROVIDER' && selected.package) {
-          <p class="muted small">
-            الحالية: {{ selected.package.nameAr }}@if (selected.subscriptionEndAt) { · حتى {{ opsDate(selected.subscriptionEndAt) }} }
-          </p>
-        }
-        <div class="field" style="margin-top:14px">
-          <label>سبب التعديل</label>
-          <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
-        </div>
-      }
       @if (hasAccountsAction() || canNotify(selected)) {
         <div class="ops-drawer-actions" style="margin-top:16px">
           @if (hasAccountsAction()) {
-            <button class="btn primary" type="button" (click)="applyAccount(selected)">حفظ الإجراء</button>
+            <button class="btn primary" type="button" (click)="openAction(selected)">إجراء الحساب</button>
           }
           @if (canNotify(selected)) {
             <button class="btn ghost" type="button" (click)="openNotify(selected)">{{ notifyLabel(selected) }}</button>
@@ -196,6 +156,54 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendNotify()">إرسال الإشعار</button>
     </app-ops-modal>
+
+    <app-ops-modal
+      [open]="actionOpen"
+      title="إجراء الحساب"
+      [kicker]="selected ? selected.displayName : ''"
+      (closed)="closeAction()"
+    >
+      @if (selected) {
+        <p class="muted small">تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label>الحالة</label>
+            <select class="input" [(ngModel)]="nextStatus[selected.id]">
+              <option value="INACTIVE">غير نشط</option>
+              <option value="ACTIVE">نشط</option>
+              <option value="RESTRICTED">مقيّد</option>
+              <option value="UNRESTRICTED">غير مقيّد</option>
+              <option value="SUSPENDED">معطل</option>
+              <option value="CANCELLED">رقم محذوف</option>
+              <option value="DELETED">محذوف</option>
+            </select>
+          </div>
+          @if (selected.accountType === 'PROVIDER') {
+            <div class="field">
+              <label>باقة الخبيرة</label>
+              <select class="input" [(ngModel)]="nextPackage[selected.id]">
+                <option value="">بدون تغيير</option>
+                @for (pkg of packages; track pkg.id) {
+                  <option [value]="pkg.id">{{ pkg.nameAr }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+        @if (selected.accountType === 'PROVIDER' && selected.package) {
+          <p class="muted small">
+            الحالية: {{ selected.package.nameAr }}@if (selected.subscriptionEndAt) { · حتى {{ opsDate(selected.subscriptionEndAt) }} }
+          </p>
+        }
+        <div class="field" style="margin-top:14px">
+          <label>سبب التعديل</label>
+          <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
+        </div>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="applyAccount(selected)">
+          حفظ الإجراء
+        </button>
+      }
+    </app-ops-modal>
   `,
 })
 export class OpsClientsComponent implements OnInit {
@@ -221,6 +229,7 @@ export class OpsClientsComponent implements OnInit {
   reasons: Record<string, string> = {};
   notifyTarget: OpsManagedAccount | null = null;
   notifyDraft = { titleAr: '', bodyAr: '' };
+  actionOpen = false;
 
   ngOnInit(): void {
     this.shell.set('حسابات عملاء المنصة', 'الخبيرات والعميلات المسجّلات في المنصة');
@@ -250,8 +259,24 @@ export class OpsClientsComponent implements OnInit {
   }
 
   closeAccount(): void {
+    this.actionOpen = false;
     this.selected = null;
     this.shell.set('حسابات عملاء المنصة', 'الخبيرات والعميلات المسجّلات في المنصة');
+  }
+
+  openAction(item: OpsManagedAccount): void {
+    if (!this.hasAccountsAction()) {
+      this.toast.show('ليست لديكِ صلاحية إجراء الحساب');
+      return;
+    }
+    this.nextStatus[item.id] ??= item.status === 'PENDING_APPROVAL' ? 'ACTIVE' : item.status;
+    this.nextPackage[item.id] ??= item.package?.id ?? '';
+    this.reasons[item.id] ??= '';
+    this.actionOpen = true;
+  }
+
+  closeAction(): void {
+    this.actionOpen = false;
   }
 
   search(): void {
@@ -382,6 +407,7 @@ export class OpsClientsComponent implements OnInit {
         next: (row) => {
           this.selected = row;
           this.nextPackage[row.id] = row.package?.id ?? '';
+          this.actionOpen = false;
           this.toast.show('تم حفظ إجراء الحساب');
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحساب')),

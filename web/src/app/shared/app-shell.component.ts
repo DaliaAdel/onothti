@@ -93,9 +93,6 @@ export interface NavItem {
             @if (home === '/p') {
               <small>حساب الخبيرة</small>
             }
-            @if (home === '/ops') {
-              <small>المشغّل الإداري</small>
-            }
             <b>{{ shell.title() }}</b>
           </div>
           <div class="top-actions">
