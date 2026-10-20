@@ -192,10 +192,16 @@ export class ProviderService {
     if (!service) {
       throw new BadRequestException("الخدمة غير متاحة");
     }
-    const sub = await this.prisma.subService.findFirst({
-      where: { id: dto.subServiceId, serviceId: dto.serviceId, isVisible: true },
+    const subIds = [
+      ...new Set([...(dto.subServiceIds ?? []), dto.subServiceId].filter((id): id is string => Boolean(id?.trim()))),
+    ];
+    if (!subIds.length) {
+      throw new BadRequestException("اختاري خدمة رئيسية وفرعية");
+    }
+    const subs = await this.prisma.subService.findMany({
+      where: { id: { in: subIds }, serviceId: dto.serviceId, isVisible: true },
     });
-    if (!sub) {
+    if (subs.length !== subIds.length) {
       throw new BadRequestException("اختاري خدمة رئيسية وفرعية");
     }
     this.assertPrices(dto.priceFrom, dto.priceTo);
@@ -203,8 +209,17 @@ export class ProviderService {
     if (limits.allowedServiceIds && !limits.allowedServiceIds.includes(dto.serviceId)) {
       throw new ForbiddenException("هذه الخدمة غير متاحة في باقتك");
     }
+    const existing = await this.prisma.providerService.findMany({
+      where: { providerUserId: userId, serviceId: dto.serviceId, subServiceId: { in: subIds } },
+      select: { subServiceId: true },
+    });
+    const already = new Set(existing.map((row) => row.subServiceId));
+    const toCreate = subIds.filter((id) => !already.has(id));
+    if (!toCreate.length) {
+      throw new ConflictException("الخدمة مضافة بالفعل");
+    }
     const count = await this.prisma.providerService.count({ where: { providerUserId: userId } });
-    if (limits.maxServices != null && count >= limits.maxServices) {
+    if (limits.maxServices != null && count + toCreate.length > limits.maxServices) {
       throw new ForbiddenException("تجاوزتِ حد الخدمات في باقتك");
     }
     const makePrimary = dto.isPrimary || count === 0;
@@ -214,22 +229,23 @@ export class ProviderService {
         data: { isPrimary: false },
       });
     }
-    try {
-      return await this.prisma.providerService.create({
-        data: {
-          providerUserId: userId,
-          serviceId: dto.serviceId,
-          subServiceId: dto.subServiceId,
-          isPrimary: makePrimary,
-          priceFrom: dto.priceFrom,
-          priceTo: dto.priceTo,
-          sortOrder: count,
-        },
-        include: { service: true, subService: true },
-      });
-    } catch {
-      throw new ConflictException("الخدمة مضافة بالفعل");
-    }
+    const created = await this.prisma.$transaction(
+      toCreate.map((subServiceId, index) =>
+        this.prisma.providerService.create({
+          data: {
+            providerUserId: userId,
+            serviceId: dto.serviceId,
+            subServiceId,
+            isPrimary: makePrimary && index === 0,
+            priceFrom: dto.priceFrom,
+            priceTo: dto.priceTo,
+            sortOrder: count + index,
+          },
+          include: { service: true, subService: true },
+        }),
+      ),
+    );
+    return created.length === 1 ? created[0] : created;
   }
 
   async reorderServices(userId: string, ids: string[]) {

@@ -56,9 +56,17 @@ export class AddProviderServiceDto {
   @IsString()
   serviceId!: string;
 
-  @ApiPropertyOptional({ description: "معرّف الخدمة الفرعية — مطلوب" })
+  @ApiPropertyOptional({ description: "معرّف الخدمة الفرعية" })
+  @IsOptional()
   @IsString()
-  subServiceId!: string;
+  subServiceId?: string;
+
+  @ApiPropertyOptional({ type: [String], description: "معرّفات الخدمات الفرعية" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  subServiceIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

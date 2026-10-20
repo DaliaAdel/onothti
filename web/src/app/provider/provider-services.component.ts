@@ -24,16 +24,16 @@ import { ToastService } from '../core/toast.service';
       <div class="page-head">
         <div>
           <h1>إضافة خدمة جديدة</h1>
-          <p>اختاري الخدمة الرئيسية والفرعية</p>
+          <p>اختاري الخدمة الرئيسية ثم خدمة فرعية أو أكثر</p>
         </div>
         <button class="btn secondary" type="button" (click)="mode = 'list'">← الرجوع إلى خدماتي</button>
       </div>
       <div class="service-steps">
         <span [class.active]="!!serviceId"><i>1</i>الخدمة الرئيسية</span>
         <b></b>
-        <span [class.active]="!!subServiceId"><i>2</i>الخدمة الفرعية</span>
+        <span [class.active]="hasSubSelection"><i>2</i>الخدمة الفرعية</span>
         <b></b>
-        <span [class.active]="!!serviceId && !!subServiceId"><i>3</i>المراجعة والحفظ</span>
+        <span [class.active]="!!serviceId && hasSubSelection"><i>3</i>المراجعة والحفظ</span>
       </div>
       <div class="card add-service-section">
         <div class="section-title"><div><h3>اختاري الخدمة الرئيسية</h3><p class="small muted">يمكن اختيار خدمة رئيسية واحدة في كل مرة.</p></div></div>
@@ -53,13 +53,13 @@ import { ToastService } from '../core/toast.service';
       <div class="card add-service-section">
         <div class="section-title">
           <div>
-            <h3>اختاري الخدمة الفرعية</h3>
-            <p class="small muted">{{ serviceId ? 'اختاري خدمة فرعية واحدة.' : 'اختاري الخدمة الرئيسية أولًا.' }}</p>
+            <h3>اختاري الخدمات الفرعية</h3>
+            <p class="small muted">{{ subHint }}</p>
           </div>
         </div>
         <div class="chips add-subservices">
           @for (sub of subServices; track sub.id) {
-            <button class="chip" type="button" [class.active]="subServiceId === sub.id" [disabled]="!serviceId" (click)="subServiceId = sub.id">
+            <button class="chip" type="button" [class.active]="isSubPicked(sub.id)" [disabled]="!serviceId" (click)="toggleSub(sub.id)">
               {{ locale.localizedName(sub) }}
             </button>
           }
@@ -69,9 +69,9 @@ import { ToastService } from '../core/toast.service';
         <div>
           <h3>مراجعة الاختيار</h3>
           <p class="small muted">الخدمة الرئيسية: <b>{{ selectedMainName }}</b></p>
-          <p class="small muted">الخدمة الفرعية: <b>{{ selectedSubName }}</b></p>
+          <p class="small muted">الخدمات الفرعية: <b>{{ selectedSubName }}</b></p>
         </div>
-        <button class="btn primary" type="button" [disabled]="loading || !serviceId || !subServiceId" (click)="add()">إضافة إلى خدماتي</button>
+        <button class="btn primary" type="button" [disabled]="loading || !serviceId || !hasSubSelection" (click)="add()">إضافة إلى خدماتي</button>
       </div>
     } @else if (mode === 'edit' && editing) {
       <div class="page-head">
@@ -170,7 +170,7 @@ export class ProviderServicesPageComponent implements OnInit {
   items: ProviderServiceRow[] = [];
   subscription: ProviderSubscription | null = null;
   serviceId = '';
-  subServiceId = '';
+  subServiceIds: string[] = [];
   loading = false;
   mode: 'list' | 'add' | 'edit' = 'list';
   locked = false;
@@ -197,9 +197,27 @@ export class ProviderServicesPageComponent implements OnInit {
     return service ? this.locale.localizedName(service) : '—';
   }
 
+  get hasSubSelection(): boolean {
+    return this.subServiceIds.length > 0;
+  }
+
+  get subHint(): string {
+    if (!this.serviceId) {
+      return 'اختاري الخدمة الرئيسية أولًا.';
+    }
+    if (!this.subServiceIds.length) {
+      return 'تقدري تختاري أكتر من خدمة فرعية.';
+    }
+    return this.subServiceIds.length === 1
+      ? 'تم اختيار خدمة فرعية واحدة.'
+      : `تم اختيار ${this.subServiceIds.length} خدمات فرعية.`;
+  }
+
   get selectedSubName(): string {
-    const sub = this.subServices.find((item) => item.id === this.subServiceId);
-    return sub ? this.locale.localizedName(sub) : '—';
+    const names = this.subServices
+      .filter((item) => this.subServiceIds.includes(item.id))
+      .map((item) => this.locale.localizedName(item));
+    return names.length ? names.join('، ') : '—';
   }
 
   get editDisplayName(): string {
@@ -236,13 +254,28 @@ export class ProviderServicesPageComponent implements OnInit {
 
   pickMain(id: string): void {
     this.serviceId = id;
-    this.subServiceId = '';
+    this.subServiceIds = [];
+  }
+
+  isSubPicked(id: string): boolean {
+    return this.subServiceIds.includes(id);
+  }
+
+  toggleSub(id: string): void {
+    if (!this.serviceId) {
+      return;
+    }
+    if (this.subServiceIds.includes(id)) {
+      this.subServiceIds = this.subServiceIds.filter((item) => item !== id);
+      return;
+    }
+    this.subServiceIds = [...this.subServiceIds, id];
   }
 
   openAdd(): void {
     this.mode = 'add';
     this.serviceId = '';
-    this.subServiceId = '';
+    this.subServiceIds = [];
     this.editing = null;
     this.shell.set('إضافة خدمة');
   }
@@ -284,17 +317,17 @@ export class ProviderServicesPageComponent implements OnInit {
   }
 
   add(): void {
-    if (!this.serviceId || !this.subServiceId) {
-      this.toast.show('اختاري خدمة رئيسية وفرعية');
+    if (!this.serviceId || !this.subServiceIds.length) {
+      this.toast.show('اختاري خدمة رئيسية وفرعية واحدة على الأقل');
       return;
     }
     this.loading = true;
-    this.api.addProviderService({ serviceId: this.serviceId, subServiceId: this.subServiceId }).subscribe({
+    this.api.addProviderService({ serviceId: this.serviceId, subServiceIds: this.subServiceIds }).subscribe({
       next: () => {
         this.loading = false;
         this.mode = 'list';
         this.shell.set('خدماتي');
-        this.toast.show('تمت إضافة الخدمة');
+        this.toast.show(this.subServiceIds.length > 1 ? 'تمت إضافة الخدمات' : 'تمت إضافة الخدمة');
         this.reload();
       },
       error: (err) => {

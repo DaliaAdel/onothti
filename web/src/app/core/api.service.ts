@@ -262,8 +262,8 @@ export class ApiService {
     return this.http.get<ProviderServiceRow[]>(`${this.base}/provider/services`);
   }
 
-  addProviderService(body: { serviceId: string; subServiceId?: string }) {
-    return this.http.post<ProviderServiceRow>(`${this.base}/provider/services`, body);
+  addProviderService(body: { serviceId: string; subServiceId?: string; subServiceIds?: string[] }) {
+    return this.http.post<ProviderServiceRow | ProviderServiceRow[]>(`${this.base}/provider/services`, body);
   }
 
   reorderProviderServices(ids: string[]) {
