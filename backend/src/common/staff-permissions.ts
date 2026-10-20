@@ -132,7 +132,7 @@ export function staffHasExact(held: Iterable<string>, ...needed: string[]): bool
 }
 
 export function matrixCodeIsOn(code: string, held: Iterable<string>): boolean {
-  return staffHas(held, code);
+  return staffHasExact(held, code);
 }
 
 export function mergeMatrixCodes(
@@ -141,10 +141,16 @@ export function mergeMatrixCodes(
   current: string[],
 ): string[] {
   const matrixSet = new Set(matrixCodes);
-  const legacyAlias = new Set(Object.values(MATRIX_TO_LEGACY).flat());
-  const kept = current.filter((code) => !matrixSet.has(code) && !legacyAlias.has(code));
+  const aliasCodes = new Set([
+    ...Object.values(MATRIX_TO_LEGACY).flat(),
+    ...Object.values(CHECK_ALIASES).flat(),
+  ]);
+  const kept = current.filter((code) => !matrixSet.has(code) && !aliasCodes.has(code));
   const picked = matrixCodes.filter((code) => selected[code]);
-  const mirrored = picked.flatMap((code) => MATRIX_TO_LEGACY[code] ?? []);
+  const mirrored = picked.flatMap((code) => [
+    ...(MATRIX_TO_LEGACY[code] ?? []),
+    ...(CHECK_ALIASES[code] ?? []),
+  ]);
   return [...new Set([...kept, ...picked, ...mirrored])];
 }
 

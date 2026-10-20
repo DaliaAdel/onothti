@@ -64,7 +64,7 @@ import { PERMISSION_MATRIX, type PermissionMatrixItem } from './permission-matri
                 <label class="perm-row" [class.on]="picked(perm.code)">
                   <span>{{ perm.nameAr }}</span>
                   <span class="perm-toggle">
-                    <input type="checkbox" [name]="toggleName(perm.code)" [(ngModel)]="activeGrid()[perm.code]" />
+                    <input type="checkbox" [name]="toggleName(perm.code)" [(ngModel)]="currentGrid[perm.code]" />
                     <i></i>
                   </span>
                 </label>
@@ -163,7 +163,7 @@ export class OpsPermissionsComponent implements OnInit {
     return (this.staff?.id || this.selectedRole?.code || 'role') + '-' + code;
   }
 
-  activeGrid(): Record<string, boolean> {
+  get currentGrid(): Record<string, boolean> {
     if (this.staff) {
       return this.staffGrid;
     }
@@ -173,7 +173,7 @@ export class OpsPermissionsComponent implements OnInit {
   }
 
   picked(code: string): boolean {
-    return this.activeGrid()[code] === true;
+    return this.currentGrid[code] === true;
   }
 
   selectRole(role: OpsRole): void {
@@ -217,10 +217,11 @@ export class OpsPermissionsComponent implements OnInit {
       return;
     }
     this.saving = true;
-    this.api.opsPatchRolePermissions(role.id, this.codesFor(this.grid[role.code] ?? {}, role.permissions)).subscribe({
+    this.api.opsPatchRolePermissions(role.id, this.codesFor(this.currentGrid, role.permissions)).subscribe({
       next: (row) => {
         this.selectedRole = row;
         this.roles = this.roles.map((item) => (item.id === row.id ? row : item));
+        this.applyFromRoles();
         this.saving = false;
         this.toast.show('تم حفظ صلاحيات ' + row.nameAr);
       },

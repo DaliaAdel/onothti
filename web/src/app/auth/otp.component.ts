@@ -178,7 +178,7 @@ export class OtpComponent implements OnInit, OnDestroy {
     }
     this.api.verifyPhone(this.mobile, this.code).subscribe({
       next: (res) => {
-        if (res.accessToken && res.user) {
+        if (res.accessToken && res.user && res.user.accountType !== 'STAFF') {
           this.session.clearDraft();
           this.session.setSession(res.accessToken, res.user);
           this.toast.show(this.locale.t('auth.otp.success'));

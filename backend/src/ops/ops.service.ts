@@ -485,12 +485,7 @@ export class OpsService {
     }
     this.assertPerm(permissions, permForStaffPermissions(role.code));
     const uniqueCodes = [...new Set(dto.permissionCodes.map((code) => code.trim()).filter(Boolean))];
-    const catalog = await this.prisma.permission.findMany({
-      where: { code: { in: uniqueCodes } },
-    });
-    if (catalog.length !== uniqueCodes.length) {
-      throw new BadRequestException("صلاحية غير معروفة");
-    }
+    const catalog = await this.resolvePermissionCatalog(uniqueCodes);
     const nextHasUsers = this.isStaffManager(uniqueCodes);
     const currentlyHasUsers = this.isStaffManager(role.permissions.map((row) => row.permission.code));
     if (currentlyHasUsers && !nextHasUsers) {
@@ -1516,7 +1511,7 @@ export class OpsService {
     }
     const scope = await this.orgScope(actorId, permissions);
     this.assertStaffInScope(scope, this.staffOrgRef(user.staff, user.id));
-    if (id === actorId && !this.hasPerm(permissions, "SEC-01")) {
+    if (id === actorId && !this.hasPerm(permissions, "SEC-01", "ACC-14", "ACC-15")) {
       throw new ForbiddenException("لا يمكن تعديل صلاحيات حسابكِ");
     }
     this.assertPerm(permissions, permForStaffPermissions(user.staff.role.code));
@@ -1534,12 +1529,7 @@ export class OpsService {
       return this.staffById(id);
     }
     const uniqueCodes = [...new Set((dto.permissionCodes ?? []).map((code) => code.trim()).filter(Boolean))];
-    const catalog = await this.prisma.permission.findMany({
-      where: { code: { in: uniqueCodes } },
-    });
-    if (catalog.length !== uniqueCodes.length) {
-      throw new BadRequestException("صلاحية غير معروفة");
-    }
+    const catalog = await this.resolvePermissionCatalog(uniqueCodes);
     const current = effectivePermissionCodes(user.staff);
     if (this.isStaffManager(current.codes) && !this.isStaffManager(uniqueCodes)) {
       await this.assertNotLastManager(id);
@@ -1904,6 +1894,27 @@ export class OpsService {
         teams: department.teams.filter((team) => team.id === scope.teamId),
       }))
       .filter((department) => department.teams.length);
+  }
+
+  private async resolvePermissionCatalog(codes: string[]) {
+    if (!codes.length) {
+      return [];
+    }
+    const existing = await this.prisma.permission.findMany({
+      where: { code: { in: codes } },
+    });
+    const have = new Set(existing.map((row) => row.code));
+    for (const code of codes) {
+      if (have.has(code)) {
+        continue;
+      }
+      const created = await this.prisma.permission.create({
+        data: { code, nameAr: code, nameEn: code },
+      });
+      existing.push(created);
+      have.add(code);
+    }
+    return existing;
   }
 
   private hasPerm(permissions: string[], ...codes: string[]) {
