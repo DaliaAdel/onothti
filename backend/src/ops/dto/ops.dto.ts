@@ -1,6 +1,9 @@
 import { Transform, Type } from "class-transformer";
 import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { TICKET_TYPE_CATALOG } from "../../common/ticket-types";
+
+const STAFF_TICKET_CODES = TICKET_TYPE_CATALOG.filter((item) => item.audience === "STAFF").map((item) => item.code);
 
 export class UpdateSettingDto {
   @ApiProperty()
@@ -1020,20 +1023,57 @@ export class PatchCoverageDto {
   isVisible?: boolean;
 }
 
+const BANK_LETTERS_PATTERN = /^[\p{L}]+(?:\s+[\p{L}]+)*$/u;
+const BANK_IBAN_PATTERN = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{15,34}$/;
+
+function toBankLetters(value: unknown): string {
+  return String(value ?? "")
+    .replace(/[^\p{L}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toBankIban(value: unknown): string {
+  return String(value ?? "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
+function optionalBankLetters(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return toBankLetters(value) || undefined;
+}
+
+function optionalBankIban(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return toBankIban(value) || undefined;
+}
+
 export class UpsertBankDto {
   @ApiProperty()
+  @Transform(({ value }) => toBankLetters(value))
   @IsString()
-  @MinLength(2)
+  @MinLength(2, { message: "اسم البنك حروف فقط" })
+  @Matches(BANK_LETTERS_PATTERN, { message: "اسم البنك حروف فقط" })
   bankName!: string;
 
   @ApiProperty()
+  @Transform(({ value }) => toBankIban(value))
   @IsString()
-  @MinLength(10)
+  @MinLength(15, { message: "الآيبان مزيج من الحروف والأرقام" })
+  @MaxLength(34, { message: "الآيبان مزيج من الحروف والأرقام" })
+  @Matches(BANK_IBAN_PATTERN, { message: "الآيبان مزيج من الحروف والأرقام" })
   iban!: string;
 
   @ApiProperty()
+  @Transform(({ value }) => toBankLetters(value))
   @IsString()
-  @MinLength(2)
+  @MinLength(2, { message: "اسم المستفيد حروف فقط" })
+  @Matches(BANK_LETTERS_PATTERN, { message: "اسم المستفيد حروف فقط" })
   accountName!: string;
 
   @ApiPropertyOptional()
@@ -1045,20 +1085,27 @@ export class UpsertBankDto {
 export class PatchBankDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => optionalBankLetters(value))
   @IsString()
-  @MinLength(2)
+  @MinLength(2, { message: "اسم البنك حروف فقط" })
+  @Matches(BANK_LETTERS_PATTERN, { message: "اسم البنك حروف فقط" })
   bankName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => optionalBankIban(value))
   @IsString()
-  @MinLength(10)
+  @MinLength(15, { message: "الآيبان مزيج من الحروف والأرقام" })
+  @MaxLength(34, { message: "الآيبان مزيج من الحروف والأرقام" })
+  @Matches(BANK_IBAN_PATTERN, { message: "الآيبان مزيج من الحروف والأرقام" })
   iban?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => optionalBankLetters(value))
   @IsString()
-  @MinLength(2)
+  @MinLength(2, { message: "اسم المستفيد حروف فقط" })
+  @Matches(BANK_LETTERS_PATTERN, { message: "اسم المستفيد حروف فقط" })
   accountName?: string;
 
   @ApiPropertyOptional()
@@ -1079,9 +1126,9 @@ export class CreateBannedPhoneDto {
 }
 
 export class CreateOpsTicketDto {
-  @ApiProperty({ enum: ["OP-SUPPORT", "OP-SUGGEST"] })
-  @IsIn(["OP-SUPPORT", "OP-SUGGEST"])
-  typeCode!: "OP-SUPPORT" | "OP-SUGGEST";
+  @ApiProperty({ enum: STAFF_TICKET_CODES, example: "AD-06" })
+  @IsIn(STAFF_TICKET_CODES)
+  typeCode!: string;
 
   @ApiProperty({ example: "تعطل تسجيل الدخول" })
   @IsString()

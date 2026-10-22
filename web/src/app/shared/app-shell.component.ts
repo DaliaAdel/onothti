@@ -7,6 +7,7 @@ import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { ApiService } from '../core/api.service';
+import { mediaUrl } from '../core/media';
 import { BrandComponent } from './brand.component';
 import { IconComponent } from './icon.component';
 
@@ -111,7 +112,16 @@ export interface NavItem {
             <a class="icon-btn" [class.has-dot]="unread > 0" [routerLink]="notifyRoute">
               <span class="ico"><app-icon name="bell" /></span>
             </a>
-            <a class="avatar" [routerLink]="profileRoute">{{ initial }}</a>
+            <a
+              class="avatar"
+              [class.has-photo]="!!avatarUrl"
+              [routerLink]="profileRoute"
+              [style.background-image]="avatarUrl ? 'url(' + avatarUrl + ')' : 'none'"
+            >
+              @if (!avatarUrl) {
+                {{ initial }}
+              }
+            </a>
           </div>
         </header>
         <section class="content">
@@ -119,6 +129,30 @@ export interface NavItem {
         </section>
       </main>
     </div>
+    @if (logoutOpen) {
+      <div class="logout-layer" (click)="cancelLogout()">
+        <div
+          class="logout-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-title"
+          (click)="$event.stopPropagation()"
+        >
+          <button class="logout-close" type="button" aria-label="إغلاق" (click)="cancelLogout()">×</button>
+          <div class="logout-heart" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+            </svg>
+          </div>
+          <h2 id="logout-title">إلى لقاء قريب</h2>
+          <p>نتمنى لكِ يومًا جميلًا، وننتظرك قريبًا لتواصلي رحلة جمالك معنا.</p>
+          <div class="logout-actions">
+            <button class="btn primary" type="button" (click)="cancelLogout()">البقاء في الحساب</button>
+            <button class="btn ghost" type="button" [disabled]="loggingOut" (click)="confirmLogout()">تسجيل الخروج</button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class AppShellComponent implements OnInit {
@@ -136,6 +170,8 @@ export class AppShellComponent implements OnInit {
   @Input() profileRoute = '/c/account';
   @Input() notifyRoute = '/c/notifications';
   menuOpen = false;
+  logoutOpen = false;
+  loggingOut = false;
 
   get name(): string {
     return this.session.user()?.displayName || this.locale.t('account.mine');
@@ -143,6 +179,10 @@ export class AppShellComponent implements OnInit {
 
   get initial(): string {
     return this.name.slice(0, 1);
+  }
+
+  get avatarUrl(): string {
+    return mediaUrl(this.session.user()?.avatarUrl);
   }
 
   unread = 0;
@@ -207,6 +247,10 @@ export class AppShellComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.logoutOpen) {
+      this.cancelLogout();
+      return;
+    }
     this.closeMenu();
   }
 
@@ -218,11 +262,25 @@ export class AppShellComponent implements OnInit {
   }
 
   logout(): void {
-    if (!confirm('نتمنى لكِ يومًا جميلًا. هل تريدين تسجيل الخروج؟')) {
+    this.logoutOpen = true;
+  }
+
+  cancelLogout(): void {
+    if (this.loggingOut) {
       return;
     }
+    this.logoutOpen = false;
+  }
+
+  confirmLogout(): void {
+    if (this.loggingOut) {
+      return;
+    }
+    this.loggingOut = true;
     const finish = () => {
       this.session.clear();
+      this.logoutOpen = false;
+      this.loggingOut = false;
       this.toast.show(this.locale.t('toast.logout'));
       void this.router.navigateByUrl('/login');
     };

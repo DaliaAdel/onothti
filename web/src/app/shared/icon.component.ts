@@ -4,6 +4,8 @@ const APPROVED: Record<string, string> = {
   home: 'home',
   search: 'search',
   services: 'services',
+  heart: 'heart',
+  favorites: 'heart',
   spark: 'expert',
   expert: 'expert',
   user: 'profile',
@@ -24,6 +26,10 @@ const APPROVED: Record<string, string> = {
   location: 'location',
   logout: 'logout',
   grid: 'services',
+  image: 'album',
+  album: 'album',
+  gallery: 'album',
+  portfolio: 'album',
 };
 
 @Component({

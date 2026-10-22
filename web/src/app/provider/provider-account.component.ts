@@ -51,11 +51,11 @@ import { ToastService } from '../core/toast.service';
           </div>
         </div>
         <div class="grid cols-2">
-          <div class="field">
+          <!-- <div class="field">
             <label>رقم التواصل عبر واتساب</label>
             <input dir="ltr" [value]="loginMobile" disabled />
             <small class="muted">هو رقم تسجيل الدخول ولا يمكن تغييره من هنا</small>
-          </div>
+          </div> -->
           <div class="field">
             <label>البريد الإلكتروني <span class="muted">(اختياري)</span></label>
             <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" (ngModelChange)="dirty = true" />

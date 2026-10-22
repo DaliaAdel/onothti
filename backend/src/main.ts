@@ -16,6 +16,8 @@ async function bootstrap() {
   const origins = new Set(
     [
       "http://localhost:4200",
+      "https://onothti.com",
+      "https://www.onothti.com",
       "https://webonothti.dalia-adel.com",
       "https://onotht.dalia-adel.com",
       ...(process.env.FRONTEND_URL ?? "").split(","),

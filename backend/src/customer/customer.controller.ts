@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Patch, Post, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import type { AuthUser } from "../auth/auth-user";
 import { CustomerService } from "./customer.service";
+import { avatarUpload } from "../provider/avatar-upload";
 import {
   CreateComplaintDto,
   CreateCustomerTicketDto,
@@ -26,6 +28,23 @@ export class CustomerController {
   @Patch("profile")
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateCustomerProfileDto) {
     return this.customer.updateProfile(user.sub, dto);
+  }
+
+  @Post("avatar")
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(FileInterceptor("file", avatarUpload))
+  uploadAvatar(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file?: { filename: string; mimetype: string; size: number },
+  ) {
+    return this.customer.uploadAvatar(user.sub, file);
   }
 
   @Get("favorites")

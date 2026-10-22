@@ -60,19 +60,19 @@ import { ToastService } from '../core/toast.service';
           <input class="input" type="number" [(ngModel)]="pkg.rank" />
         </div>
         <div class="field">
-          <label>حد الخدمات</label>
+          <label>عدد الخدمات</label>
           <input class="input" type="number" [(ngModel)]="pkg.maxServices" />
         </div>
         <div class="field">
-          <label>حد الصور</label>
+          <label>عدد الصور</label>
           <input class="input" type="number" [(ngModel)]="pkg.maxPhotos" />
         </div>
         <div class="field">
-          <label>حد الفيديو</label>
+          <label>عدد الفيديو</label>
           <input class="input" type="number" [(ngModel)]="pkg.maxVideos" />
         </div>
         <div class="field">
-          <label>حد الألبومات</label>
+          <label>عدد الألبومات</label>
           <input class="input" type="number" [(ngModel)]="pkg.maxAlbums" />
         </div>
       </div>
@@ -80,7 +80,7 @@ import { ToastService } from '../core/toast.service';
       <div class="section-head">
         <div>
           <h2>خدمات الباقة</h2>
-          <p>حددي الخدمات الرئيسية المتاحة لخبيرات هذه الباقة</p>
+          <p>عدددي الخدمات الرئيسية المتاحة لخبيرات هذه الباقة</p>
         </div>
       </div>
       <div class="pkg-services-page">
@@ -88,7 +88,7 @@ import { ToastService } from '../core/toast.service';
           <div class="pkg-services-toolbar">
             <span><b>{{ pickedCount() }}</b> من {{ services.length }} خدمة</span>
             <div class="pkg-services-links">
-              <button class="text-link" type="button" (click)="setAll(true)">تحديد الكل</button>
+              <button class="text-link" type="button" (click)="setAll(true)">تعدديد الكل</button>
               <button class="text-link" type="button" (click)="setAll(false)">مسح</button>
             </div>
           </div>

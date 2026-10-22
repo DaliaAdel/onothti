@@ -15,7 +15,7 @@ export const OPS_PAGE_PERMISSIONS = {
   ],
   reviews: ['RAT-01', 'RATINGS_REVIEW', 'PRO-02', 'PRO-05', 'PRO-07'],
   tickets: ['TKT-01', 'TKT-02', 'TKT-03'],
-  clients: ['PRO-01', 'PROVIDERS_APPROVE', 'NOT-01', 'USR-01'],
+  clients: ['PRO-01', 'PROVIDERS_APPROVE', 'NOT-01', 'USR-01', 'USR-04'],
   notices: ['NOT-01', 'NOT-02', 'NOT-03', 'NOT-04'],
   settings: ['SETTINGS_MANAGE', 'RAT-05'],
   legal: ['LEGAL_MANAGE'],

@@ -373,6 +373,9 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
               }
             </div>
           }
+          <div class="appr-drawer-foot">
+            <button class="appr-btn ghost" type="button" (click)="closeDrawer()">إغلاق</button>
+          </div>
         }
       </aside>
     </div>
@@ -666,6 +669,11 @@ export class OpsApprovalsComponent implements OnInit {
     this.accountFile = null;
   }
 
+  private afterReview(): void {
+    this.focusedKind = null;
+    this.load();
+  }
+
   openLightbox(url?: string): void {
     this.lightboxUrl = url || null;
   }
@@ -705,8 +713,7 @@ export class OpsApprovalsComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toast.show(approve ? 'تم الاعتماد' : 'تم الرفض');
-          this.closeDrawer();
-          this.load();
+          this.afterReview();
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر تنفيذ المراجعة')),
       });
@@ -734,8 +741,7 @@ export class OpsApprovalsComponent implements OnInit {
     this.api.opsReviewMedia(file.id, { requestClearer: true, note: this.notes[file.id] }).subscribe({
       next: () => {
         this.toast.show('تم طلب صورة أوضح');
-        this.closeDrawer();
-        this.load();
+        this.afterReview();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الطلب')),
     });
@@ -749,8 +755,7 @@ export class OpsApprovalsComponent implements OnInit {
     this.api.opsReviewRating(rating.id, approve, this.ratingNotes[rating.id]).subscribe({
       next: () => {
         this.toast.show(approve ? 'تم اعتماد التقييم' : 'تم رفض التقييم');
-        this.closeDrawer();
-        this.load();
+        this.afterReview();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر مراجعة التقييم')),
     });
@@ -764,8 +769,7 @@ export class OpsApprovalsComponent implements OnInit {
     this.api.opsReviewChange(change.id, approve).subscribe({
       next: () => {
         this.toast.show(approve ? 'تم اعتماد التعديل' : 'تم رفض التعديل');
-        this.closeDrawer();
-        this.load();
+        this.afterReview();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر مراجعة التعديل')),
     });
@@ -779,8 +783,7 @@ export class OpsApprovalsComponent implements OnInit {
     this.api.opsReviewProvider(provider.id, approve).subscribe({
       next: () => {
         this.toast.show(approve ? 'تم اعتماد الحساب' : 'تم إيقاف الحساب');
-        this.closeDrawer();
-        this.load();
+        this.afterReview();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تنفيذ القرار')),
     });
@@ -790,8 +793,7 @@ export class OpsApprovalsComponent implements OnInit {
     const done = {
       next: () => {
         this.toast.show('أُعيد للمراجعة');
-        this.closeDrawer();
-        this.load();
+        this.afterReview();
       },
       error: (err: unknown) => this.toast.show(apiMessage(err, 'تعذر إعادة العنصر للمراجعة')),
     };
@@ -964,6 +966,9 @@ export class OpsApprovalsComponent implements OnInit {
         this.refreshTabs();
         const selectedKey = this.selectedGroup?.key;
         this.selectedGroup = selectedKey ? this.groups.find((row) => row.key === selectedKey) ?? null : null;
+        if (this.selectedGroup) {
+          this.prepareDrawer(this.selectedGroup);
+        }
         const openAccount = this.route.snapshot.queryParamMap.get('account');
         if (!this.selectedGroup && openAccount) {
           this.openAccountKey(openAccount);

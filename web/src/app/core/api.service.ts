@@ -222,6 +222,12 @@ export class ApiService {
     return this.http.patch<SessionUser>(`${this.base}/customer/profile`, body);
   }
 
+  uploadCustomerAvatar(file: File) {
+    const data = new FormData();
+    data.append('file', file);
+    return this.http.post<SessionUser>(`${this.base}/customer/avatar`, data);
+  }
+
   favorites() {
     return this.http.get<FavoriteList>(`${this.base}/customer/favorites`);
   }

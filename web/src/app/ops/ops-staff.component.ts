@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
-import type { OpsBannedPhone, OpsOrgDepartment, OpsOrgTeam, OpsRole, OpsStaff } from '../core/models';
+import type { OpsOrgDepartment, OpsOrgTeam, OpsRole, OpsStaff } from '../core/models';
 import { ACC_CREATE, accCodeForRole, permForStaffPermissions } from '../core/staff-permissions';
 import { PERMISSION_MATRIX } from './permission-matrix.data';
 import { SessionService } from '../core/session.service';
@@ -30,7 +30,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           <a class="btn ghost" routerLink="/ops/permissions">صلاحيات المناصب</a>
         }
         @if (canCreateStaff) {
-          <button class="btn primary" type="button" (click)="openAdd()">+ إضافة مستخدمة</button>
+          <button class="btn primary" type="button" (click)="openAdd()">+ إضافة مستخدم</button>
         }
       </div>
     </div>
@@ -235,7 +235,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
             <button class="btn ghost" type="button" (click)="openPermissions($event, item)">صلاحيات الحساب</button>
           }
           @if (canManageRole(item)) {
-            <button class="btn ghost" type="button" (click)="resetPassword(item)">إعادة تعيين كلمة المرور</button>
+            <button class="btn ghost" type="button" (click)="resetPassword(item)">إعادة تغيير كلمة المرور</button>
           }
           @if (canSuspend) {
             <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
@@ -245,83 +245,6 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
       }
     </app-ops-drawer>
-
-    @if (canBan) {
-    <div class="section-head">
-      <div>
-        <h2>أرقام محظورة</h2>
-        <p>الرقم المحظور لا يستطيع إنشاء حساب جديد أو الدخول.</p>
-      </div>
-      <button class="btn primary" type="button" (click)="openBan()">+ حظر رقم</button>
-    </div>
-    <app-ops-modal [open]="addingBan" title="حظر رقم جوال" kicker="منع الدخول والتسجيل" (closed)="closeBan()">
-      <div class="form-grid">
-        <div class="field">
-          <label>الجوال</label>
-          <input
-            class="input"
-            dir="ltr"
-            [class.invalid]="!!banMobileError"
-            [ngModel]="banDraft.mobile"
-            (ngModelChange)="onBanMobileChange($event)"
-            (paste)="onBanMobilePaste($event)"
-            (blur)="onBanMobileBlur()"
-            inputmode="numeric"
-            maxlength="10"
-            placeholder="05xxxxxxxx"
-            autocomplete="tel"
-            [ngModelOptions]="{standalone: true}"
-          />
-          @if (banMobileError) {
-            <p class="field-error">{{ banMobileError }}</p>
-          }
-        </div>
-        <div class="field">
-          <label>السبب</label>
-          <input class="input" [(ngModel)]="banDraft.reason" />
-        </div>
-      </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="ban()">حظر الرقم</button>
-    </app-ops-modal>
-    @if (banned.length) {
-      <div class="ops-table-wrap">
-        <table class="ops-table">
-          <thead>
-            <tr>
-              <th>الجوال</th>
-              <th>السبب</th>
-              <th>بواسطة</th>
-              <th>التاريخ</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of banned; track item.mobile) {
-              <tr [class.active]="selectedBan?.mobile === item.mobile" (click)="selectedBan = item">
-                <td dir="ltr"><b>{{ item.mobile }}</b></td>
-                <td class="clip">{{ item.reason }}</td>
-                <td>{{ item.createdBy?.displayName || '—' }}</td>
-                <td>{{ opsDate(item.createdAt) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-    <app-ops-drawer
-      [open]="!!selectedBan"
-      [title]="selectedBan?.mobile || ''"
-      kicker="رقم محظور"
-      (closed)="selectedBan = null"
-    >
-      @if (selectedBan; as item) {
-        <p class="muted small">{{ item.reason }}</p>
-        <p class="muted small">{{ opsDate(item.createdAt) }} · {{ item.createdBy?.displayName || '' }}</p>
-        <div class="ops-drawer-actions">
-          <button class="btn ghost" type="button" (click)="unban(item.mobile)">رفع الحظر</button>
-        </div>
-      }
-    </app-ops-drawer>
-    }
   `,
 })
 export class OpsStaffComponent implements OnInit {
@@ -337,7 +260,6 @@ export class OpsStaffComponent implements OnInit {
   loading = true;
   staff: OpsStaff[] = [];
   selectedStaff: OpsStaff | null = null;
-  selectedBan: OpsBannedPhone | null = null;
   roles: OpsRole[] = [];
   departments: OpsOrgDepartment[] = [];
   roleById: Record<string, string> = {};
@@ -350,11 +272,7 @@ export class OpsStaffComponent implements OnInit {
   teamFilter = '';
   adding = false;
   creating = false;
-  addingBan = false;
   mobileTouched = false;
-  banMobileTouched = false;
-  banDraft = { mobile: '', reason: '' };
-  banned: OpsBannedPhone[] = [];
   meId = this.session.user()?.id ?? '';
 
   get selectedRole(): OpsRole | undefined {
@@ -363,10 +281,6 @@ export class OpsStaffComponent implements OnInit {
 
   get draftMobileError(): string {
     return this.mobileErrorText(this.draft.mobile, this.mobileTouched);
-  }
-
-  get banMobileError(): string {
-    return this.mobileErrorText(this.banDraft.mobile, this.banMobileTouched);
   }
 
   get canCreateStaff(): boolean {
@@ -387,10 +301,6 @@ export class OpsStaffComponent implements OnInit {
 
   get canPerms(): boolean {
     return this.session.hasAnyPermission('ACC-14', 'ACC-15');
-  }
-
-  get canBan(): boolean {
-    return this.session.hasAnyPermission('USR-04');
   }
 
   get canSuspend(): boolean {
@@ -562,28 +472,6 @@ export class OpsStaffComponent implements OnInit {
     this.mobileTouched = true;
   }
 
-  onBanMobileChange(value: string): void {
-    this.banDraft.mobile = toMobile(value);
-  }
-
-  onBanMobilePaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    this.banDraft.mobile = toMobile(event.clipboardData?.getData('text') ?? '');
-  }
-
-  onBanMobileBlur(): void {
-    this.banMobileTouched = true;
-  }
-
-  openBan(): void {
-    this.banMobileTouched = false;
-    this.addingBan = true;
-  }
-
-  closeBan(): void {
-    this.addingBan = false;
-  }
-
   create(): void {
     this.mobileTouched = true;
     const name = this.draft.displayName.trim();
@@ -677,38 +565,6 @@ export class OpsStaffComponent implements OnInit {
     });
   }
 
-  ban(): void {
-    this.banMobileTouched = true;
-    const mobile = toMobile(this.banDraft.mobile);
-    if (!isSaudiMobile(mobile)) {
-      return;
-    }
-    if (this.banDraft.reason.trim().length < 4) {
-      this.toast.show('أدخلي سبب الحظر');
-      return;
-    }
-    this.api.opsBanPhone({ mobile, reason: this.banDraft.reason }).subscribe({
-      next: () => {
-        this.toast.show('تم حظر الرقم');
-        this.banDraft = { mobile: '', reason: '' };
-        this.addingBan = false;
-        this.loadBanned();
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حظر الرقم')),
-    });
-  }
-
-  unban(mobile: string): void {
-    this.api.opsUnbanPhone(mobile).subscribe({
-      next: () => {
-        this.toast.show('تم رفع الحظر');
-        this.selectedBan = null;
-        this.loadBanned();
-      },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الحظر')),
-    });
-  }
-
   private mobileErrorText(raw: string, touched: boolean): string {
     const mobile = toMobile(raw);
     if (!mobile) {
@@ -750,9 +606,6 @@ export class OpsStaffComponent implements OnInit {
         this.toast.show(apiMessage(err, 'تعذر تحميل المستخدمين'));
       },
     });
-    if (this.canBan) {
-      this.loadBanned();
-    }
     this.api.opsOrg().subscribe({
       next: (rows) => {
         this.departments = rows;
@@ -760,18 +613,6 @@ export class OpsStaffComponent implements OnInit {
           this.onRoleChange();
         }
         this.applyScopeFilters();
-      },
-      error: () => undefined,
-    });
-  }
-
-  private loadBanned(): void {
-    this.api.opsBannedPhones().subscribe({
-      next: (rows) => {
-        this.banned = newestFirst(rows);
-        this.selectedBan = this.selectedBan
-          ? this.banned.find((row) => row.mobile === this.selectedBan?.mobile) ?? null
-          : null;
       },
       error: () => undefined,
     });

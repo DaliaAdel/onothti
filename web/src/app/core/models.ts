@@ -6,6 +6,7 @@ export interface SessionUser {
   status: string;
   displayName: string;
   accountCode: string;
+  avatarUrl?: string | null;
   visible?: boolean;
   mobile?: string;
   email?: string;
@@ -123,7 +124,7 @@ export function servicePhoto(service?: { imageUrl?: string | null; code?: string
   if (key) {
     return `/assets/service-photos/${key}.webp`;
   }
-  return '/assets/photos/hero-makeup.png';
+  return '/assets/photos/hero-makeup.jpg';
 }
 
 export function serviceIcon(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
@@ -190,7 +191,14 @@ export interface FavoriteRow {
   id?: string;
   targetType: 'PROVIDER' | 'SERVICE';
   targetId: string;
-  item?: { id: string; displayName?: string; nameAr?: string; nameEn?: string } | null;
+  item?: {
+    id: string;
+    displayName?: string;
+    nameAr?: string;
+    nameEn?: string;
+    code?: string;
+    imageUrl?: string | null;
+  } | null;
 }
 
 export interface FavoriteList {

@@ -24,5 +24,6 @@ export class ProviderLayoutComponent {
     { icon: 'package', label: 'nav.paymentStatus', route: '/p/payment-status' },
     { icon: 'bell', label: 'nav.notifications', route: '/p/notifications' },
     { icon: 'support', label: 'nav.support', route: '/p/support' },
+    { icon: 'about', label: 'nav.about', route: '/p/about' },
   ];
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { SessionService } from '../core/session.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
 
 @Component({
@@ -24,6 +25,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
 export class LegalComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly session = inject(SessionService);
 
   kind: 'TERMS' | 'POLICIES' | 'PRIVACY' | 'OTHER' = 'TERMS';
   audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF' = 'CUSTOMER';
@@ -42,7 +44,16 @@ export class LegalComponent implements OnInit {
   }
 
   get backLink(): string {
-    return this.audience === 'STAFF' ? '/ops/about' : '/signup';
+    if (!this.session.isLoggedIn) {
+      return '/signup';
+    }
+    if (this.audience === 'STAFF') {
+      return '/ops/about';
+    }
+    if (this.audience === 'PROVIDER') {
+      return '/p/about';
+    }
+    return '/c/about';
   }
 
   ngOnInit(): void {

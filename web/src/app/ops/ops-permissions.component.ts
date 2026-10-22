@@ -188,7 +188,7 @@ export class OpsPermissionsComponent implements OnInit {
         next: (row) => {
           this.applyStaffResult(row);
           this.saving = false;
-          this.toast.show('رجعت صلاحيات المنصب');
+          this.toast.show('تم إعادة صلاحيات الحساب');
         },
         error: (err) => {
           this.saving = false;

@@ -75,14 +75,6 @@ import { opsDate } from './ops-ui';
             }
           </div>
         }
-        @if (coverage.length) {
-          <p class="muted small" style="margin:16px 0 8px">أحياء التغطية</p>
-          <div class="filters" style="margin:0">
-            @for (area of coverage; track area) {
-              <span class="chip">{{ area }}</span>
-            }
-          </div>
-        }
       }
     </article>
   `,
@@ -140,9 +132,5 @@ export class OpsAccountFileComponent {
 
   get services(): string[] {
     return (this.account.providerProfile?.services ?? []).map((row) => row.nameAr);
-  }
-
-  get coverage(): string[] {
-    return (this.account.providerProfile?.coverage ?? []).map((row) => row.nameAr);
   }
 }

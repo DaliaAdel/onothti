@@ -26,7 +26,7 @@ import { opsDate } from './ops-ui';
           <h3 style="margin:0 0 12px;color:var(--plum)">بيانات الحساب</h3>
           <div class="form-grid">
             <div class="field">
-              <label>اسم الموظفة</label>
+              <label>اسم المستخدم</label>
               <input class="input" [(ngModel)]="displayName" />
             </div>
             <div class="field">

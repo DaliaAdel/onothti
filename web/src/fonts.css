@@ -1,0 +1,23 @@
+@font-face{font-family:Alexandria;src:url('/assets/fonts/alexandria.ttf') format('truetype');font-weight:100 900;font-display:swap}
+@font-face{font-family:Naskh;src:url('/assets/fonts/noto-naskh-arabic.ttf') format('truetype');font-weight:400 800;font-display:swap}
+@font-face{font-family:Lora;src:url('/assets/fonts/lora.ttf') format('truetype');font-weight:400 800;font-display:swap}
+@font-face{font-family:'DM Sans';src:url('/assets/fonts/dm-sans.ttf') format('truetype');font-weight:100 900;font-display:swap}
+
+@font-face{font-family:OnothitiUI;src:url('/assets/fonts/alexandria.ttf') format('truetype');font-weight:100 900;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:OnothitiUI;src:url('/assets/fonts/dm-sans.ttf') format('truetype');font-weight:100 900;font-display:swap;unicode-range:U+0000-024F,U+1E00-1EFF}
+
+@font-face{font-family:OnothitiDisplay;src:url('/assets/fonts/noto-naskh-arabic.ttf') format('truetype');font-weight:400 800;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:OnothitiDisplay;src:url('/assets/fonts/lora.ttf') format('truetype');font-weight:400 800;font-display:swap;unicode-range:U+0000-024F,U+1E00-1EFF}
+
+:root{
+  --font-ar-display:Naskh,'Noto Naskh Arabic',serif;
+  --font-ar-ui:Alexandria,Tahoma,sans-serif;
+  --font-en-display:Lora,Georgia,serif;
+  --font-en-ui:'DM Sans',Arial,sans-serif;
+  --font-display:OnothitiDisplay,var(--font-ar-display),var(--font-en-display);
+  --font-ui:OnothitiUI,var(--font-ar-ui),var(--font-en-ui);
+}
+html[lang="en"]{
+  --font-display:OnothitiDisplay,var(--font-en-display),var(--font-ar-display);
+  --font-ui:OnothitiUI,var(--font-en-ui),var(--font-ar-ui);
+}

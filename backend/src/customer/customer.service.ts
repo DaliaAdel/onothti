@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { AccountType, ProfileChangeField, StaffPermission } from "../common/enums";
+import { withServiceImageUrls } from "../common/service-image";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateComplaintDto,
@@ -23,6 +24,7 @@ import { assertMaxChars } from "../common/platform-settings";
 import { orderedCitiesFromRows, replaceCustomerCities, resolveCityIds } from "../common/geo";
 import { notifyStaffWithPermission } from "../common/notify";
 import { ensureTicketTypes } from "../common/ticket-types";
+import { publicUploadUrl } from "../common/upload-url";
 
 @Injectable()
 export class CustomerService {
@@ -46,8 +48,31 @@ export class CustomerService {
       city: geo.city,
       cities: geo.cities,
       region: geo.region,
+      avatarUrl: await this.avatarUrlFor(pendingValue(pending, ProfileChangeField.AVATAR) ?? user.avatarFileId),
       pendingChanges: pending,
     };
+  }
+
+  async uploadAvatar(userId: string, file?: { filename: string; mimetype: string; size: number }) {
+    await this.requireCustomer(userId);
+    if (!file) {
+      throw new BadRequestException("اختاري صورة للحساب");
+    }
+    const media = await this.prisma.mediaFile.create({
+      data: {
+        storageKey: `avatars/${file.filename}`,
+        mime: file.mimetype,
+        sizeBytes: file.size,
+        kind: "IMAGE",
+        status: "APPROVED",
+        uploadedById: userId,
+      },
+    });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarFileId: media.id },
+    });
+    return this.getProfile(userId);
   }
 
   async updateProfile(userId: string, dto: UpdateCustomerProfileDto) {
@@ -110,10 +135,12 @@ export class CustomerService {
           })
         : Promise.resolve([]),
       serviceIds.length
-        ? this.prisma.service.findMany({
-            where: { id: { in: serviceIds } },
-            select: { id: true, code: true, nameAr: true, nameEn: true },
-          })
+        ? this.prisma.service
+            .findMany({
+              where: { id: { in: serviceIds } },
+              select: { id: true, code: true, nameAr: true, nameEn: true, imageFileId: true },
+            })
+            .then((items) => withServiceImageUrls(this.prisma, items))
         : Promise.resolve([]),
     ]);
     const providerById = Object.fromEntries(providers.map((item) => [item.id, item]));
@@ -279,6 +306,14 @@ export class CustomerService {
       `complaint:${complaint.id}`,
     );
     return complaint;
+  }
+
+  private async avatarUrlFor(fileId?: string | null) {
+    if (!fileId) {
+      return null;
+    }
+    const file = await this.prisma.mediaFile.findUnique({ where: { id: fileId } });
+    return publicUploadUrl(file?.storageKey);
   }
 
   private async requireCustomer(userId: string) {

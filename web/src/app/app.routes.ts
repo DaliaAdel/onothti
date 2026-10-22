@@ -172,6 +172,10 @@ export const routes: Routes = [
         path: 'account',
         loadComponent: () => import('./provider/provider-account.component').then((m) => m.ProviderAccountComponent),
       },
+      {
+        path: 'about',
+        loadComponent: () => import('./provider/provider-about.component').then((m) => m.ProviderAboutComponent),
+      },
     ],
   },
   {

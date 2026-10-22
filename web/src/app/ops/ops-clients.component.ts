@@ -2,18 +2,19 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { apiMessage } from '../core/phone';
-import type { CatalogPackage, OpsManagedAccount } from '../core/models';
+import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
+import type { CatalogPackage, OpsBannedPhone, OpsManagedAccount } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsAccountFileComponent } from './ops-account-file.component';
+import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
 @Component({
   selector: 'app-ops-clients',
-  imports: [FormsModule, OpsAccountFileComponent, OpsModalComponent],
+  imports: [FormsModule, OpsAccountFileComponent, OpsDrawerComponent, OpsModalComponent],
   template: `
     @if (!selected) {
       <div class="section-head">
@@ -111,6 +112,42 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
           </table>
         </div>
       }
+
+      @if (canBan) {
+        <div class="section-head">
+          <div>
+            <h2>أرقام محظورة</h2>
+            <p>الرقم المحظور لا يستطيع إنشاء حساب عميلة أو خبيرة أو الدخول.</p>
+          </div>
+          <button class="btn primary" type="button" (click)="openBan()">+ حظر رقم</button>
+        </div>
+        @if (!banned.length) {
+          <p class="page-empty">لا توجد أرقام محظورة.</p>
+        } @else {
+          <div class="ops-table-wrap">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>الجوال</th>
+                  <th>السبب</th>
+                  <th>بواسطة</th>
+                  <th>التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of banned; track item.mobile) {
+                  <tr [class.active]="selectedBan?.mobile === item.mobile" (click)="selectBan(item)">
+                    <td dir="ltr"><b>{{ item.mobile }}</b></td>
+                    <td class="clip">{{ item.reason }}</td>
+                    <td>{{ item.createdBy?.displayName || '—' }}</td>
+                    <td>{{ opsDate(item.createdAt) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
     } @else {
       <div class="section-head">
         <div>
@@ -156,6 +193,50 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendNotify()">إرسال الإشعار</button>
     </app-ops-modal>
+
+    <app-ops-modal [open]="addingBan" title="حظر رقم جوال" kicker="حسابات العميلة والخبيرة" (closed)="closeBan()">
+      <div class="form-grid">
+        <div class="field">
+          <label>الجوال</label>
+          <input
+            class="input"
+            dir="ltr"
+            [class.invalid]="!!banMobileError"
+            [ngModel]="banDraft.mobile"
+            (ngModelChange)="onBanMobileChange($event)"
+            (paste)="onBanMobilePaste($event)"
+            (blur)="onBanMobileBlur()"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="05xxxxxxxx"
+            autocomplete="tel"
+            [ngModelOptions]="{standalone: true}"
+          />
+          @if (banMobileError) {
+            <p class="field-error">{{ banMobileError }}</p>
+          }
+        </div>
+        <div class="field">
+          <label>السبب</label>
+          <input class="input" [(ngModel)]="banDraft.reason" />
+        </div>
+      </div>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="ban()">حظر الرقم</button>
+    </app-ops-modal>
+    <app-ops-drawer
+      [open]="!!selectedBan"
+      [title]="selectedBan?.mobile || ''"
+      kicker="رقم محظور"
+      (closed)="selectedBan = null"
+    >
+      @if (selectedBan; as item) {
+        <p class="muted small">{{ item.reason }}</p>
+        <p class="muted small">{{ opsDate(item.createdAt) }} · {{ item.createdBy?.displayName || '' }}</p>
+        <div class="ops-drawer-actions">
+          <button class="btn ghost" type="button" (click)="unban(item.mobile)">رفع الحظر</button>
+        </div>
+      }
+    </app-ops-drawer>
 
     <app-ops-modal
       [open]="actionOpen"
@@ -230,9 +311,17 @@ export class OpsClientsComponent implements OnInit {
   notifyTarget: OpsManagedAccount | null = null;
   notifyDraft = { titleAr: '', bodyAr: '' };
   actionOpen = false;
+  banned: OpsBannedPhone[] = [];
+  selectedBan: OpsBannedPhone | null = null;
+  addingBan = false;
+  banMobileTouched = false;
+  banDraft = { mobile: '', reason: '' };
 
   ngOnInit(): void {
     this.shell.set('حسابات عملاء المنصة', 'الخبيرات والعميلات المسجّلات في المنصة');
+    if (this.canBan) {
+      this.loadBanned();
+    }
     this.api.packages().subscribe({
       next: (rows) => (this.packages = rows),
       error: () => undefined,
@@ -375,6 +464,84 @@ export class OpsClientsComponent implements OnInit {
     });
   }
 
+  get canBan(): boolean {
+    return this.session.hasAnyPermission('USR-04');
+  }
+
+  get banMobileError(): string {
+    const mobile = toMobile(this.banDraft.mobile);
+    if (!mobile) {
+      return this.banMobileTouched ? 'أدخلي رقم الجوال' : '';
+    }
+    if (isSaudiMobile(mobile)) {
+      return '';
+    }
+    if (this.banMobileTouched || mobile.length >= 10 || !mobile.startsWith('05')) {
+      return 'أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05';
+    }
+    return '';
+  }
+
+  selectBan(item: OpsBannedPhone): void {
+    this.selectedBan = item;
+  }
+
+  openBan(): void {
+    this.banMobileTouched = false;
+    this.banDraft = { mobile: '', reason: '' };
+    this.addingBan = true;
+  }
+
+  closeBan(): void {
+    this.addingBan = false;
+    this.banDraft = { mobile: '', reason: '' };
+    this.banMobileTouched = false;
+  }
+
+  onBanMobileChange(value: string): void {
+    this.banDraft.mobile = toMobile(value);
+  }
+
+  onBanMobilePaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.banDraft.mobile = toMobile(event.clipboardData?.getData('text') ?? '');
+  }
+
+  onBanMobileBlur(): void {
+    this.banMobileTouched = true;
+  }
+
+  ban(): void {
+    this.banMobileTouched = true;
+    const mobile = toMobile(this.banDraft.mobile);
+    if (!isSaudiMobile(mobile)) {
+      return;
+    }
+    if (this.banDraft.reason.trim().length < 4) {
+      this.toast.show('أدخلي سبب الحظر');
+      return;
+    }
+    this.api.opsBanPhone({ mobile, reason: this.banDraft.reason }).subscribe({
+      next: () => {
+        this.toast.show('تم حظر الرقم');
+        this.closeBan();
+        this.loadBanned();
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حظر الرقم')),
+    });
+  }
+
+  unban(mobile: string): void {
+    this.api.opsUnbanPhone(mobile).subscribe({
+      next: () => {
+        this.toast.show('تم رفع الحظر');
+        this.selectedBan = null;
+        this.loadBanned();
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الحظر')),
+    });
+  }
+
   hasAccountsAction(): boolean {
     return this.session.hasAnyPermission('USR-01', 'USR-05', 'USR-06');
   }
@@ -429,6 +596,18 @@ export class OpsClientsComponent implements OnInit {
       DELETED: 'محذوف',
     };
     return labels[status] ?? status;
+  }
+
+  private loadBanned(): void {
+    this.api.opsBannedPhones().subscribe({
+      next: (rows) => {
+        this.banned = newestFirst(rows);
+        this.selectedBan = this.selectedBan
+          ? this.banned.find((row) => row.mobile === this.selectedBan?.mobile) ?? null
+          : null;
+      },
+      error: () => undefined,
+    });
   }
 
   private loadFile(id: string): void {

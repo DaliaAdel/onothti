@@ -47,6 +47,7 @@ import {
   orderedCitiesFromRows,
   resolveCityIds,
 } from "../common/geo";
+import { publicUploadUrl } from "../common/upload-url";
 
 @Injectable()
 export class AuthService {
@@ -379,6 +380,7 @@ export class AuthService {
       city: geo.city,
       cities: geo.cities,
       region: geo.region,
+      avatarUrl: await this.avatarUrlFor(pendingValue(pending, ProfileChangeField.AVATAR) ?? user.avatarFileId),
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,
       pendingChanges: pending,
@@ -482,9 +484,10 @@ export class AuthService {
       throw new ForbiddenException("تم إيقاف المحاولة لمدة 30 دقيقة");
     }
 
+    const isProd = (this.config.get<string>("NODE_ENV") ?? process.env.NODE_ENV) === "production";
+    const devCode = this.config.get<string>("OTP_DEV_CODE");
     const code =
-      this.config.get<string>("OTP_DEV_CODE") ||
-      String(randomInt(100000, 1000000));
+      !isProd && devCode ? devCode : String(randomInt(100000, 1000000));
     const otp = await this.prisma.otpRequest.create({
       data: {
         mobile,
@@ -522,6 +525,7 @@ export class AuthService {
       status: string;
       displayName: string;
       accountCode: string;
+      avatarFileId?: string | null;
       providerProfile?: { visibility?: string | null } | null;
     },
     device?: { deviceId?: string; channel?: string },
@@ -569,6 +573,7 @@ export class AuthService {
         status: user.status,
         displayName: user.displayName,
         accountCode: user.accountCode,
+        avatarUrl: await this.avatarUrlFor(user.avatarFileId),
         visible: this.prisma.isPubliclyVisible({
           status: user.status,
           visibility: user.providerProfile?.visibility,
@@ -576,6 +581,14 @@ export class AuthService {
         ...(staff ?? {}),
       },
     };
+  }
+
+  private async avatarUrlFor(fileId?: string | null) {
+    if (!fileId) {
+      return null;
+    }
+    const file = await this.prisma.mediaFile.findUnique({ where: { id: fileId } });
+    return publicUploadUrl(file?.storageKey);
   }
 
   private async staffSession(userId: string) {

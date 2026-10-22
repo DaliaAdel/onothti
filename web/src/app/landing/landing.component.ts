@@ -18,12 +18,19 @@ import { RouterLink } from '@angular/router';
           <a href="#how">كيف تعمل المنصة؟</a>
           <a href="#experts">للخبيرات</a>
           <a href="#about">لماذا نحن؟</a>
+          <a class="header-menu-login" routerLink="/login">تسجيل الدخول</a>
         </nav>
         <div class="header-store-links" aria-label="تحميل التطبيق">
           <button class="store-badge google-play-badge" type="button" (click)="soon('Google Play')" aria-label="Get it on Google Play">
+            <svg class="play-mark" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#fff" d="M4.1 2.4c-.6.3-1 1-1 1.7v15.8c0 .7.4 1.4 1 1.7l.2.1 9.3-9.7L4.3 2.3l-.2.1Zm.8-.3 9.8 10 2.7-2.8c1.5-1.6.3-2.8-1.3-3.7L4.9 2.1ZM16.3 13.5l-2.7-2.8-9.8 10 11.2-6.3c.6-.3 1-.6 1.3-.9Zm2.5-5.4c-.4.2-.8.5-1.2.8l-3.1 3.2 3.1 3.2c.4.3.8.5 1.2.8 1.8 1 3.1.2 3.1-2.1V10.2c0-2.3-1.3-3.1-3.1-2.1Z"/>
+            </svg>
             <span><small>GET IT ON</small><strong>Google Play</strong></span>
           </button>
           <button class="store-badge app-store-badge" type="button" (click)="soon('App Store')" aria-label="Download on the App Store">
+            <svg class="apple-mark" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#fff" d="M16.8 12.7c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9s-1.9-.9-3.1-.9c-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.8 2.4 3 2.3 1.2 0 1.7-.8 3.1-.8s1.8.8 3.1.8 2.1-.1 3-2.4c1.1-1.1 1.5-2.2 1.6-2.3 0 0-2.2-.8-2.2-3.3Zm-2.1-6.3c.7-.8 1.1-1.9 1-3-1 .1-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/>
+            </svg>
             <span><small>Download on the</small><strong>App Store</strong></span>
           </button>
         </div>
@@ -47,7 +54,7 @@ import { RouterLink } from '@angular/router';
             <div class="hero-proof"><span>✓ خبيرات متخصصات</span><span>✓ تواصل مباشر</span><span>✓ خدمات في مدينتكِ</span></div>
           </div>
           <div class="hero-visual">
-            <img class="hero-photo" src="/assets/photos/hero-makeup.png" alt="خبيرة مكياج تجهز عميلة لمناسبتها" fetchpriority="high" decoding="async" />
+            <img class="hero-photo" src="/assets/photos/hero-makeup.jpg" width="1408" height="768" alt="خبيرة مكياج تجهز عميلة لمناسبتها" fetchpriority="high" decoding="async" />
             <div class="visual-orbit one"></div>
             <div class="visual-orbit two"></div>
             <div class="browser-card">
@@ -183,7 +190,7 @@ import { RouterLink } from '@angular/router';
               <a class="btn primary" routerLink="/signup/phone" [queryParams]="{ role: 'customer' }">ابدئي كعميلة</a>
             </div>
             <div class="impact-visual customer-visual has-customer-photo">
-              <img src="/assets/photos/customer-browsing-clean.png" alt="عميلة تتصفح خبيرات الجمال" loading="lazy" decoding="async" />
+              <img src="/assets/photos/customer-browsing-clean.jpg" width="1448" height="1086" alt="عميلة تتصفح خبيرات الجمال" loading="lazy" decoding="async" />
             </div>
           </div>
           <div class="impact-card expert-impact">
@@ -300,10 +307,25 @@ import { RouterLink } from '@angular/router';
           <a routerLink="/legal/policies">سياسة الخصوصية</a>
           <a routerLink="/legal/terms">الشروط والأحكام</a>
         </div>
-        <div>
+        <div class="footer-connect">
           <b>الحساب</b>
           <a routerLink="/login">تسجيل الدخول</a>
           <a routerLink="/signup">إنشاء حساب</a>
+          <b class="download-title">حمّلي التطبيق</b>
+          <div class="app-downloads">
+            <button type="button" (click)="soon('Google Play')" aria-label="Get it on Google Play">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#fff" d="M4.1 2.4c-.6.3-1 1-1 1.7v15.8c0 .7.4 1.4 1 1.7l.2.1 9.3-9.7L4.3 2.3l-.2.1Zm.8-.3 9.8 10 2.7-2.8c1.5-1.6.3-2.8-1.3-3.7L4.9 2.1ZM16.3 13.5l-2.7-2.8-9.8 10 11.2-6.3c.6-.3 1-.6 1.3-.9Zm2.5-5.4c-.4.2-.8.5-1.2.8l-3.1 3.2 3.1 3.2c.4.3.8.5 1.2.8 1.8 1 3.1.2 3.1-2.1V10.2c0-2.3-1.3-3.1-3.1-2.1Z"/>
+              </svg>
+              <span><small>GET IT ON</small><strong>Google Play</strong></span>
+            </button>
+            <button type="button" (click)="soon('App Store')" aria-label="Download on the App Store">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#fff" d="M16.8 12.7c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9s-1.9-.9-3.1-.9c-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.8 2.4 3 2.3 1.2 0 1.7-.8 3.1-.8s1.8.8 3.1.8 2.1-.1 3-2.4c1.1-1.1 1.5-2.2 1.6-2.3 0 0-2.2-.8-2.2-3.3Zm-2.1-6.3c.7-.8 1.1-1.9 1-3-1 .1-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/>
+              </svg>
+              <span><small>Download on the</small><strong>App Store</strong></span>
+            </button>
+          </div>
         </div>
         <small>© 2026 منصة الأنوثة والجمال. جميع الحقوق محفوظة.</small>
       </footer>

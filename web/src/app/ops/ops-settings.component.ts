@@ -51,6 +51,47 @@ function unitLabel(unit: IdleUnit): string {
   return 'يوم';
 }
 
+const BANK_LETTERS_RE = /[^\p{L}\s]/gu;
+const BANK_NAME_RE = /^[\p{L}]+(?:\s+[\p{L}]+)*$/u;
+const BANK_IBAN_RE = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{15,34}$/;
+
+type BankFieldErrors = { bankName: string; iban: string; accountName: string };
+
+function emptyBankErrors(): BankFieldErrors {
+  return { bankName: '', iban: '', accountName: '' };
+}
+
+function lettersOnly(value: string): string {
+  return value.replace(BANK_LETTERS_RE, '').replace(/ {2,}/g, ' ');
+}
+
+function ibanOnly(value: string): string {
+  return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 34);
+}
+
+function writeSanitized(event: Event, sanitize: (value: string) => string): string {
+  const input = event.target as HTMLInputElement;
+  const next = sanitize(input.value);
+  if (input.value !== next) {
+    const pos = Math.min(input.selectionStart ?? next.length, next.length);
+    input.value = next;
+    input.setSelectionRange(pos, pos);
+  }
+  return next;
+}
+
+function bankNameError(value: string): string {
+  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'اسم البنك حروف فقط';
+}
+
+function accountNameError(value: string): string {
+  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'اسم المستفيد حروف فقط';
+}
+
+function ibanError(value: string): string {
+  return BANK_IBAN_RE.test(ibanOnly(value)) ? '' : 'الآيبان مزيج من الحروف والأرقام';
+}
+
 @Component({
   selector: 'app-ops-settings',
   imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
@@ -192,7 +233,7 @@ function unitLabel(unit: IdleUnit): string {
         <h2>الحساب البنكي للمنصة</h2>
         <p>بيانات التحويل التي تراها الخبيرة عند الاشتراك.</p>
       </div>
-      <button class="btn primary" type="button" (click)="addingBank = true">+ إضافة حساب</button>
+      <button class="btn primary" type="button" (click)="openAddBank()">+ إضافة حساب</button>
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
@@ -206,7 +247,7 @@ function unitLabel(unit: IdleUnit): string {
         </thead>
         <tbody>
           @for (item of banks; track item.id) {
-            <tr [class.active]="selectedBank?.id === item.id" (click)="selectedBank = item">
+            <tr [class.active]="selectedBank?.id === item.id" (click)="selectBank(item)">
               <td><b>{{ item.bankName }}</b></td>
               <td dir="ltr">{{ item.iban }}</td>
               <td>{{ item.accountName }}</td>
@@ -226,15 +267,52 @@ function unitLabel(unit: IdleUnit): string {
         <div class="form-grid">
           <div class="field">
             <label>البنك</label>
-            <input class="input" [(ngModel)]="item.bankName" />
-          </div>
-          <div class="field">
-            <label>الآيبان</label>
-            <input class="input" dir="ltr" [(ngModel)]="item.iban" />
+            <input
+              class="input"
+              [class.invalid]="!!editBankErrors.bankName"
+              [value]="item.bankName"
+              (input)="onEditBankName(item, $event)"
+              (blur)="validateEditBankName(item)"
+              maxlength="80"
+              autocomplete="off"
+            />
+            @if (editBankErrors.bankName) {
+              <p class="field-error">{{ editBankErrors.bankName }}</p>
+            }
           </div>
           <div class="field">
             <label>اسم المستفيد</label>
-            <input class="input" [(ngModel)]="item.accountName" />
+            <input
+              class="input"
+              [class.invalid]="!!editBankErrors.accountName"
+              [value]="item.accountName"
+              (input)="onEditAccountName(item, $event)"
+              (blur)="validateEditAccountName(item)"
+              maxlength="80"
+              autocomplete="off"
+            />
+            @if (editBankErrors.accountName) {
+              <p class="field-error">{{ editBankErrors.accountName }}</p>
+            }
+          </div>
+          <div class="field full">
+            <label>الآيبان</label>
+            <input
+              class="input"
+              dir="ltr"
+              lang="en"
+              [class.invalid]="!!editBankErrors.iban"
+              [value]="item.iban"
+              (input)="onEditIban(item, $event)"
+              (blur)="validateEditIban(item)"
+              maxlength="34"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="SA0000000000000000000000"
+            />
+            @if (editBankErrors.iban) {
+              <p class="field-error">{{ editBankErrors.iban }}</p>
+            }
           </div>
         </div>
         <div class="ops-drawer-actions">
@@ -245,22 +323,59 @@ function unitLabel(unit: IdleUnit): string {
         </div>
       }
     </app-ops-drawer>
-    <app-ops-modal [open]="addingBank" title="إضافة حساب بنكي" kicker="تحويل الاشتراك" (closed)="addingBank = false">
+    <app-ops-modal [open]="addingBank" title="إضافة حساب بنكي" kicker="تحويل الاشتراك" (closed)="closeAddBank()">
       <div class="form-grid">
         <div class="field">
           <label>البنك</label>
-          <input class="input" [(ngModel)]="bankDraft.bankName" />
-        </div>
-        <div class="field">
-          <label>الآيبان</label>
-          <input class="input" dir="ltr" [(ngModel)]="bankDraft.iban" />
+          <input
+            class="input"
+            [class.invalid]="!!bankDraftErrors.bankName"
+            [value]="bankDraft.bankName"
+            (input)="onDraftBankName($event)"
+            (blur)="validateDraftBankName()"
+            maxlength="80"
+            autocomplete="off"
+          />
+          @if (bankDraftErrors.bankName) {
+            <p class="field-error">{{ bankDraftErrors.bankName }}</p>
+          }
         </div>
         <div class="field">
           <label>اسم المستفيد</label>
-          <input class="input" [(ngModel)]="bankDraft.accountName" />
+          <input
+            class="input"
+            [class.invalid]="!!bankDraftErrors.accountName"
+            [value]="bankDraft.accountName"
+            (input)="onDraftAccountName($event)"
+            (blur)="validateDraftAccountName()"
+            maxlength="80"
+            autocomplete="off"
+          />
+          @if (bankDraftErrors.accountName) {
+            <p class="field-error">{{ bankDraftErrors.accountName }}</p>
+          }
+        </div>
+        <div class="field full">
+          <label>الآيبان</label>
+          <input
+            class="input"
+            dir="ltr"
+            lang="en"
+            [class.invalid]="!!bankDraftErrors.iban"
+            [value]="bankDraft.iban"
+            (input)="onDraftIban($event)"
+            (blur)="validateDraftIban()"
+            maxlength="34"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="SA0000000000000000000000"
+          />
+          @if (bankDraftErrors.iban) {
+            <p class="field-error">{{ bankDraftErrors.iban }}</p>
+          }
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createBank()">إضافة الحساب</button>
+      <button class="btn primary" style="margin-top:8px;width:100%" type="button" (click)="createBank()">إضافة الحساب</button>
     </app-ops-modal>
   `,
 })
@@ -282,6 +397,8 @@ export class OpsSettingsComponent implements OnInit {
   welcomeDraft = { audience: 'CUSTOMER', kind: 'WELCOME', bodyAr: '' };
   banks: OpsBankAccount[] = [];
   bankDraft = { bankName: '', iban: '', accountName: '' };
+  bankDraftErrors = emptyBankErrors();
+  editBankErrors = emptyBankErrors();
   addingWelcome = false;
   addingBank = false;
   readonly settingRows = SETTING_META;
@@ -379,8 +496,107 @@ export class OpsSettingsComponent implements OnInit {
     });
   }
 
+  selectBank(item: OpsBankAccount): void {
+    this.selectedBank = item;
+    this.editBankErrors = emptyBankErrors();
+  }
+
+  openAddBank(): void {
+    this.bankDraft = { bankName: '', iban: '', accountName: '' };
+    this.bankDraftErrors = emptyBankErrors();
+    this.addingBank = true;
+  }
+
+  closeAddBank(): void {
+    this.addingBank = false;
+    this.bankDraft = { bankName: '', iban: '', accountName: '' };
+    this.bankDraftErrors = emptyBankErrors();
+  }
+
+  onDraftBankName(event: Event): void {
+    this.bankDraft.bankName = writeSanitized(event, lettersOnly);
+    if (this.bankDraftErrors.bankName) {
+      this.bankDraftErrors.bankName = bankNameError(this.bankDraft.bankName);
+    }
+  }
+
+  onDraftIban(event: Event): void {
+    this.bankDraft.iban = writeSanitized(event, ibanOnly);
+    if (this.bankDraftErrors.iban) {
+      this.bankDraftErrors.iban = ibanError(this.bankDraft.iban);
+    }
+  }
+
+  onDraftAccountName(event: Event): void {
+    this.bankDraft.accountName = writeSanitized(event, lettersOnly);
+    if (this.bankDraftErrors.accountName) {
+      this.bankDraftErrors.accountName = accountNameError(this.bankDraft.accountName);
+    }
+  }
+
+  validateDraftBankName(): void {
+    this.bankDraftErrors.bankName = bankNameError(this.bankDraft.bankName);
+  }
+
+  validateDraftIban(): void {
+    this.bankDraftErrors.iban = ibanError(this.bankDraft.iban);
+  }
+
+  validateDraftAccountName(): void {
+    this.bankDraftErrors.accountName = accountNameError(this.bankDraft.accountName);
+  }
+
+  onEditBankName(item: OpsBankAccount, event: Event): void {
+    item.bankName = writeSanitized(event, lettersOnly);
+    if (this.editBankErrors.bankName) {
+      this.editBankErrors.bankName = bankNameError(item.bankName);
+    }
+  }
+
+  onEditIban(item: OpsBankAccount, event: Event): void {
+    item.iban = writeSanitized(event, ibanOnly);
+    if (this.editBankErrors.iban) {
+      this.editBankErrors.iban = ibanError(item.iban);
+    }
+  }
+
+  onEditAccountName(item: OpsBankAccount, event: Event): void {
+    item.accountName = writeSanitized(event, lettersOnly);
+    if (this.editBankErrors.accountName) {
+      this.editBankErrors.accountName = accountNameError(item.accountName);
+    }
+  }
+
+  validateEditBankName(item: OpsBankAccount): void {
+    this.editBankErrors.bankName = bankNameError(item.bankName);
+  }
+
+  validateEditIban(item: OpsBankAccount): void {
+    this.editBankErrors.iban = ibanError(item.iban);
+  }
+
+  validateEditAccountName(item: OpsBankAccount): void {
+    this.editBankErrors.accountName = accountNameError(item.accountName);
+  }
+
   saveBank(item: OpsBankAccount): void {
-    this.api.opsPatchBank(item.id, item).subscribe({
+    item.bankName = lettersOnly(item.bankName).trim();
+    item.iban = ibanOnly(item.iban);
+    item.accountName = lettersOnly(item.accountName).trim();
+    this.editBankErrors = {
+      bankName: bankNameError(item.bankName),
+      iban: ibanError(item.iban),
+      accountName: accountNameError(item.accountName),
+    };
+    if (this.editBankErrors.bankName || this.editBankErrors.iban || this.editBankErrors.accountName) {
+      this.toast.show('أدخلي اسم البنك والآيبان والمستفيد بالصيغة الصحيحة');
+      return;
+    }
+    this.api.opsPatchBank(item.id, {
+      bankName: item.bankName,
+      iban: item.iban,
+      accountName: item.accountName,
+    }).subscribe({
       next: () => this.toast.show('تم حفظ الحساب البنكي'),
       error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الحساب البنكي')),
     });
@@ -397,15 +613,22 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   createBank(): void {
-    if (this.bankDraft.bankName.trim().length < 2 || this.bankDraft.iban.trim().length < 10 || this.bankDraft.accountName.trim().length < 2) {
-      this.toast.show('أدخلي اسم البنك والآيبان والمستفيد');
+    this.bankDraft.bankName = lettersOnly(this.bankDraft.bankName).trim();
+    this.bankDraft.iban = ibanOnly(this.bankDraft.iban);
+    this.bankDraft.accountName = lettersOnly(this.bankDraft.accountName).trim();
+    this.bankDraftErrors = {
+      bankName: bankNameError(this.bankDraft.bankName),
+      iban: ibanError(this.bankDraft.iban),
+      accountName: accountNameError(this.bankDraft.accountName),
+    };
+    if (this.bankDraftErrors.bankName || this.bankDraftErrors.iban || this.bankDraftErrors.accountName) {
+      this.toast.show('أدخلي اسم البنك والآيبان والمستفيد بالصيغة الصحيحة');
       return;
     }
     this.api.opsCreateBank(this.bankDraft).subscribe({
       next: () => {
         this.toast.show('تمت إضافة الحساب البنكي');
-        this.bankDraft = { bankName: '', iban: '', accountName: '' };
-        this.addingBank = false;
+        this.closeAddBank();
         this.loadBanks();
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الحساب البنكي')),
