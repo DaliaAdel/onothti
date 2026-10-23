@@ -15,7 +15,7 @@ import { LocaleService } from '../core/locale.service';
           <p>منصة الأنوثة والجمال</p>
         </div>
       </section>
-      <section class="auth-panel">
+      <section class="auth-panel" [class.has-bg]="!!panelSrc" [style.background-image]="panelSrc ? 'url(' + panelSrc + ')' : null">
         <ng-content />
       </section>
     </div>
@@ -23,6 +23,7 @@ import { LocaleService } from '../core/locale.service';
 })
 export class AuthLayoutComponent {
   readonly locale = inject(LocaleService);
+  @Input() panelSrc = '';
   @Input() variant: 'default' | 'customer' | 'provider' = 'default';
   @Input() visualTitle = '';
   @Input() visualSub = '';

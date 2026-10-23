@@ -132,7 +132,20 @@
 @media(max-width:780px){.grid.four,.grid.three,.grid.two{grid-template-columns:1fr}}
 .auth-layout{position:fixed;inset:0;z-index:1;grid-template-rows:minmax(0,1fr)}
 .auth-layout .auth-brand{position:relative!important;inset:auto!important;top:auto!important;min-height:0}
-.auth-layout .auth-panel{min-height:0;height:100%;overflow:hidden;padding:28px 40px!important;align-items:center}
+.auth-layout .auth-panel{min-height:0;height:100%;overflow:hidden;padding:28px 40px!important;align-items:center;position:relative}
+.auth-layout .auth-panel.has-bg{
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+.auth-layout .auth-panel.has-bg:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(255,253,252,.78);
+  pointer-events:none;
+}
+.auth-layout .auth-panel.has-bg>.auth-box{position:relative;z-index:2}
 .auth-layout .auth-box{max-height:100%;width:min(100%,470px)}
 .auth-layout .auth-box h1,.auth-layout .auth-box h2{margin:8px 0 6px;line-height:1.25}
 .auth-layout .auth-back{margin-bottom:12px}
