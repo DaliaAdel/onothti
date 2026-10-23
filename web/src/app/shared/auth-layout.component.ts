@@ -11,7 +11,7 @@ import { LocaleService } from '../core/locale.service';
       </div>
       <section class="auth-brand">
         <div class="auth-brand-copy auth-entry-brand">
-          <img src="/assets/logo-auth.png" alt="أنوثتي" />
+          <img src="/assets/login_new.jpg" alt="أنوثتي" />
           <p>منصة الأنوثة والجمال</p>
         </div>
       </section>

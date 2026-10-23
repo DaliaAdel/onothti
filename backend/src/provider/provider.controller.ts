@@ -98,6 +98,11 @@ export class ProviderController {
     return this.provider.patchService(user.sub, id, dto);
   }
 
+  @Delete("services/main/:serviceId")
+  removeMainService(@CurrentUser() user: AuthUser, @Param("serviceId") serviceId: string) {
+    return this.provider.removeMainService(user.sub, serviceId);
+  }
+
   @Delete("services/:id")
   removeService(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.provider.removeService(user.sub, id);

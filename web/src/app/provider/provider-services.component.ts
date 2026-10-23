@@ -73,38 +73,39 @@ import { ToastService } from '../core/toast.service';
         </div>
         <button class="btn primary" type="button" [disabled]="loading || !serviceId || !hasSubSelection" (click)="add()">إضافة إلى خدماتي</button>
       </div>
-    } @else if (mode === 'edit' && editing) {
+    } @else if (mode === 'edit' && editingGroup) {
       <div class="page-head">
         <div>
           <h1>تعديل الخدمة</h1>
-          <p>حدّثي بيانات الخدمة المحددة</p>
+          <p>الخدمات الفرعية التابعة لـ {{ locale.localizedName(editingGroup.service) }}</p>
         </div>
         <button class="btn secondary" type="button" (click)="closeEdit()">← الرجوع إلى خدماتي</button>
       </div>
       <div class="card edit-service-form">
         <div class="edit-service-heading">
-          <img class="service-edit-photo" [src]="photoFor(editing.service)" alt="" />
+          <img class="service-edit-photo" [src]="photoFor(editingGroup.service)" alt="" />
           <div>
-            <h2>{{ locale.localizedName(editing.service) }}</h2>
-            <p class="small muted">{{ editing.subService ? locale.localizedName(editing.subService) : 'الخدمة الرئيسية' }}</p>
+            <h2>{{ locale.localizedName(editingGroup.service) }}</h2>
+            <p class="small muted">{{ editingGroup.items.length === 1 ? 'خدمة فرعية واحدة' : editingGroup.items.length + ' خدمات فرعية' }}</p>
           </div>
         </div>
-        <div class="grid cols-2">
-          <div class="field">
-            <label>اسم الخدمة</label>
-            <input [value]="editDisplayName" disabled />
-          </div>
-          <div class="field">
-            <label>حالة الخدمة</label>
-            <select [(ngModel)]="editStatus" name="editStatus">
-              <option value="active">نشطة</option>
-              <option value="inactive">غير نشطة</option>
-            </select>
-          </div>
+        <div class="list">
+          @for (item of editingGroup.items; track item.id) {
+            <div class="list-row">
+              <div class="copy">
+                <b>{{ item.subService ? locale.localizedName(item.subService) : 'الخدمة الرئيسية' }}</b>
+                <p>{{ isItemActive(item) ? 'نشطة' : 'غير نشطة' }}</p>
+              </div>
+              <span class="status" [class.success]="isItemActive(item)" [class.warning]="!isItemActive(item)">
+                {{ isItemActive(item) ? 'نشطة' : 'غير نشطة' }}
+              </span>
+              <button class="favorite service-delete" type="button" [disabled]="loading" aria-label="حذف الخدمة الفرعية" (click)="removeSub(item)">×</button>
+            </div>
+          }
         </div>
         <div class="edit-service-actions">
-          <button class="btn secondary" type="button" (click)="closeEdit()">إلغاء</button>
-          <button class="btn primary" type="button" [disabled]="loading || !editDirty" (click)="saveEdit()">حفظ التعديلات</button>
+          <button class="btn ghost" type="button" [disabled]="loading" (click)="removeMainFromEdit()">حذف الخدمة الرئيسية</button>
+          <button class="btn secondary" type="button" (click)="closeEdit()">رجوع</button>
         </div>
       </div>
     } @else {
@@ -122,7 +123,7 @@ import { ToastService } from '../core/toast.service';
             <p class="muted small">لا توجد خدمات مضافة بعد.</p>
           } @else {
             <div class="list">
-              @for (item of items; track item.id; let i = $index) {
+              @for (group of serviceGroups; track group.serviceId; let i = $index) {
                 <div
                   class="list-row"
                   [class.is-dragging]="dragIndex === i"
@@ -135,15 +136,16 @@ import { ToastService } from '../core/toast.service';
                   (dragend)="onDragEnd()"
                 >
                   <b class="drag-handle" title="اسحبي لإعادة الترتيب">⋮⋮</b>
-                  <img class="service-row-photo" [src]="photoFor(item.service)" alt="" />
+                  <img class="service-row-photo" [src]="photoFor(group.service)" alt="" />
                   <div class="copy">
-                    <b>{{ locale.localizedName(item.service) }}</b>
-                    <p>{{ item.subService ? locale.localizedName(item.subService) : 'الخدمة الرئيسية' }}</p>
+                    <b>{{ locale.localizedName(group.service) }}</b>
+                    <p>{{ groupSubNames(group) }}</p>
                   </div>
-                  <span class="status" [class.success]="isItemActive(item)" [class.warning]="!isItemActive(item)">
-                    {{ isItemActive(item) ? 'نشطة' : 'غير نشطة' }}
+                  <span class="status" [class.success]="isGroupActive(group)" [class.warning]="!isGroupActive(group)">
+                    {{ isGroupActive(group) ? 'نشطة' : 'غير نشطة' }}
                   </span>
-                  <button class="favorite" type="button" aria-label="تعديل الخدمة" (click)="openEdit(item); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">✎</button>
+                  <button class="favorite" type="button" aria-label="تعديل الخدمة" (click)="openEdit(group.items[0]); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">✎</button>
+                  <button class="favorite service-delete" type="button" aria-label="حذف الخدمة الرئيسية" (click)="removeMain(group); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">×</button>
                 </div>
               }
             </div>
@@ -175,7 +177,7 @@ export class ProviderServicesPageComponent implements OnInit {
   mode: 'list' | 'add' | 'edit' = 'list';
   locked = false;
   editing: ProviderServiceRow | null = null;
-  editStatus: 'active' | 'inactive' = 'active';
+  editingServiceId = '';
   dragIndex: number | null = null;
   overIndex: number | null = null;
   private orderBeforeDrag: string[] = [];
@@ -220,20 +222,26 @@ export class ProviderServicesPageComponent implements OnInit {
     return names.length ? names.join('، ') : '—';
   }
 
-  get editDisplayName(): string {
-    if (!this.editing) {
-      return '';
+  get serviceGroups(): { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }[] {
+    const groups: { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }[] = [];
+    const index = new Map<string, (typeof groups)[number]>();
+    for (const item of this.items) {
+      let group = index.get(item.serviceId);
+      if (!group) {
+        group = { serviceId: item.serviceId, service: item.service, items: [] };
+        index.set(item.serviceId, group);
+        groups.push(group);
+      }
+      group.items.push(item);
     }
-    return this.editing.subService
-      ? this.locale.localizedName(this.editing.subService)
-      : this.locale.localizedName(this.editing.service);
+    return groups;
   }
 
-  get editDirty(): boolean {
-    if (!this.editing) {
-      return false;
+  get editingGroup(): { serviceId: string; service: CatalogService; items: ProviderServiceRow[] } | null {
+    if (!this.editingServiceId) {
+      return null;
     }
-    return this.editStatus !== (this.isItemActive(this.editing) ? 'active' : 'inactive');
+    return this.serviceGroups.find((group) => group.serviceId === this.editingServiceId) ?? null;
   }
 
   ngOnInit(): void {
@@ -277,19 +285,21 @@ export class ProviderServicesPageComponent implements OnInit {
     this.serviceId = '';
     this.subServiceIds = [];
     this.editing = null;
+    this.editingServiceId = '';
     this.shell.set('إضافة خدمة');
   }
 
   openEdit(item: ProviderServiceRow): void {
     this.mode = 'edit';
     this.editing = item;
-    this.editStatus = this.isItemActive(item) ? 'active' : 'inactive';
+    this.editingServiceId = item.serviceId;
     this.shell.set('تعديل الخدمة');
   }
 
   closeEdit(): void {
     this.mode = 'list';
     this.editing = null;
+    this.editingServiceId = '';
     this.shell.set('خدماتي');
   }
 
@@ -297,21 +307,77 @@ export class ProviderServicesPageComponent implements OnInit {
     return item.isActive !== false;
   }
 
-  saveEdit(): void {
-    if (!this.editing || !this.editDirty) {
+  isGroupActive(group: { items: ProviderServiceRow[] }): boolean {
+    return group.items.some((item) => this.isItemActive(item));
+  }
+
+  groupSubNames(group: { items: ProviderServiceRow[] }): string {
+    const names = group.items
+      .map((item) => (item.subService ? this.locale.localizedName(item.subService) : ''))
+      .filter((name) => name);
+    return names.length ? names.join('، ') : 'الخدمة الرئيسية';
+  }
+
+  removeMain(group: { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }): void {
+    const name = this.locale.localizedName(group.service);
+    const subCount = group.items.length;
+    const message =
+      subCount > 1
+        ? `سيتم حذف «${name}» وكل خدماتها الفرعية (${subCount}). هل تريدين المتابعة؟`
+        : `سيتم حذف «${name}» وكل خدماتها الفرعية. هل تريدين المتابعة؟`;
+    if (!window.confirm(message)) {
+      return;
+    }
+    this.deleteMainService(group.serviceId);
+  }
+
+  removeMainFromEdit(): void {
+    if (!this.editingGroup) {
+      return;
+    }
+    this.removeMain(this.editingGroup);
+  }
+
+  removeSub(item: ProviderServiceRow): void {
+    const name = item.subService ? this.locale.localizedName(item.subService) : 'هذه الخدمة الفرعية';
+    if (!window.confirm(`سيتم حذف «${name}». هل تريدين المتابعة؟`)) {
       return;
     }
     this.loading = true;
-    this.api.patchProviderService(this.editing.id, { isActive: this.editStatus === 'active' }).subscribe({
+    this.api.removeProviderService(item.id).subscribe({
       next: () => {
         this.loading = false;
-        this.toast.show('تم حفظ تعديلات الخدمة');
-        this.closeEdit();
+        this.toast.show('تم حذف الخدمة الفرعية');
+        this.api.providerServices().subscribe({
+          next: (items) => {
+            this.items = items;
+            if (!this.editingGroup) {
+              this.closeEdit();
+            }
+          },
+        });
+      },
+      error: (err) => {
+        this.loading = false;
+        this.toast.show(apiMessage(err, 'تعذر حذف الخدمة الفرعية'));
+      },
+    });
+  }
+
+  private deleteMainService(serviceId: string): void {
+    this.loading = true;
+    this.api.removeProviderMainService(serviceId).subscribe({
+      next: () => {
+        this.loading = false;
+        this.toast.show('تم حذف الخدمة الرئيسية وكل خدماتها الفرعية');
+        if (this.mode === 'edit') {
+          this.closeEdit();
+        }
         this.reload();
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر حفظ التعديلات'));
+        this.toast.show(apiMessage(err, 'تعذر حذف الخدمة'));
       },
     });
   }
@@ -339,14 +405,15 @@ export class ProviderServicesPageComponent implements OnInit {
 
   onDragStart(event: DragEvent, index: number): void {
     const target = event.target as HTMLElement | null;
-    if (this.items.length < 2 || target?.closest('button')) {
+    const groups = this.serviceGroups;
+    if (groups.length < 2 || target?.closest('button')) {
       event.preventDefault();
       return;
     }
     this.dragIndex = index;
     this.overIndex = index;
     this.orderBeforeDrag = this.items.map((item) => item.id);
-    event.dataTransfer?.setData('text/plain', this.items[index].id);
+    event.dataTransfer?.setData('text/plain', groups[index].serviceId);
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
     }
@@ -360,10 +427,10 @@ export class ProviderServicesPageComponent implements OnInit {
     if (this.dragIndex == null || this.dragIndex === index) {
       return;
     }
-    const next = [...this.items];
-    const [moved] = next.splice(this.dragIndex, 1);
-    next.splice(index, 0, moved);
-    this.items = next;
+    const groups = this.serviceGroups;
+    const [moved] = groups.splice(this.dragIndex, 1);
+    groups.splice(index, 0, moved);
+    this.items = groups.flatMap((group) => group.items);
     this.dragIndex = index;
     this.overIndex = index;
   }

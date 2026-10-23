@@ -284,6 +284,10 @@ export class ApiService {
     return this.http.delete<{ ok: boolean }>(`${this.base}/provider/services/${id}`);
   }
 
+  removeProviderMainService(serviceId: string) {
+    return this.http.delete<{ ok: boolean }>(`${this.base}/provider/services/main/${serviceId}`);
+  }
+
   providerPortfolio(albumId?: string) {
     const params = albumId ? `?albumId=${encodeURIComponent(albumId)}` : '';
     return this.http.get<ProviderPortfolioItem[]>(`${this.base}/provider/portfolio${params}`);

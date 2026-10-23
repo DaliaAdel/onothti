@@ -341,6 +341,39 @@ export class ProviderService {
     return { ok: true };
   }
 
+  async removeMainService(userId: string, serviceId: string) {
+    await this.requireProvider(userId);
+    const rows = await this.prisma.providerService.findMany({
+      where: { providerUserId: userId, serviceId },
+    });
+    if (!rows.length) {
+      throw new NotFoundException("الخدمة غير موجودة");
+    }
+    const otherCount = await this.prisma.providerService.count({
+      where: { providerUserId: userId, serviceId: { not: serviceId } },
+    });
+    if (otherCount === 0) {
+      throw new BadRequestException("لازم تبقى خدمة رئيسية واحدة على الأقل");
+    }
+    const wasPrimary = rows.some((row) => row.isPrimary);
+    await this.prisma.providerService.deleteMany({
+      where: { providerUserId: userId, serviceId },
+    });
+    if (wasPrimary) {
+      const next = await this.prisma.providerService.findFirst({
+        where: { providerUserId: userId },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (next) {
+        await this.prisma.providerService.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
+    return { ok: true };
+  }
+
   async listCoverage(userId: string) {
     await this.requireProvider(userId);
     return this.prisma.providerCoverage.findMany({
