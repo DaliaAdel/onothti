@@ -12,7 +12,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   selector: 'app-login-phone',
   imports: [FormsModule, RouterLink, AuthLayoutComponent],
   template: `
-    <app-auth-layout panelSrc="/assets/bg_new.png">
+    <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
         <a class="auth-back" [routerLink]="backLink">← رجوع</a>
         <span class="auth-kicker">{{ isNew ? 'إنشاء حساب جديد' : 'لدي حساب' }}</span>

@@ -23,7 +23,7 @@ import { LocaleService } from '../core/locale.service';
 })
 export class AuthLayoutComponent {
   readonly locale = inject(LocaleService);
-  @Input() panelSrc = '';
+  @Input() panelSrc = '/assets/bg_new.png';
   @Input() variant: 'default' | 'customer' | 'provider' = 'default';
   @Input() visualTitle = '';
   @Input() visualSub = '';
