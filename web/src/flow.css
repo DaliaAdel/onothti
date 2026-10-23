@@ -107,7 +107,7 @@
 .metric .value,.metric strong{font-size:27px;font-weight:900;color:var(--primary-dark)}
 .hero h2{font:700 32px/1.45 var(--font-display);color:var(--primary-dark)}
 @media(max-width:780px){.grid.four,.grid.three,.grid.two{grid-template-columns:1fr}}
-.auth-layout{position:fixed;inset:0;z-index:1}
+.auth-layout{position:fixed;inset:0;z-index:1;grid-template-rows:minmax(0,1fr)}
 .auth-layout .auth-brand{position:relative!important;inset:auto!important;top:auto!important;min-height:0}
 .auth-layout .auth-panel{min-height:0;height:100%;overflow:hidden;padding:28px 40px!important;align-items:center}
 .auth-layout .auth-box{max-height:100%;width:min(100%,470px)}
@@ -123,19 +123,34 @@
 .auth-layout .signup-details .form-grid{gap:8px}
 .auth-layout .terms-row,.auth-layout .step-row{margin-top:8px}
 .auth-layout .auth-panel:has(.signup-box){
-  overflow-y:auto;
-  overflow-x:hidden;
-  align-items:flex-start;
-  -webkit-overflow-scrolling:touch;
+  overflow:hidden;
+  align-items:center;
+  justify-content:center;
 }
 .auth-layout .signup-box{
-  max-height:none;
+  display:flex;
+  flex-direction:column;
+  max-height:100%;
+  min-height:0;
   width:min(100%,560px);
-  margin:auto 0;
-  padding:8px 0 20px;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+}
+.auth-layout .signup-box .signup-head{flex:none}
+.auth-layout .signup-box .signup-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding-left:4px;
+}
+.auth-layout .signup-box .signup-foot{
+  flex:none;
+  padding-top:10px;
+  background:#fffdfc;
 }
 .auth-layout .signup-box h2{font-size:28px;margin:4px 0 6px}
-.auth-layout .signup-box>p.muted{margin:0 0 10px;line-height:1.7}
+.auth-layout .signup-box .signup-head .muted{margin:0 0 10px;line-height:1.7}
 .auth-layout .signup-box .auth-grid{gap:0 12px}
 .auth-layout .signup-box .field{margin-bottom:8px}
 .auth-layout .signup-box .city-multi .chips{
@@ -147,14 +162,12 @@
 .auth-layout .signup-box h3{font-size:13px;margin:8px 0 6px}
 .auth-layout .signup-box .disabled-services{max-height:68px;overflow:auto;margin:0 0 6px}
 .auth-layout .signup-box .subscription-note{margin:8px 0;padding:10px 12px}
-.auth-layout .signup-box .terms-row{margin:10px 0 8px}
+.auth-layout .signup-box .terms-row{margin:0 0 8px}
 .auth-layout .signup-box .auth-submit{
-  position:sticky;
-  bottom:0;
-  z-index:2;
+  position:static;
+  width:100%;
   margin-top:4px;
-  background:#fffdfc;
-  box-shadow:0 -14px 18px #fffdfc;
+  box-shadow:none;
 }
 a.entry-card{color:inherit;text-decoration:none}
 a.auth-back{display:inline-block}
@@ -332,8 +345,8 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
   .table-wrap,.ops-table-wrap,.appr-table-card{max-width:100%}
   input,select,textarea{font-size:16px}
   .package-grid{grid-template-columns:1fr}
-  .auth-layout .auth-panel:has(.signup-box){padding:56px 16px 12px!important}
-  .auth-layout .signup-box{padding-bottom:12px}
+  .auth-layout .auth-panel:has(.signup-box){padding:56px 16px 16px!important}
+  .auth-layout .signup-box{padding-bottom:0}
   .auth-layout .signup-box h2{font-size:24px}
   .auth-layout .signup-box .auth-grid{grid-template-columns:1fr 1fr!important}
 }

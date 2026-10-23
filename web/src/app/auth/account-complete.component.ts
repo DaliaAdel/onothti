@@ -15,86 +15,92 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <form class="auth-box signup-box" (ngSubmit)="submit()">
-        <a class="auth-back" routerLink="/login">← رجوع</a>
-        <span class="auth-kicker">{{ isCustomer ? 'العميلة' : 'الخبيرة' }}</span>
-        <h2>إكمال الملف الشخصي</h2>
-        <p class="muted">
-          {{
-            isCustomer
-              ? 'الاسم والمنطقة والمدينة مطلوبة، والبريد الإلكتروني اختياري.'
-              : 'الاسم والمنطقة والمدن مطلوبة، ويمكنكِ اختيار أكثر من مدينة في نفس المنطقة.'
-          }}
-        </p>
-        <div class="auth-grid">
-          <div class="field">
-            <label>الاسم *</label>
-            <input name="name" [(ngModel)]="displayName" placeholder="اسم العرض" />
-          </div>
-          <div class="field">
-            <label>المنطقة *</label>
-            <select name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-              <option value="">اختاري المنطقة</option>
-              @for (region of regions; track region.id) {
-                <option [value]="region.id">{{ locale.localizedName(region) }}</option>
-              }
-            </select>
-          </div>
-          @if (isCustomer) {
+        <div class="signup-head">
+          <a class="auth-back" routerLink="/login">← رجوع</a>
+          <span class="auth-kicker">{{ isCustomer ? 'العميلة' : 'الخبيرة' }}</span>
+          <h2>إكمال الملف الشخصي</h2>
+          <p class="muted">
+            {{
+              isCustomer
+                ? 'الاسم والمنطقة والمدينة مطلوبة، والبريد الإلكتروني اختياري.'
+                : 'الاسم والمنطقة والمدن مطلوبة، ويمكنكِ اختيار أكثر من مدينة في نفس المنطقة.'
+            }}
+          </p>
+        </div>
+        <div class="signup-body">
+          <div class="auth-grid">
             <div class="field">
-              <label>المدينة *</label>
-              <select name="city" [(ngModel)]="cityId" [disabled]="!regionId">
-                <option value="">اختاري المدينة</option>
-                @for (city of cities; track city.id) {
-                  <option [value]="city.id">{{ locale.localizedName(city) }}</option>
+              <label>الاسم *</label>
+              <input name="name" [(ngModel)]="displayName" placeholder="اسم العرض" />
+            </div>
+            <div class="field">
+              <label>المنطقة *</label>
+              <select name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
+                <option value="">اختاري المنطقة</option>
+                @for (region of regions; track region.id) {
+                  <option [value]="region.id">{{ locale.localizedName(region) }}</option>
                 }
               </select>
             </div>
-          } @else {
-            <div class="field city-multi">
-              <label>المدن *</label>
-              <small class="city-hint">{{ locale.t('auth.complete.citiesHint') }}</small>
-              <div class="chips">
-                @if (!regionId) {
-                  <span class="muted small">{{ locale.t('auth.complete.citiesPickRegion') }}</span>
-                }
-                @for (city of cities; track city.id) {
-                  <button class="chip" type="button" [class.active]="isCitySelected(city.id)" (click)="toggleCity(city.id)">
-                    {{ locale.localizedName(city) }}
-                  </button>
-                }
+            @if (isCustomer) {
+              <div class="field">
+                <label>المدينة *</label>
+                <select name="city" [(ngModel)]="cityId" [disabled]="!regionId">
+                  <option value="">اختاري المدينة</option>
+                  @for (city of cities; track city.id) {
+                    <option [value]="city.id">{{ locale.localizedName(city) }}</option>
+                  }
+                </select>
               </div>
+            } @else {
+              <div class="field city-multi">
+                <label>المدن *</label>
+                <small class="city-hint">{{ locale.t('auth.complete.citiesHint') }}</small>
+                <div class="chips">
+                  @if (!regionId) {
+                    <span class="muted small">{{ locale.t('auth.complete.citiesPickRegion') }}</span>
+                  }
+                  @for (city of cities; track city.id) {
+                    <button class="chip" type="button" [class.active]="isCitySelected(city.id)" (click)="toggleCity(city.id)">
+                      {{ locale.localizedName(city) }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+            <div class="field auth-email">
+              <label>البريد الإلكتروني (اختياري)</label>
+              <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" />
+            </div>
+          </div>
+          @if (!isCustomer) {
+            <h3>الخدمات التي تقدمينها</h3>
+            <div class="chips disabled-services">
+              @for (service of previewServices; track service.id) {
+                <button class="chip" type="button" disabled>{{ locale.localizedName(service) }}</button>
+              }
+            </div>
+            <div class="subscription-note">
+              <b>الخدمات متاحة بعد الاشتراك</b>
+              <span>بعد الدخول اختاري باقة، وبعد اعتماد الدفع يمكنكِ إضافة خدماتك وألبومات أعمالك.</span>
             </div>
           }
-          <div class="field auth-email">
-            <label>البريد الإلكتروني (اختياري)</label>
-            <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" />
-          </div>
         </div>
-        @if (!isCustomer) {
-          <h3>الخدمات التي تقدمينها</h3>
-          <div class="chips disabled-services">
-            @for (service of previewServices; track service.id) {
-              <button class="chip" type="button" disabled>{{ locale.localizedName(service) }}</button>
-            }
-          </div>
-          <div class="subscription-note">
-            <b>الخدمات متاحة بعد الاشتراك</b>
-            <span>بعد الدخول اختاري باقة، وبعد اعتماد الدفع يمكنكِ إضافة خدماتك وألبومات أعمالك.</span>
-          </div>
-        }
-        <label class="terms-row">
-          <input type="checkbox" name="acceptTerms" [(ngModel)]="acceptTerms" />
-          <span>
-            أوافق على
-            <a routerLink="/legal/terms" [queryParams]="{ audience: accountType }">الشروط والأحكام</a>
-            و
-            <a routerLink="/legal/policies" [queryParams]="{ audience: accountType }">سياسة الخصوصية</a>
-          </span>
-        </label>
-        @if (errorText) {
-          <p class="auth-error">{{ errorText }}</p>
-        }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ والدخول للرئيسية</button>
+        <div class="signup-foot">
+          <label class="terms-row">
+            <input type="checkbox" name="acceptTerms" [(ngModel)]="acceptTerms" />
+            <span>
+              أوافق على
+              <a routerLink="/legal/terms" [queryParams]="{ audience: accountType }">الشروط والأحكام</a>
+              و
+              <a routerLink="/legal/policies" [queryParams]="{ audience: accountType }">سياسة الخصوصية</a>
+            </span>
+          </label>
+          @if (errorText) {
+            <p class="auth-error">{{ errorText }}</p>
+          }
+          <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ والدخول للرئيسية</button>
+        </div>
       </form>
     </app-auth-layout>
   `,
