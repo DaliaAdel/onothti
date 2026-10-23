@@ -160,7 +160,7 @@ function ibanError(value: string): string {
     <div class="section-head">
       <div>
         <h2>رسائل الترحيب</h2>
-        <p>ترحيب وتحفيز للعميلة والخبيرة عند الدخول</p>
+        <p>إدارة رسائل الترحيب والتحفيز التى تظهر للعميلة والخبيرة عند تسجيل الدخول</p>
       </div>
       <button class="btn primary" type="button" (click)="addingWelcome = true">+ إضافة رسالة</button>
     </div>
@@ -168,9 +168,9 @@ function ibanError(value: string): string {
       <table class="ops-table">
         <thead>
           <tr>
-            <th>الجمهور</th>
-            <th>النوع</th>
-            <th>النص</th>
+            <th>الجمهور المستهدف</th>
+            <th>نوع الرسالة</th>
+            <th>محتوى الرسالة</th>
             <th>الحالة</th>
           </tr>
         </thead>
@@ -231,7 +231,7 @@ function ibanError(value: string): string {
     <div class="section-head">
       <div>
         <h2>الحساب البنكي للمنصة</h2>
-        <p>بيانات التحويل التي تراها الخبيرة عند الاشتراك.</p>
+        <p>إدارة بيانات الحساب البنكي التى تظهر للخبيرة عند سداد قيمة الاشتراك او تجديد الباقة</p>
       </div>
       <button class="btn primary" type="button" (click)="openAddBank()">+ إضافة حساب</button>
     </div>

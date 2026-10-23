@@ -18,7 +18,7 @@ import { keepSelected } from './ops-ui';
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
-        <p>اضغطي على صف الباقة لفتح شاشتها وتعديل الأسعار والخدمات</p>
+        <p>اختر الباقه لعرض تفاصيلها وتعديلها</p>
       </div>
         @if (canEditPackage) {
           <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
@@ -113,7 +113,7 @@ import { keepSelected } from './ops-ui';
     <div class="section-head">
       <div>
         <h2>الحملات الترويجية</h2>
-        <p>اربطي الحملة بباقة (مثل المجانية) ثم حددي المدة والتشغيل</p>
+        <p>اربط الحملة بباقة (مثل المجانية) ثم حدد المدة والتشغيل</p>
       </div>
       @if (canCampaign) {
         <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة حملة</button>

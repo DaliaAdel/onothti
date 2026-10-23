@@ -22,7 +22,7 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
       <div class="section-head">
         <div>
           <h2>الهيكل التنظيمي</h2>
-          <p>كل قسم يتسع لأكثر من فريق. اربطي الموظفات بالفرق من حسابات موظفي المنصة.</p>
+          <p>كل قسم يتسع لأكثر من فريق. اربط الموظفين بالفرق من حسابات موظفي المنصة.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <a class="btn ghost" routerLink="/ops/staff">حسابات الموظفين</a>

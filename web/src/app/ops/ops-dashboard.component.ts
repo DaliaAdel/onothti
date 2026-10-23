@@ -51,28 +51,28 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
       </article>
       @if (canPage('staff')) {
         <a class="stat" routerLink="/ops/staff">
-          <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>حسابات الموظفين</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.staffCount ?? '—' }}</b>
-          <span>حسابات تشغيل ومالية</span>
+          <span>حسابات إدارية وتشغيلية ومالية</span>
         </a>
       } @else {
         <article class="stat">
-          <div class="top"><span>موظفو التشغيل</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>حسابات الموظفين</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.staffCount ?? '—' }}</b>
-          <span>حسابات تشغيل ومالية</span>
+          <span>حسابات إدارية وتشغيلية ومالية</span>
         </article>
       }
       @if (canPage('tickets')) {
         <a class="stat" routerLink="/ops/tickets" [queryParams]="{ priority: '1' }">
-          <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <div class="top"><span>الطلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
           <b>{{ dash?.escalatedTickets ?? 0 }}</b>
-          <span>تحتاج مراجعة إدارية</span>
+          <span> طلبات تحتاج مراجعة إدارية </span>
         </a>
       } @else {
         <article class="stat">
-          <div class="top"><span>طلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <div class="top"><span>الطلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
           <b>{{ dash?.escalatedTickets ?? 0 }}</b>
-          <span>تحتاج مراجعة إدارية</span>
+          <span> طلبات تحتاج مراجعة إدارية </span>
         </article>
       }
       @if (canPage('events')) {
@@ -93,7 +93,7 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
     <div class="section-head">
       <div>
         <h2>مهام تحتاج إجراء</h2>
-        <p>الأحدث أولًا. اضغطي الصف للانتقال إلى شاشة المراجعة.</p>
+        <p>اختر مهمة لعرض تفاصيلها واتخاذ الاجراء </p>
       </div>
     </div>
 
@@ -144,31 +144,31 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
 
     <div class="grid two" style="margin-top:22px">
       <article class="card">
-        <h3>حالة العمل اليوم</h3>
+        <h3>ملخص العمل اليوم</h3>
         @if (canPage('approvals')) {
           <a class="activity" routerLink="/ops/approvals">
             <span class="dot"></span>
-            <div><b>الاعتمادات</b><span>{{ (dash?.pendingRatings ?? 0) + (dash?.pendingProfileChanges ?? 0) + (dash?.pendingMedia ?? 0) + (dash?.pendingProviders ?? 0) }} عنصر</span></div>
+            <div><b>الاعتمادات</b><span>{{ countLabel(pendingApprovals, 'عنصر', 'عناصر') }}</span></div>
           </a>
           <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
             <span class="dot"></span>
-            <div><b>إيصالات تحويل</b><span>{{ dash?.pendingReceipts ?? 0 }} إيصال</span></div>
+            <div><b>إيصالات تحويل</b><span>{{ countLabel(dash?.pendingReceipts ?? 0, 'إيصال', 'إيصالات') }}</span></div>
           </a>
           <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'accounts' }">
             <span class="dot"></span>
-            <div><b>حسابات خبيرات للمراجعة</b><span>{{ dash?.pendingProviders ?? 0 }} حساب</span></div>
+            <div><b>حسابات خبيرات للمراجعة</b><span>{{ countLabel(dash?.pendingProviders ?? 0, 'حساب', 'حسابات') }}</span></div>
           </a>
         }
         @if (canPage('reviews')) {
           <a class="activity" routerLink="/ops/reviews">
             <span class="dot"></span>
-            <div><b>بلاغات</b><span>{{ dash?.openComplaints ?? 0 }} بلاغ</span></div>
+            <div><b>بلاغات</b><span>{{ countLabel(dash?.openComplaints ?? 0, 'بلاغ', 'بلاغات') }}</span></div>
           </a>
         }
         @if (canPage('packages')) {
           <a class="activity" routerLink="/ops/packages">
             <span class="dot"></span>
-            <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ dash?.expiringSubscriptions ?? 0 }} باقة</span></div>
+            <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ countLabel(dash?.expiringSubscriptions ?? 0, 'باقة', 'باقات') }}</span></div>
           </a>
         }
       </article>
@@ -210,7 +210,7 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
           }
         </div>
         <p class="notice" style="margin-top:16px">
-          حسابات الخبيرات والاسم والصورة والنبذة والتقييم والأعمال والإيصالات تُعتمد من شاشة واحدة.
+         إدارة جميع الاعتمادات ومراجعتها  من شاشة واحدة.
         </p>
       </article>
     </div>
@@ -233,6 +233,25 @@ export class OpsDashboardComponent implements OnInit {
 
   get inbox(): OpsInboxItem[] {
     return this.dash?.inbox ?? [];
+  }
+
+  get pendingApprovals(): number {
+    return (
+      (this.dash?.pendingRatings ?? 0) +
+      (this.dash?.pendingProfileChanges ?? 0) +
+      (this.dash?.pendingMedia ?? 0) +
+      (this.dash?.pendingProviders ?? 0)
+    );
+  }
+
+  countLabel(count: number, singular: string, plural: string): string {
+    if (count <= 0) {
+      return 'لا يوجد';
+    }
+    if (count === 1) {
+      return `1 ${singular}`;
+    }
+    return `${count} ${plural}`;
   }
 
   ngOnInit(): void {
