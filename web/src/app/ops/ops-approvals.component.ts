@@ -473,14 +473,17 @@ export class OpsApprovalsComponent implements OnInit {
     if (!group) {
       return [];
     }
-    if (this.focusedKind) {
-      return group.items.filter((item) => item.kind === this.focusedKind);
+    const items = group.items.filter((item) => item.kind !== 'account');
+    if (this.focusedKind && this.focusedKind !== 'account') {
+      return items.filter((item) => item.kind === this.focusedKind);
     }
-    return group.items;
+    return items;
   }
 
   get historyItems(): ApprovalItem[] {
-    return this.selectedGroup?.items.filter((item) => this.itemTone(item) !== 'pending') ?? [];
+    return (
+      this.selectedGroup?.items.filter((item) => item.kind !== 'account' && this.itemTone(item) !== 'pending') ?? []
+    );
   }
 
   get drawerTitle(): string {
@@ -622,6 +625,7 @@ export class OpsApprovalsComponent implements OnInit {
   chips(group: AccountGroup): KindChip[] {
     const order: ApprovalKind[] = ['account', 'name', 'photo', 'bio', 'rating', 'portfolio', 'receipt', 'other'];
     return order
+      .filter((kind) => kind !== 'account')
       .filter((kind) => group.items.some((item) => item.kind === kind))
       .map((kind) => {
         const rows = group.items.filter((item) => item.kind === kind);
@@ -893,27 +897,6 @@ export class OpsApprovalsComponent implements OnInit {
         this.ratingNotes[item.rating.id] ??= '';
       }
     }
-    this.loadAccountFile(group);
-  }
-
-  private loadAccountFile(group: AccountGroup): void {
-    this.accountFile = null;
-    if (!this.canApproveAccounts && !this.session.hasAnyPermission('PRO-01', 'NOT-01', 'USR-01')) {
-      return;
-    }
-    if (!group.items.some((item) => item.kind === 'account')) {
-      return;
-    }
-    this.accountFileLoading = true;
-    this.api.opsAccount(group.accountId).subscribe({
-      next: (row) => {
-        this.accountFile = row;
-        this.accountFileLoading = false;
-      },
-      error: () => {
-        this.accountFileLoading = false;
-      },
-    });
   }
 
   private listOrEmpty<T>(enabled: boolean, source: Observable<T[]>): Observable<T[]> {
