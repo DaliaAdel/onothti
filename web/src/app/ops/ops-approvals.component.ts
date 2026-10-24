@@ -87,10 +87,10 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
 
       <div class="appr-tabs">
         <button class="appr-tab" type="button" [class.active]="view === 'all'" (click)="setView('all')">
-          الكل <span class="count">{{ items.length }}</span>
+          الكل <span class="count">{{ pendingCount }}</span>
         </button>
         <button class="appr-tab" type="button" [class.active]="view === 'accounts'" (click)="setView('accounts')">
-          الحسابات <span class="count">{{ groups.length }}</span>
+          الحسابات <span class="count">{{ pendingGroupsCount }}</span>
         </button>
         @for (tab of kindTabs; track tab.id) {
           @if (tab.visible) {
@@ -436,6 +436,10 @@ export class OpsApprovalsComponent implements OnInit {
     return this.items.filter((item) => this.itemTone(item) === 'pending').length;
   }
 
+  get pendingGroupsCount(): number {
+    return this.groups.filter((group) => group.items.some((item) => this.itemTone(item) === 'pending')).length;
+  }
+
   get approvedCount(): number {
     return this.items.filter((item) => this.itemTone(item) === 'approved').length;
   }
@@ -541,7 +545,7 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   kindCount(kind: ApprovalKind): number {
-    return this.items.filter((item) => item.kind === kind).length;
+    return this.items.filter((item) => item.kind === kind && this.itemTone(item) === 'pending').length;
   }
 
   kindLabel(kind: ApprovalKind): string {
@@ -826,7 +830,7 @@ export class OpsApprovalsComponent implements OnInit {
       { id: 'rating', label: 'التقييم', visible: this.canSeeProfile },
       { id: 'portfolio', label: 'أعمال', visible: this.canSeeContent },
       { id: 'receipt', label: 'إيصالات', visible: this.canSeeReceipts },
-      { id: 'other', label: 'أخرى', visible: this.kindCount('other') > 0 },
+      { id: 'other', label: 'أخرى', visible: this.items.some((item) => item.kind === 'other') },
     ];
   }
 
