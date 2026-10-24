@@ -17,7 +17,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <a class="auth-back" routerLink="/login/password">← رجوع</a>
         <span class="auth-kicker">استعادة الحساب</span>
         <h2>نسيت كلمة المرور</h2>
-        <p class="muted">أدخلي رقم الجوال لاستلام رمز التحقق ثم تعيين كلمة مرور جديدة.</p>
+        <p class="muted">أدخل رقم الجوال لاستلام رمز التحقق ثم تعيين كلمة مرور جديدة.</p>
         <div class="field">
           <label>رقم الجوال</label>
           <input class="input" dir="ltr" name="phone" [(ngModel)]="phone" placeholder="05xxxxxxxx" />

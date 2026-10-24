@@ -10,8 +10,8 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
       <div class="auth-box">
         <a class="auth-back" routerLink="/login">← رجوع</a>
         <span class="auth-kicker">مستخدم جديد</span>
-        <h2>اختاري نوع الحساب</h2>
-        <p class="muted">اختاري نوع الحساب المناسب لكِ لاستكمال التسجيل.</p>
+        <h2>اختار نوع الحساب</h2>
+        <p class="muted">اختار نوع الحساب المناسب لك لاستكمال التسجيل.</p>
         <div class="entry-options role-options">
           <a class="entry-card" routerLink="/signup/phone" [queryParams]="{ role: 'provider' }">
             <span class="entry-icon">✦</span>

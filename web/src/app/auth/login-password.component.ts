@@ -17,7 +17,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <a class="auth-back" routerLink="/login/phone">← رجوع</a>
         <span class="auth-kicker">حساب التشغيل</span>
         <h2>كلمة المرور</h2>
-        <p class="muted">أدخلي كلمة مرور حساب التشغيل المرتبط بـ <b dir="ltr">{{ phoneLabel }}</b></p>
+        <p class="muted">أدخل كلمة مرور حساب التشغيل المرتبط بـ <b dir="ltr">{{ phoneLabel }}</b></p>
         <div class="field">
           <div class="field-label">
             <label>{{ locale.t('auth.password') }}</label>
