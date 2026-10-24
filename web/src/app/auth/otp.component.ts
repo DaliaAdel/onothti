@@ -15,7 +15,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
       <form class="auth-box" (submit)="submit($event)">
         <a class="auth-back" [routerLink]="backLink" [queryParams]="backQuery">← رجوع</a>
         <span class="auth-kicker">التحقق من رقم الجوال</span>
-        <h2>أدخلي رمز التحقق</h2>
+        <h2>أدخل رمز التحقق</h2>
         <p class="muted">أرسلنا رمزًا من 6 أرقام إلى <b dir="ltr">{{ phoneLabel }}</b></p>
         <div class="otp-fields" dir="ltr">
           @for (digit of digits; track $index) {

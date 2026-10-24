@@ -17,7 +17,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <a class="auth-back" [routerLink]="backLink">← رجوع</a>
         <span class="auth-kicker">{{ isNew ? 'إنشاء حساب جديد' : 'لدي حساب' }}</span>
         <h2>رقم الهاتف</h2>
-        <p class="muted">{{ isNew ? 'أدخلي رقم الهاتف وسنرسل لكِ رمز تحقق OTP.' : 'أدخلي رقم الجوال للمتابعة. حساب التشغيل يطلب كلمة المرور بعد التحقق.' }}</p>
+        <p class="muted">{{ isNew ? 'أدخل رقم الهاتف وسنرسل لكِ رمز تحقق OTP.' : 'أدخلي رقم الجوال للمتابعة. حساب التشغيل يطلب كلمة المرور بعد التحقق.' }}</p>
         <div class="field">
           <label>رقم الجوال</label>
           <input
