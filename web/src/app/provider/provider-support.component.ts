@@ -18,7 +18,7 @@ import { ToastService } from '../core/toast.service';
       </div>
     </div>
     @if (selected) {
-      <button class="btn secondary" type="button" (click)="selected = null">← الرجوع إلى الطلبات</button>
+      <button class="btn secondary back" type="button" (click)="selected = null">← الرجوع إلى الطلبات</button>
       <div class="request-detail-head card">
         <div>
           <span class="request-type">{{ locale.localizedName(selected.type) }}</span>

@@ -151,7 +151,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeAccount()">→ رجوع للحسابات</button>
+          <button class="text-link back" type="button" (click)="closeAccount()">→ رجوع للحسابات</button>
           <h2>{{ selected.displayName }}</h2>
           <p>{{ typeAr(selected.accountType) }} · {{ selected.accountCode }}</p>
         </div>

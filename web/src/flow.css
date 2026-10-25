@@ -207,6 +207,13 @@
 }
 a.entry-card{color:inherit;text-decoration:none}
 a.auth-back{display:inline-block}
+.auth-back,.back-link{color:var(--success);font-weight:800}
+.auth-back:hover,.back-link:hover{color:#2d5a3c}
+.btn.back,.btn.secondary.back,.btn.ghost.back,.album-back{
+  background:var(--success-bg);
+  color:var(--success);
+  border-color:#c5dfcc;
+}
 a.city{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 a.subscription-note{text-decoration:none;cursor:pointer}
 .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 12px}

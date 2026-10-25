@@ -339,4 +339,6 @@ a.avatar.has-photo{background-size:cover;background-position:center;overflow:hid
   .appr-summary{grid-template-columns:repeat(2,minmax(145px,1fr))}
   .appr-dates{grid-template-columns:1fr}
 }
+.text-link.back{color:var(--green)}
+.text-link.back:hover{color:#24614e}
 

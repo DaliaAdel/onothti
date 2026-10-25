@@ -840,7 +840,6 @@ export class OpsApprovalsComponent implements OnInit {
       { id: 'rating', label: 'التقييم', visible: this.canSeeProfile },
       { id: 'portfolio', label: 'أعمال', visible: this.canSeeContent },
       { id: 'receipt', label: 'إيصالات', visible: this.canSeeReceipts },
-      { id: 'other', label: 'أخرى', visible: this.items.some((item) => item.kind === 'other') },
     ];
   }
 
@@ -859,8 +858,7 @@ export class OpsApprovalsComponent implements OnInit {
       kind === 'photo' ||
       kind === 'bio' ||
       kind === 'rating' ||
-      kind === 'receipt' ||
-      kind === 'other'
+      kind === 'receipt'
     ) {
       return kind;
     }

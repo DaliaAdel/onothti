@@ -26,7 +26,7 @@ import { ToastService } from '../core/toast.service';
           <h1>إضافة خدمة جديدة</h1>
           <p>اختاري الخدمة الرئيسية ثم خدمة فرعية أو أكثر</p>
         </div>
-        <button class="btn secondary" type="button" (click)="mode = 'list'">← الرجوع إلى خدماتي</button>
+        <button class="btn secondary back" type="button" (click)="mode = 'list'">← الرجوع إلى خدماتي</button>
       </div>
       <div class="service-steps">
         <span [class.active]="!!serviceId"><i>1</i>الخدمة الرئيسية</span>
@@ -79,7 +79,7 @@ import { ToastService } from '../core/toast.service';
           <h1>تعديل الخدمة</h1>
           <p>الخدمات الفرعية التابعة لـ {{ locale.localizedName(editingGroup.service) }}</p>
         </div>
-        <button class="btn secondary" type="button" (click)="closeEdit()">← الرجوع إلى خدماتي</button>
+        <button class="btn secondary back" type="button" (click)="closeEdit()">← الرجوع إلى خدماتي</button>
       </div>
       <div class="card edit-service-form">
         <div class="edit-service-heading">
@@ -105,7 +105,7 @@ import { ToastService } from '../core/toast.service';
         </div>
         <div class="edit-service-actions">
           <button class="btn ghost" type="button" [disabled]="loading" (click)="removeMainFromEdit()">حذف الخدمة الرئيسية</button>
-          <button class="btn secondary" type="button" (click)="closeEdit()">رجوع</button>
+          <button class="btn secondary back" type="button" (click)="closeEdit()">رجوع</button>
         </div>
       </div>
     } @else {

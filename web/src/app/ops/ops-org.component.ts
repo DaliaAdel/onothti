@@ -88,7 +88,7 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeDepartment()">→ رجوع للأقسام</button>
+          <button class="text-link back" type="button" (click)="closeDepartment()">→ رجوع للأقسام</button>
           <h2>{{ selected.nameAr }}</h2>
           <p>كل فريق تشغيل يحتوي على مدير وموظفات، ويمكن تحديد صلاحيات مستقلة لكل حساب.</p>
         </div>

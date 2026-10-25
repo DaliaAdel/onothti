@@ -98,7 +98,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeService()">→ رجوع للخدمات</button>
+          <button class="text-link back" type="button" (click)="closeService()">→ رجوع للخدمات</button>
           <h2>{{ selected.nameAr }}</h2>
           <p>{{ selected.nameEn }} · {{ selected.subServices.length }} خدمة فرعية</p>
         </div>

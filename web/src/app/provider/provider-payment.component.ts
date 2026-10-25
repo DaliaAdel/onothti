@@ -96,7 +96,7 @@ import { ToastService } from '../core/toast.service';
           @if (!ready) {
             <p class="proof-hint">{{ uploading ? 'جاري رفع الإيصال...' : 'ارفعي الإيصال أو اكتبي رسالة التحويل (8 أحرف على الأقل) لتفعيل زر الإرسال.' }}</p>
           }
-          <a class="btn ghost" routerLink="/p/package">العودة للباقات</a>
+          <a class="btn ghost back" routerLink="/p/package">العودة للباقات</a>
         </div>
       </div>
     }

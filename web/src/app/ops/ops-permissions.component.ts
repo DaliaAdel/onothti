@@ -18,7 +18,7 @@ import { PERMISSION_MATRIX, type PermissionMatrixItem } from './permission-matri
     <div class="section-head">
       <div>
         @if (staff) {
-          <a class="text-link" routerLink="/ops/staff">→ رجوع لحسابات الموظفين</a>
+          <a class="text-link back" routerLink="/ops/staff">→ رجوع لحسابات الموظفين</a>
           <h2>{{ staff.displayName }}</h2>
           <p>
             {{ staff.role?.nameAr || 'بدون منصب' }}

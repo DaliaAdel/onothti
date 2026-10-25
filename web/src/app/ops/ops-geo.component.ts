@@ -80,7 +80,7 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
     } @else if (!selectedCity) {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeRegion()">→ رجوع للمناطق</button>
+          <button class="text-link back" type="button" (click)="closeRegion()">→ رجوع للمناطق</button>
           <h2>{{ selected.nameAr }}</h2>
           <p>{{ selected.nameEn }} · {{ selected.cities.length }} مدينة</p>
         </div>
@@ -145,7 +145,7 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeCity()">→ رجوع لـ {{ selected.nameAr }}</button>
+          <button class="text-link back" type="button" (click)="closeCity()">→ رجوع لـ {{ selected.nameAr }}</button>
           <h2>{{ selectedCity.nameAr }}</h2>
           <p>{{ selectedCity.nameEn }}</p>
         </div>

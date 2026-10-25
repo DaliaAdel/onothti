@@ -54,7 +54,7 @@ import { newestFirst, opsDate, statusTone } from './ops-ui';
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link" type="button" (click)="closeFile()">→ رجوع للاعتماد</button>
+          <button class="text-link back" type="button" (click)="closeFile()">→ رجوع للاعتماد</button>
           <h2>{{ selected.displayName }}</h2>
           <p>ملف الخبيرة للعرض فقط</p>
         </div>

@@ -28,7 +28,7 @@ import { ToastService } from '../core/toast.service';
           <p>أضيفي صور وفيديوهات الألبوم</p>
         </div>
       </div>
-      <button class="btn secondary album-back" type="button" (click)="closeAlbum()">← الرجوع إلى ألبوماتي</button>
+      <button class="btn secondary back album-back" type="button" (click)="closeAlbum()">← الرجوع إلى ألبوماتي</button>
       <div class="card album-upload">
         <button type="button" class="upload-icon album-upload-trigger" aria-label="رفع صور أو فيديوهات" (click)="fileInput.click()">＋</button>
         <div>

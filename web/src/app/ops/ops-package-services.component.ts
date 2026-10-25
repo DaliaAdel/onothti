@@ -21,7 +21,7 @@ import { PositiveIntDirective } from './positive-int.directive';
     } @else {
       <div class="section-head">
         <div>
-          <a class="text-link" routerLink="/ops/packages">→ رجوع للباقات</a>
+          <a class="text-link back" routerLink="/ops/packages">→ رجوع للباقات</a>
           <h2>{{ pkg.nameAr }}</h2>
           <p>{{ pkg.durationMonths }} شهر</p>
         </div>
