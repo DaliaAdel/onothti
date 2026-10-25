@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
+import { IsArray, IsBoolean, IsDate, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TICKET_TYPE_CATALOG } from "../../common/ticket-types";
 
@@ -18,17 +18,30 @@ export class UpdateSettingDto {
 export class PatchCampaignDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Date)
+  @IsDate()
   startDate?: Date;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Date)
+  @IsDate()
   endDate?: Date;
 
   @ApiPropertyOptional()
@@ -382,6 +395,12 @@ export class UpsertPackageDto {
   @IsBoolean()
   isActive?: boolean;
 
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  isPromotional?: boolean;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -492,6 +511,12 @@ export class PatchPackageDto {
   @IsBoolean()
   isActive?: boolean;
 
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsOptional()
+  @IsBoolean()
+  isPromotional?: boolean;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -512,10 +537,12 @@ export class CreateCampaignDto {
 
   @ApiProperty()
   @Type(() => Date)
+  @IsDate()
   startDate!: Date;
 
   @ApiProperty()
   @Type(() => Date)
+  @IsDate()
   endDate!: Date;
 
   @ApiProperty()

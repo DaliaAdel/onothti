@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,25 +8,14 @@ import { type CatalogPackage, type CatalogService, type OpsCampaign } from '../c
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
-import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
 import { PositiveIntDirective } from './positive-int.directive';
-import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-packages',
-  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent, PositiveIntDirective],
+  imports: [FormsModule, NgTemplateOutlet, OpsModalComponent, PositiveIntDirective],
   template: `
-    <div class="section-head">
-      <div>
-        <h2>الباقات</h2>
-        <p>اختر الباقه لعرض تفاصيلها وتعديلها</p>
-      </div>
-        @if (canEditPackage) {
-          <button class="btn primary" type="button" (click)="adding = true">+ إضافة باقة</button>
-        }
-    </div>
-    <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
+    <ng-template #packageForm>
       <div class="form-grid">
         <div class="field">
           <label>الاسم</label>
@@ -47,20 +37,34 @@ import { keepSelected } from './ops-ui';
           <label>السعر بعد الخصم</label>
           <input class="input" [value]="afterOf(draft.priceBefore, draft.discountPercent)" readonly />
         </div>
-          <div class="field">
-            <label>الترتيب</label>
-            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.rank" />
-          </div>
+        <div class="field">
+          <label>الترتيب</label>
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.rank" />
         </div>
-        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
+      </div>
+    </ng-template>
+    <div class="section-head">
+      <div>
+        <h2>الباقات</h2>
+        <p>الباقات العادية للاشتراك. اضغطي على صف لتعديلها وتحديد خدماتها</p>
+      </div>
+      @if (canEditPackage) {
+        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة باقة</button>
+      }
+    </div>
+    <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
+      <ng-container [ngTemplateOutlet]="packageForm" />
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
     </app-ops-modal>
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
+    } @else if (!regularPackages.length) {
+      <p class="page-empty">لا توجد باقات عادية بعد.</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
-              <tr>
+            <tr>
               <th>الباقة</th>
               <th>المدة</th>
               <th>السعر</th>
@@ -70,7 +74,7 @@ import { keepSelected } from './ops-ui';
             </tr>
           </thead>
           <tbody>
-            @for (item of packages; track item.id) {
+            @for (item of regularPackages; track item.id) {
               <tr (click)="openPackage(item)">
                 <td><b>{{ item.nameAr }}</b></td>
                 <td>{{ item.durationMonths }} شهر</td>
@@ -107,28 +111,16 @@ import { keepSelected } from './ops-ui';
 
     <div class="section-head">
       <div>
-        <h2>الحملات الترويجية</h2>
-        <p>اربط الحملة بباقة (مثل المجانية) ثم حدد المدة والتشغيل</p>
+        <h2>الباقات الترويجية</h2>
+        <p>نفس بيانات الباقة العادية، بالإضافة إلى مدة الحملة وتاريخ البداية والنهاية</p>
       </div>
-      @if (canCampaign) {
-        <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة حملة</button>
+      @if (canAddPromo) {
+        <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة باقة ترويجية</button>
       }
     </div>
-    <app-ops-modal [open]="addingCampaign" title="إضافة حملة" kicker="ترويج الباقة" (closed)="addingCampaign = false">
-      <div class="form-grid">
-        <div class="field">
-          <label>اسم الحملة</label>
-          <input class="input" [(ngModel)]="campaignDraft.nameAr" />
-        </div>
-        <div class="field">
-          <label>الباقة</label>
-          <select class="input" [(ngModel)]="campaignDraft.packageId">
-            <option value="">اختاري الباقة</option>
-            @for (pkg of packages; track pkg.id) {
-              <option [value]="pkg.id">{{ pkg.nameAr }}</option>
-            }
-          </select>
-        </div>
+    <app-ops-modal [open]="addingCampaign" title="إضافة باقة ترويجية" kicker="باقة + حملة" (closed)="addingCampaign = false">
+      <ng-container [ngTemplateOutlet]="packageForm" />
+      <div class="form-grid" style="margin-top:16px">
         <div class="field">
           <label>البداية</label>
           <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" />
@@ -148,84 +140,51 @@ import { keepSelected } from './ops-ui';
             <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
           </span>
         </label>
-
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createCampaign()">إضافة الحملة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createPromo()">إضافة الباقة الترويجية</button>
     </app-ops-modal>
-    <div class="ops-table-wrap">
-      <table class="ops-table">
-        <thead>
-          <tr>
-            <th>الحملة</th>
-            <th>الباقة</th>
-            <th>البداية</th>
-            <th>النهاية</th>
-            <th>مدة التنشيط</th>
-            <th>حتى النهاية</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of campaigns; track item.id) {
-            <tr [class.active]="selectedCampaign?.id === item.id" (click)="selectedCampaign = item">
-              <td><b>{{ item.nameAr }}</b></td>
-              <td>{{ item.package?.nameAr || packageName(item.packageId) }}</td>
-              <td>{{ toDate(item.startDate) }}</td>
-              <td>{{ toDate(item.endDate) }}</td>
-              <td>{{ item.benefitDays }} يوم</td>
-              <td>{{ item.clipToEndDate ? 'نعم' : 'لا' }}</td>
-              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'شغالة' : 'متوقفة' }}</span></td>
+    @if (!promoPackages.length) {
+      <p class="page-empty">لا توجد باقات ترويجية بعد.</p>
+    } @else {
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>الباقة</th>
+              <th>المدة</th>
+              <th>السعر</th>
+              <th>البداية</th>
+              <th>النهاية</th>
+              <th>مدة التنشيط</th>
+              <th>الحالة</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <app-ops-drawer
-      [open]="!!selectedCampaign"
-      [title]="selectedCampaign?.nameAr || ''"
-      kicker="حملة ترويجية"
-      (closed)="selectedCampaign = null"
-    >
-      @if (selectedCampaign; as item) {
-        <p class="muted small">{{ toDate(item.startDate) }} → {{ toDate(item.endDate) }}</p>
-        <div class="form-grid">
-          <div class="field">
-            <label>الباقة</label>
-            <select class="input" [(ngModel)]="item.packageId">
-              @for (pkg of packages; track pkg.id) {
-                <option [value]="pkg.id">{{ pkg.nameAr }}</option>
-              }
-            </select>
-          </div>
-          <div class="field">
-            <label>البداية</label>
-            <input class="input" type="date" [(ngModel)]="campaignDates[item.id].startDate" />
-          </div>
-          <div class="field">
-            <label>النهاية</label>
-            <input class="input" type="date" [(ngModel)]="campaignDates[item.id].endDate" />
-          </div>
-          <label class="ops-check" [class.on]="item.clipToEndDate">
-            <input type="checkbox" name="clipToEndDate" [(ngModel)]="item.clipToEndDate" />
-            <span class="ops-check-copy">
-              <b>مرتبط بتاريخ نهاية الحملة</b>
-              <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
-            </span>
-          </label>
-          <div class="field">
-            <label>مدة التنشيط بالأيام</label>
-            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="item.benefitDays" />
-          </div>
-        </div>
-        <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveCampaign(item)">حفظ</button>
-          <button class="btn ghost" type="button" (click)="toggleCampaign(item)">
-            {{ item.isActive ? 'اخفاء الحملة' : 'اظهار الحملة' }}
-          </button>
-        </div>
-      }
-    </app-ops-drawer>
+          </thead>
+          <tbody>
+            @for (item of promoPackages; track item.id) {
+              <tr (click)="openPackage(item)">
+                <td><b>{{ item.nameAr }}</b></td>
+                <td>{{ item.durationMonths }} شهر</td>
+                <td>
+                  @if (hasDiscount(item)) {
+                    <del>{{ money(item.priceBefore) }} ر.س</del>
+                    <b> {{ money(item.price) }} ر.س</b>
+                    <span class="badge">{{ money(item.discountPercent) }}%</span>
+                  } @else {
+                    {{ money(item.price) }} ر.س
+                  }
+                </td>
+                <td>{{ campaignDate(item, 'startDate') }}</td>
+                <td>{{ campaignDate(item, 'endDate') }}</td>
+                <td>{{ campaignDays(item) }}</td>
+                <td>
+                  <span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'مفعّلة' : 'متوقفة' }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
 
     <div class="section-head">
       <div>
@@ -272,16 +231,26 @@ export class OpsPackagesComponent implements OnInit {
     return this.session.hasAnyPermission('PKG-03');
   }
 
+  get canAddPromo(): boolean {
+    return this.canEditPackage && this.canCampaign;
+  }
+
+  get regularPackages(): CatalogPackage[] {
+    return this.packages.filter((item) => !item.isPromotional);
+  }
+
+  get promoPackages(): CatalogPackage[] {
+    return this.packages.filter((item) => item.isPromotional);
+  }
+
   packages: CatalogPackage[] = [];
   catalogServices: CatalogService[] = [];
   campaigns: OpsCampaign[] = [];
-  selectedCampaign: OpsCampaign | null = null;
-  campaignDates: Record<string, { startDate: string; endDate: string }> = {};
   loading = true;
   draft = { nameAr: '', durationMonths: 1, priceBefore: '' as number | '', discountPercent: '' as number | '', rank: 5 };
   adding = false;
   addingCampaign = false;
-  campaignDraft = { nameAr: '', packageId: '', startDate: '', endDate: '', benefitDays: 30, clipToEndDate: true };
+  campaignDraft = { startDate: '', endDate: '', benefitDays: 30, clipToEndDate: true };
   readonly stateMatrix = [
     { from: 'قيد الإنشاء', to: 'غير نشط', reason: 'إنشاء الحساب وانتظار رمز التفعيل', owner: 'صاحبة الحساب والنظام' },
     { from: 'غير نشط', to: 'نشط', reason: 'نجاح إدخال رمز التحقق', owner: 'النظام' },
@@ -302,68 +271,39 @@ export class OpsPackagesComponent implements OnInit {
     void this.router.navigate(['/ops/packages', item.id]);
   }
 
+  campaignOf(item: CatalogPackage): OpsCampaign | undefined {
+    return this.campaigns.find((row) => row.packageId === item.id);
+  }
+
+  campaignDate(item: CatalogPackage, field: 'startDate' | 'endDate'): string {
+    const value = this.campaignOf(item)?.[field];
+    return value ? this.toDate(value) : '—';
+  }
+
+  campaignDays(item: CatalogPackage): string {
+    const days = this.campaignOf(item)?.benefitDays;
+    return days ? `${days} يوم` : '—';
+  }
+
+  openAdd(): void {
+    this.addingCampaign = false;
+    this.draft = this.emptyDraft();
+    this.adding = true;
+  }
+
   create(): void {
-    if (!this.draft.nameAr.trim()) {
-      this.toast.show('أدخلي اسم الباقة');
+    const fields = this.packageFields();
+    if (!fields) {
       return;
     }
-    const durationMonths = Number(this.draft.durationMonths);
-    const priceBefore = Number(this.draft.priceBefore);
-    const rank = Number(this.draft.rank);
-    if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
-      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
-      return;
-    }
-    this.api
-      .opsCreatePackage({
-        nameAr: this.draft.nameAr.trim(),
-        durationMonths,
-        priceBefore,
-        discountPercent: Number(this.draft.discountPercent) || 0,
-        rank,
-      })
-      .subscribe({
-        next: (row) => {
-          this.toast.show('تمت إضافة الباقة. حددي خدماتها');
-          this.draft = { nameAr: '', durationMonths: 1, priceBefore: '', discountPercent: '', rank: 5 };
-          this.adding = false;
-          void this.router.navigate(['/ops/packages', row.id]);
-        },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
-      });
-  }
-
-  saveCampaign(item: OpsCampaign): void {
-    const benefitDays = Number(item.benefitDays);
-    if (!benefitDays || benefitDays <= 0) {
-      this.toast.show('مدة التنشيط رقم أكبر من صفر');
-      return;
-    }
-    const dates = this.campaignDates[item.id];
-    this.api
-      .opsPatchCampaign(item.id, {
-        packageId: item.packageId,
-        startDate: dates?.startDate,
-        endDate: dates?.endDate,
-        benefitDays,
-        clipToEndDate: Boolean(item.clipToEndDate),
-      })
-      .subscribe({
-        next: (row) => {
-          Object.assign(item, row);
-          this.toast.show('تم حفظ الحملة');
-        },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الحملة')),
-      });
-  }
-
-  toggleCampaign(item: OpsCampaign): void {
-    this.api.opsPatchCampaign(item.id, { isActive: !item.isActive }).subscribe({
+    this.api.opsCreatePackage(fields).subscribe({
       next: (row) => {
-        item.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'الحملة شغالة' : 'تم إيقاف الحملة');
+        this.toast.show('تمت إضافة الباقة. حددي خدماتها');
+        this.draft = this.emptyDraft();
+        this.adding = false;
+        void this.router.navigate(['/ops/packages', row.id]);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحملة')),
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
     });
   }
 
@@ -386,17 +326,13 @@ export class OpsPackagesComponent implements OnInit {
     return this.money(item.discountPercent) > 0;
   }
 
-  packageName(id: string | undefined): string {
-    return this.packages.find((item) => item.id === id)?.nameAr || '—';
-  }
-
   openCampaignAdd(): void {
+    this.adding = false;
+    this.draft = this.emptyDraft();
     const today = new Date().toISOString().slice(0, 10);
     const end = new Date();
     end.setDate(end.getDate() + 30);
     this.campaignDraft = {
-      nameAr: '',
-      packageId: this.packages.find((item) => item.code === 'FREE')?.id || this.packages[0]?.id || '',
       startDate: today,
       endDate: end.toISOString().slice(0, 10),
       benefitDays: 30,
@@ -405,9 +341,9 @@ export class OpsPackagesComponent implements OnInit {
     this.addingCampaign = true;
   }
 
-  createCampaign(): void {
-    if (!this.campaignDraft.nameAr.trim() || !this.campaignDraft.packageId) {
-      this.toast.show('أدخلي اسم الحملة واختاري الباقة');
+  createPromo(): void {
+    const fields = this.packageFields();
+    if (!fields) {
       return;
     }
     const benefitDays = Number(this.campaignDraft.benefitDays);
@@ -415,23 +351,39 @@ export class OpsPackagesComponent implements OnInit {
       this.toast.show('مدة التنشيط رقم أكبر من صفر');
       return;
     }
-    this.api
-      .opsCreateCampaign({
-        nameAr: this.campaignDraft.nameAr.trim(),
-        packageId: this.campaignDraft.packageId,
-        startDate: this.campaignDraft.startDate,
-        endDate: this.campaignDraft.endDate,
-        benefitDays,
-        clipToEndDate: Boolean(this.campaignDraft.clipToEndDate),
-      })
-      .subscribe({
-        next: () => {
-          this.toast.show('تمت إضافة الحملة');
-          this.addingCampaign = false;
-          this.load();
-        },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الحملة')),
-      });
+    if (!this.campaignDraft.startDate || !this.campaignDraft.endDate) {
+      this.toast.show('حددي بداية ونهاية الحملة');
+      return;
+    }
+    if (this.campaignDraft.endDate < this.campaignDraft.startDate) {
+      this.toast.show('تاريخ النهاية قبل البداية');
+      return;
+    }
+    this.api.opsCreatePackage({ ...fields, isPromotional: true }).subscribe({
+      next: (row) => {
+        this.api
+          .opsCreateCampaign({
+            nameAr: row.nameAr,
+            packageId: row.id,
+            startDate: this.campaignDraft.startDate,
+            endDate: this.campaignDraft.endDate,
+            benefitDays,
+            clipToEndDate: Boolean(this.campaignDraft.clipToEndDate),
+            isActive: true,
+          })
+          .subscribe({
+            next: () => {
+              this.toast.show('تمت إضافة الباقة الترويجية. حددي خدماتها');
+              this.finishPromo(row.id);
+            },
+            error: (err) => {
+              this.toast.show(apiMessage(err, 'تمت إضافة الباقة وتعذر حفظ الحملة'));
+              this.finishPromo(row.id);
+            },
+          });
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
+    });
   }
 
   previewServiceNames(item: CatalogPackage): string[] {
@@ -440,6 +392,44 @@ export class OpsPackagesComponent implements OnInit {
 
   extraServiceCount(item: CatalogPackage): number {
     return Math.max(0, this.namedServices(item).length - 3);
+  }
+
+  private emptyDraft() {
+    return { nameAr: '', durationMonths: 1, priceBefore: '' as number | '', discountPercent: '' as number | '', rank: 5 };
+  }
+
+  private packageFields(): {
+    nameAr: string;
+    durationMonths: number;
+    priceBefore: number;
+    discountPercent: number;
+    rank: number;
+  } | null {
+    if (!this.draft.nameAr.trim()) {
+      this.toast.show('أدخلي اسم الباقة');
+      return null;
+    }
+    const durationMonths = Number(this.draft.durationMonths);
+    const priceBefore = Number(this.draft.priceBefore);
+    const rank = Number(this.draft.rank);
+    if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
+      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
+      return null;
+    }
+    return {
+      nameAr: this.draft.nameAr.trim(),
+      durationMonths,
+      priceBefore,
+      discountPercent: Number(this.draft.discountPercent) || 0,
+      rank,
+    };
+  }
+
+  private finishPromo(packageId: string): void {
+    this.draft = this.emptyDraft();
+    this.addingCampaign = false;
+    this.load();
+    void this.router.navigate(['/ops/packages', packageId]);
   }
 
   private namedServices(item: CatalogPackage): string[] {
@@ -471,13 +461,6 @@ export class OpsPackagesComponent implements OnInit {
     this.api.opsCampaigns().subscribe({
       next: (campaigns) => {
         this.campaigns = campaigns.map((item) => ({ ...item, clipToEndDate: Boolean(item.clipToEndDate) }));
-        this.selectedCampaign = keepSelected(this.campaigns, this.selectedCampaign);
-        for (const item of campaigns) {
-          this.campaignDates[item.id] = {
-            startDate: item.startDate.slice(0, 10),
-            endDate: item.endDate.slice(0, 10),
-          };
-        }
       },
     });
   }

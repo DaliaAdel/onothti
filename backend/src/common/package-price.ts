@@ -54,6 +54,7 @@ export function serializePackage(pkg: {
   allowWhatsApp?: boolean;
   allowRating?: boolean;
   hasBadge?: boolean;
+  isPromotional?: boolean;
   isActive?: boolean;
   services?: { serviceId: string }[];
   serviceIds?: string[];
@@ -81,6 +82,7 @@ export function serializePackage(pkg: {
     allowWhatsApp: pkg.allowWhatsApp ?? true,
     allowRating: pkg.allowRating ?? true,
     hasBadge: pkg.hasBadge ?? false,
+    isPromotional: pkg.isPromotional ?? false,
     isActive: pkg.isActive ?? true,
     serviceIds: Array.isArray(pkg.services)
       ? pkg.services.map((row) => row.serviceId)

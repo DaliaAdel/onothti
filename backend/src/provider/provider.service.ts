@@ -25,6 +25,7 @@ import {
   campaignSubscriptionEndAt,
   liveCampaign,
   pendingChangesFor,
+  providerVisiblePackageWhere,
   pendingValue,
   queueProfileChange,
 } from "../common/account-rules";
@@ -663,7 +664,7 @@ export class ProviderService {
     const [current, packages, bankAccounts, proofs] = await Promise.all([
       this.currentSubscription(userId),
       this.prisma.package.findMany({
-        where: { isActive: true },
+        where: providerVisiblePackageWhere(),
         include: { services: true },
         orderBy: { rank: "asc" },
       }),
@@ -768,6 +769,9 @@ export class ProviderService {
     }
     const months = await this.extensionMonths(pkg.durationMonths);
     const campaign = await liveCampaign(this.prisma, pkg.id);
+    if (pkg.isPromotional && !campaign) {
+      throw new BadRequestException("الحملة الترويجية غير متاحة حالياً");
+    }
     const payable = Number(pkg.price);
     const startAt = new Date();
     let endAt = new Date(startAt);

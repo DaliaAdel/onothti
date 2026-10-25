@@ -103,6 +103,8 @@ export class OpsService {
     return this.prisma.campaign.update({
       where: { id },
       data: {
+        ...(dto.nameAr ? { nameAr: dto.nameAr.trim() } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn.trim() } : dto.nameAr ? { nameEn: dto.nameAr.trim() } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         ...(dto.startDate ? { startDate: dto.startDate } : {}),
         ...(dto.endDate ? { endDate: dto.endDate } : {}),
@@ -2167,6 +2169,7 @@ export class OpsService {
           allowWhatsApp: dto.allowWhatsApp ?? true,
           allowRating: dto.allowRating ?? true,
           hasBadge: dto.hasBadge ?? false,
+          isPromotional: dto.isPromotional ?? false,
           isActive: dto.isActive ?? true,
         },
       });
@@ -2199,6 +2202,7 @@ export class OpsService {
       dto.allowWhatsApp !== undefined ||
       dto.allowRating !== undefined ||
       dto.hasBadge !== undefined ||
+      dto.isPromotional !== undefined ||
       dto.isActive !== undefined ||
       dto.serviceIds !== undefined;
     if (featureChanged) {
@@ -2234,6 +2238,7 @@ export class OpsService {
         ...(dto.allowWhatsApp !== undefined ? { allowWhatsApp: dto.allowWhatsApp } : {}),
         ...(dto.allowRating !== undefined ? { allowRating: dto.allowRating } : {}),
         ...(dto.hasBadge !== undefined ? { hasBadge: dto.hasBadge } : {}),
+        ...(dto.isPromotional !== undefined ? { isPromotional: dto.isPromotional } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
     });
@@ -2298,7 +2303,7 @@ export class OpsService {
         endDate: dto.endDate,
         benefitDays: dto.benefitDays,
         clipToEndDate: dto.clipToEndDate ?? false,
-        isActive: dto.isActive ?? false,
+        isActive: dto.isActive ?? true,
       },
       include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true } } },
     });

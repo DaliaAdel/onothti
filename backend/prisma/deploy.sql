@@ -243,6 +243,7 @@ CREATE TABLE IF NOT EXISTS `package` (
     `allowWhatsApp` BOOLEAN NOT NULL DEFAULT true,
     `allowRating` BOOLEAN NOT NULL DEFAULT true,
     `hasBadge` BOOLEAN NOT NULL DEFAULT false,
+    `isPromotional` BOOLEAN NOT NULL DEFAULT false,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
 
     UNIQUE INDEX `package_code_key`(`code`),

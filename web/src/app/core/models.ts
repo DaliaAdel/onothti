@@ -225,6 +225,7 @@ export interface CatalogPackage {
   allowWhatsApp?: boolean;
   allowRating?: boolean;
   hasBadge?: boolean;
+  isPromotional?: boolean;
   isActive?: boolean;
   serviceIds?: string[];
 }

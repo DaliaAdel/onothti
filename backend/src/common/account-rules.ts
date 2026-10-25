@@ -162,13 +162,27 @@ export function campaignSubscriptionEndAt(
   return endAt;
 }
 
+export function liveCampaignWhere(now = new Date()): Prisma.CampaignWhereInput {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  return {
+    isActive: true,
+    startDate: { lte: campaignEndOfDay(now) },
+    endDate: { gte: startOfToday },
+  };
+}
+
+export function providerVisiblePackageWhere(now = new Date()): Prisma.PackageWhereInput {
+  return {
+    isActive: true,
+    OR: [{ isPromotional: false }, { campaigns: { some: liveCampaignWhere(now) } }],
+  };
+}
+
 export async function liveCampaign(prisma: PrismaService, packageId?: string) {
-  const now = new Date();
   return prisma.campaign.findFirst({
     where: {
-      isActive: true,
-      startDate: { lte: now },
-      endDate: { gte: now },
+      ...liveCampaignWhere(),
       ...(packageId ? { packageId } : {}),
     },
     include: { package: { select: { id: true, code: true, nameAr: true, nameEn: true, price: true } } },

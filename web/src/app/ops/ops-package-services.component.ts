@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
-import { servicePhoto, type CatalogPackage, type CatalogService } from '../core/models';
+import { servicePhoto, type CatalogPackage, type CatalogService, type OpsCampaign } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -78,6 +78,30 @@ import { PositiveIntDirective } from './positive-int.directive';
         </div>
       </div>
 
+      @if (pkg.isPromotional) {
+        <div class="form-grid" style="margin-bottom:22px">
+          <div class="field">
+            <label>البداية</label>
+            <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" />
+          </div>
+          <div class="field">
+            <label>النهاية</label>
+            <input class="input" type="date" [(ngModel)]="campaignDraft.endDate" />
+          </div>
+          <div class="field">
+            <label>مدة التنشيط بالأيام</label>
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" />
+          </div>
+          <label class="ops-check" [class.on]="campaignDraft.clipToEndDate">
+            <input type="checkbox" name="editClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" />
+            <span class="ops-check-copy">
+              <b>مرتبط بتاريخ نهاية الحملة</b>
+              <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
+            </span>
+          </label>
+        </div>
+      }
+
       <div class="section-head">
         <div>
           <h2>خدمات الباقة</h2>
@@ -121,6 +145,8 @@ export class OpsPackageServicesComponent implements OnInit {
   }
 
   pkg: CatalogPackage | null = null;
+  campaign: OpsCampaign | null = null;
+  campaignDraft = this.emptyCampaign();
   services: CatalogService[] = [];
   pick: Record<string, boolean> = {};
   loading = true;
@@ -132,8 +158,9 @@ export class OpsPackageServicesComponent implements OnInit {
     forkJoin({
       packages: this.api.opsPackages(),
       services: this.api.services(),
+      campaigns: this.api.opsCampaigns(),
     }).subscribe({
-      next: ({ packages, services }) => {
+      next: ({ packages, services, campaigns }) => {
         this.services = services;
         this.pkg = packages.find((item) => item.id === id) ?? null;
         if (!this.pkg) {
@@ -142,6 +169,15 @@ export class OpsPackageServicesComponent implements OnInit {
           void this.router.navigate(['/ops/packages']);
           return;
         }
+        this.campaign = campaigns.find((item) => item.packageId === id) ?? null;
+        this.campaignDraft = this.campaign
+          ? {
+              startDate: this.campaign.startDate.slice(0, 10),
+              endDate: this.campaign.endDate.slice(0, 10),
+              benefitDays: this.campaign.benefitDays,
+              clipToEndDate: Boolean(this.campaign.clipToEndDate),
+            }
+          : this.emptyCampaign();
         this.shell.set(this.pkg.nameAr, `${this.pkg.durationMonths} شهر`);
         const selected = new Set(this.pkg.serviceIds ?? []);
         this.pick = {};
@@ -212,6 +248,10 @@ export class OpsPackageServicesComponent implements OnInit {
         next: (row) => {
           this.pkg = row;
           this.shell.set(row.nameAr, `${row.durationMonths} شهر`);
+          if (row.isPromotional) {
+            this.saveCampaign(row);
+            return;
+          }
           this.saving = false;
           this.toast.show('تم حفظ الباقة');
         },
@@ -235,6 +275,59 @@ export class OpsPackageServicesComponent implements OnInit {
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحالة')),
     });
+  }
+
+  private saveCampaign(pkg: CatalogPackage): void {
+    const benefitDays = Number(this.campaignDraft.benefitDays);
+    if (!benefitDays || benefitDays <= 0) {
+      this.saving = false;
+      this.toast.show('مدة التنشيط رقم أكبر من صفر');
+      return;
+    }
+    if (!this.campaignDraft.startDate || !this.campaignDraft.endDate) {
+      this.saving = false;
+      this.toast.show('حددي بداية ونهاية الحملة');
+      return;
+    }
+    if (this.campaignDraft.endDate < this.campaignDraft.startDate) {
+      this.saving = false;
+      this.toast.show('تاريخ النهاية قبل البداية');
+      return;
+    }
+    const body = {
+      nameAr: pkg.nameAr,
+      startDate: this.campaignDraft.startDate,
+      endDate: this.campaignDraft.endDate,
+      benefitDays,
+      clipToEndDate: Boolean(this.campaignDraft.clipToEndDate),
+      isActive: true,
+    };
+    const request = this.campaign
+      ? this.api.opsPatchCampaign(this.campaign.id, body)
+      : this.api.opsCreateCampaign({ ...body, packageId: pkg.id });
+    request.subscribe({
+      next: (row) => {
+        this.campaign = row;
+        this.saving = false;
+        this.toast.show('تم حفظ الباقة');
+      },
+      error: (err) => {
+        this.saving = false;
+        this.toast.show(apiMessage(err, 'تم حفظ الباقة وتعذر حفظ الحملة'));
+      },
+    });
+  }
+
+  private emptyCampaign() {
+    const today = new Date().toISOString().slice(0, 10);
+    const end = new Date();
+    end.setDate(end.getDate() + 30);
+    return {
+      startDate: today,
+      endDate: end.toISOString().slice(0, 10),
+      benefitDays: 30,
+      clipToEndDate: true,
+    };
   }
 
   private numOrNull(value: number | string | null | undefined): number | null {

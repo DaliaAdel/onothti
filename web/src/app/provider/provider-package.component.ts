@@ -99,7 +99,10 @@ export class ProviderPackageComponent implements OnInit {
   data: ProviderSubscriptionResponse | null = null;
 
   get packages(): CatalogPackage[] {
-    return [...(this.data?.packages ?? [])].sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
+    const livePromoId = this.data?.campaign?.packageId;
+    return [...(this.data?.packages ?? [])]
+      .filter((item) => !item.isPromotional || item.id === livePromoId)
+      .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
   }
 
   get current() {

@@ -262,6 +262,7 @@ async function main() {
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
+      isPromotional: true,
     },
     {
       code: "GREEN",
@@ -280,6 +281,7 @@ async function main() {
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
+      isPromotional: false,
     },
     {
       code: "BRONZE",
@@ -298,6 +300,7 @@ async function main() {
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
+      isPromotional: false,
     },
     {
       code: "SILVER",
@@ -316,6 +319,7 @@ async function main() {
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: false,
+      isPromotional: false,
     },
     {
       code: "GOLD",
@@ -334,6 +338,7 @@ async function main() {
       allowWhatsApp: true,
       allowRating: true,
       hasBadge: true,
+      isPromotional: false,
     },
   ];
   for (const pkg of packages) {
