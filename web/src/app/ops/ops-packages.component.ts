@@ -9,11 +9,12 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
+import { PositiveIntDirective } from './positive-int.directive';
 import { keepSelected } from './ops-ui';
 
 @Component({
   selector: 'app-ops-packages',
-  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent, PositiveIntDirective],
   template: `
     <div class="section-head">
       <div>
@@ -27,24 +28,20 @@ import { keepSelected } from './ops-ui';
     <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
-          <label>الكود</label>
-          <input class="input" [(ngModel)]="draft.code" placeholder="GREEN" />
-        </div>
-        <div class="field">
           <label>الاسم</label>
           <input class="input" [(ngModel)]="draft.nameAr" />
         </div>
         <div class="field">
           <label>المدة بالشهور</label>
-          <input class="input" type="number" [(ngModel)]="draft.durationMonths" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.durationMonths" />
         </div>
         <div class="field">
           <label>السعر قبل الخصم</label>
-          <input class="input" type="number" min="0" step="0.01" [(ngModel)]="draft.priceBefore" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.priceBefore" />
         </div>
         <div class="field">
           <label>الخصم %</label>
-          <input class="input" type="number" min="0" max="100" step="0.01" [(ngModel)]="draft.discountPercent" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.discountPercent" />
         </div>
         <div class="field">
           <label>السعر بعد الخصم</label>
@@ -52,7 +49,7 @@ import { keepSelected } from './ops-ui';
         </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="draft.rank" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.rank" />
           </div>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
@@ -63,9 +60,8 @@ import { keepSelected } from './ops-ui';
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
-            <tr>
+              <tr>
               <th>الباقة</th>
-              <th>الرمز</th>
               <th>المدة</th>
               <th>السعر</th>
               <th>الترتيب</th>
@@ -77,7 +73,6 @@ import { keepSelected } from './ops-ui';
             @for (item of packages; track item.id) {
               <tr (click)="openPackage(item)">
                 <td><b>{{ item.nameAr }}</b></td>
-                <td>{{ item.code }}</td>
                 <td>{{ item.durationMonths }} شهر</td>
                 <td>
                   @if (hasDiscount(item)) {
@@ -144,7 +139,7 @@ import { keepSelected } from './ops-ui';
         </div>
         <div class="field">
           <label>مدة التنشيط بالأيام</label>
-          <input class="input" type="number" min="1" [(ngModel)]="campaignDraft.benefitDays" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" />
         </div>
         <label class="ops-check" [class.on]="campaignDraft.clipToEndDate">
           <input type="checkbox" name="draftClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" />
@@ -220,7 +215,7 @@ import { keepSelected } from './ops-ui';
           </label>
           <div class="field">
             <label>مدة التنشيط بالأيام</label>
-            <input class="input" type="number" [(ngModel)]="item.benefitDays" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="item.benefitDays" />
           </div>
         </div>
         <div class="ops-drawer-actions">
@@ -283,7 +278,7 @@ export class OpsPackagesComponent implements OnInit {
   selectedCampaign: OpsCampaign | null = null;
   campaignDates: Record<string, { startDate: string; endDate: string }> = {};
   loading = true;
-  draft = { code: '', nameAr: '', durationMonths: 1, priceBefore: 0, discountPercent: 0, rank: 5 };
+  draft = { nameAr: '', durationMonths: 1, priceBefore: '' as number | '', discountPercent: '' as number | '', rank: 5 };
   adding = false;
   addingCampaign = false;
   campaignDraft = { nameAr: '', packageId: '', startDate: '', endDate: '', benefitDays: 30, clipToEndDate: true };
@@ -308,23 +303,29 @@ export class OpsPackagesComponent implements OnInit {
   }
 
   create(): void {
-    if (!this.draft.code || !this.draft.nameAr) {
-      this.toast.show('أدخلي الرمز والاسم');
+    if (!this.draft.nameAr.trim()) {
+      this.toast.show('أدخلي اسم الباقة');
+      return;
+    }
+    const durationMonths = Number(this.draft.durationMonths);
+    const priceBefore = Number(this.draft.priceBefore);
+    const rank = Number(this.draft.rank);
+    if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
+      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
       return;
     }
     this.api
       .opsCreatePackage({
-        code: this.draft.code,
-        nameAr: this.draft.nameAr,
-        durationMonths: Number(this.draft.durationMonths),
-        priceBefore: Number(this.draft.priceBefore),
-        discountPercent: Number(this.draft.discountPercent),
-        rank: Number(this.draft.rank),
+        nameAr: this.draft.nameAr.trim(),
+        durationMonths,
+        priceBefore,
+        discountPercent: Number(this.draft.discountPercent) || 0,
+        rank,
       })
       .subscribe({
         next: (row) => {
           this.toast.show('تمت إضافة الباقة. حددي خدماتها');
-          this.draft = { code: '', nameAr: '', durationMonths: 1, priceBefore: 0, discountPercent: 0, rank: 5 };
+          this.draft = { nameAr: '', durationMonths: 1, priceBefore: '', discountPercent: '', rank: 5 };
           this.adding = false;
           void this.router.navigate(['/ops/packages', row.id]);
         },
@@ -333,13 +334,18 @@ export class OpsPackagesComponent implements OnInit {
   }
 
   saveCampaign(item: OpsCampaign): void {
+    const benefitDays = Number(item.benefitDays);
+    if (!benefitDays || benefitDays <= 0) {
+      this.toast.show('مدة التنشيط رقم أكبر من صفر');
+      return;
+    }
     const dates = this.campaignDates[item.id];
     this.api
       .opsPatchCampaign(item.id, {
         packageId: item.packageId,
         startDate: dates?.startDate,
         endDate: dates?.endDate,
-        benefitDays: Number(item.benefitDays),
+        benefitDays,
         clipToEndDate: Boolean(item.clipToEndDate),
       })
       .subscribe({
@@ -404,13 +410,18 @@ export class OpsPackagesComponent implements OnInit {
       this.toast.show('أدخلي اسم الحملة واختاري الباقة');
       return;
     }
+    const benefitDays = Number(this.campaignDraft.benefitDays);
+    if (!benefitDays || benefitDays <= 0) {
+      this.toast.show('مدة التنشيط رقم أكبر من صفر');
+      return;
+    }
     this.api
       .opsCreateCampaign({
         nameAr: this.campaignDraft.nameAr.trim(),
         packageId: this.campaignDraft.packageId,
         startDate: this.campaignDraft.startDate,
         endDate: this.campaignDraft.endDate,
-        benefitDays: Number(this.campaignDraft.benefitDays),
+        benefitDays,
         clipToEndDate: Boolean(this.campaignDraft.clipToEndDate),
       })
       .subscribe({

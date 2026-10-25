@@ -277,10 +277,11 @@ export class ReviewProviderDto {
 }
 
 export class UpsertPackageDto {
-  @ApiProperty({ example: "GOLD" })
+  @ApiPropertyOptional({ example: "GOLD" })
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  code!: string;
+  code?: string;
 
   @ApiProperty()
   @IsString()

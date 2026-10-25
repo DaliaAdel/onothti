@@ -76,7 +76,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
           <option value="PROVIDER">خبيرة</option>
           <option value="CUSTOMER">عميلة</option>
         </select>
-        <select class="appr-control" [(ngModel)]="statusFilter">
+        <select class="appr-control" [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilter()">
           <option value="">جميع الحالات</option>
           <option value="pending">بانتظار الاعتماد</option>
           <option value="approved">تم الاعتماد</option>
@@ -101,7 +101,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
         }
       </div>
 
-      @if (loading) {
+      @if (loading || (decidedLoading && (statusFilter === 'approved' || statusFilter === 'rejected'))) {
         <p class="appr-loading">جاري التحميل...</p>
       } @else if (view === 'accounts' && !visibleGroups.length) {
         <p class="appr-empty">لا توجد نتائج مطابقة للفلاتر الحالية.</p>
@@ -369,7 +369,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   </div>
                 </div>
               } @empty {
-                <small class="muted small">لا توجد إجراءات سابقة.</small>
+                <small class="muted small">{{ decidedLoading ? 'جاري تحميل السجل...' : 'لا توجد إجراءات سابقة.' }}</small>
               }
             </div>
           }
@@ -403,6 +403,8 @@ export class OpsApprovalsComponent implements OnInit {
   roleFilter = '';
   statusFilter = '';
   loading = true;
+  decidedLoading = false;
+  private decidedLoaded = false;
   items: ApprovalItem[] = [];
   groups: AccountGroup[] = [];
   selectedGroup: AccountGroup | null = null;
@@ -544,6 +546,12 @@ export class OpsApprovalsComponent implements OnInit {
     this.statusFilter = '';
   }
 
+  onStatusFilter(): void {
+    if (this.statusFilter === 'approved' || this.statusFilter === 'rejected') {
+      this.loadDecided();
+    }
+  }
+
   kindCount(kind: ApprovalKind): number {
     return this.items.filter((item) => item.kind === kind && this.itemTone(item) === 'pending').length;
   }
@@ -659,6 +667,7 @@ export class OpsApprovalsComponent implements OnInit {
     this.selectedGroup = group;
     this.focusedKind = null;
     this.prepareDrawer(group);
+    this.loadDecided();
   }
 
   openItem(item: ApprovalItem, event?: Event): void {
@@ -669,6 +678,7 @@ export class OpsApprovalsComponent implements OnInit {
     if (group) {
       this.prepareDrawer(group);
     }
+    this.loadDecided();
   }
 
   closeDrawer(): void {
@@ -912,68 +922,106 @@ export class OpsApprovalsComponent implements OnInit {
 
   private load(): void {
     this.loading = true;
+    this.decidedLoaded = false;
     const filesEnabled = this.canSeeContent || this.canSeeReceipts;
     forkJoin({
-      changesPending: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('PENDING')),
-      changesApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('APPROVED')),
-      changesRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('REJECTED')),
-      ratingsPending: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('PENDING')),
-      ratingsApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('APPROVED')),
-      ratingsRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('REJECTED')),
-      filesPending: this.listOrEmpty(filesEnabled, this.api.opsMedia()),
-      filesApproved: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'APPROVED' })),
-      filesRejected: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'REJECTED' })),
+      changes: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('PENDING')),
+      ratings: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('PENDING')),
+      files: this.listOrEmpty(filesEnabled, this.api.opsMedia()),
       providers: this.listOrEmpty(this.canApproveAccounts, this.api.opsPendingProviders()),
     }).subscribe({
       next: (payload) => {
-        const files = this.uniqueById([
-          ...payload.filesPending,
-          ...payload.filesApproved,
-          ...payload.filesRejected,
-        ]);
-        const changes = this.uniqueById([
-          ...payload.changesPending,
-          ...payload.changesApproved,
-          ...payload.changesRejected,
-        ]);
-        const ratings = this.uniqueById([
-          ...payload.ratingsPending,
-          ...payload.ratingsApproved,
-          ...payload.ratingsRejected,
-        ]);
-        const fileIds = new Set(files.map((row) => row.id));
-        const rows: ApprovalItem[] = [
-          ...payload.providers.map((row) => this.fromProvider(row)),
-          ...files.map((file) => this.fromFile(file)),
-          ...changes.filter((row) => row.field !== 'AVATAR' || !fileIds.has(row.newValue)).map((row) => this.fromChange(row)),
-          ...ratings.map((row) => this.fromRating(row)),
-        ];
-        this.items = newestFirst(rows);
-        this.groups = this.buildGroups(this.items);
-        this.refreshTabs();
-        const selectedKey = this.selectedGroup?.key;
-        this.selectedGroup = selectedKey ? this.groups.find((row) => row.key === selectedKey) ?? null : null;
-        if (this.selectedGroup) {
-          this.prepareDrawer(this.selectedGroup);
-        }
+        this.setItems(this.rowsFrom(payload));
         const openAccount = this.route.snapshot.queryParamMap.get('account');
         if (!this.selectedGroup && openAccount) {
           this.openAccountKey(openAccount);
         }
-        for (const row of ratings) {
-          this.ratingNotes[row.id] ??= '';
-        }
-        for (const file of files) {
-          this.notes[file.id] ??= '';
-          this.dates[file.id] ??= { startAt: '', endAt: '' };
-        }
         this.loading = false;
+        if (this.selectedGroup || this.statusFilter === 'approved' || this.statusFilter === 'rejected') {
+          this.loadDecided();
+        }
       },
       error: (err) => {
         this.loading = false;
         this.toast.show(apiMessage(err, 'تعذر تحميل الاعتمادات'));
       },
     });
+  }
+
+  private loadDecided(): void {
+    if (this.decidedLoaded || this.decidedLoading) {
+      return;
+    }
+    this.decidedLoading = true;
+    const filesEnabled = this.canSeeContent || this.canSeeReceipts;
+    forkJoin({
+      changesApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('APPROVED')),
+      changesRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('REJECTED')),
+      ratingsApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('APPROVED')),
+      ratingsRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('REJECTED')),
+      filesApproved: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'APPROVED' })),
+      filesRejected: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'REJECTED' })),
+    }).subscribe({
+      next: (payload) => {
+        this.setItems([
+          ...this.items,
+          ...this.rowsFrom({
+            files: [...payload.filesApproved, ...payload.filesRejected],
+            changes: [...payload.changesApproved, ...payload.changesRejected],
+            ratings: [...payload.ratingsApproved, ...payload.ratingsRejected],
+          }),
+        ]);
+        this.decidedLoaded = true;
+        this.decidedLoading = false;
+      },
+      error: () => {
+        this.decidedLoading = false;
+      },
+    });
+  }
+
+  private rowsFrom(payload: {
+    providers?: OpsPendingProvider[];
+    files: OpsMediaItem[];
+    changes: OpsProfileChange[];
+    ratings: OpsRating[];
+  }): ApprovalItem[] {
+    const files = this.uniqueById(payload.files);
+    const changes = this.uniqueById(payload.changes);
+    const ratings = this.uniqueById(payload.ratings);
+    const fileIds = new Set(files.map((row) => row.id));
+    return [
+      ...(payload.providers ?? []).map((row) => this.fromProvider(row)),
+      ...files.map((file) => this.fromFile(file)),
+      ...changes
+        .filter((row) => row.field !== 'AVATAR' || !fileIds.has(row.newValue))
+        .map((row) => this.fromChange(row)),
+      ...ratings.map((row) => this.fromRating(row)),
+    ];
+  }
+
+  private setItems(rows: ApprovalItem[]): void {
+    const unique = this.uniqueById(rows);
+    const fileIds = new Set(unique.filter((item) => item.media).map((item) => item.media?.id || ''));
+    this.items = newestFirst(
+      unique.filter((item) => item.change?.field !== 'AVATAR' || !fileIds.has(item.change.newValue)),
+    );
+    this.groups = this.buildGroups(this.items);
+    this.refreshTabs();
+    const selectedKey = this.selectedGroup?.key;
+    this.selectedGroup = selectedKey ? this.groups.find((row) => row.key === selectedKey) ?? null : null;
+    if (this.selectedGroup) {
+      this.prepareDrawer(this.selectedGroup);
+    }
+    for (const item of this.items) {
+      if (item.rating) {
+        this.ratingNotes[item.rating.id] ??= '';
+      }
+      if (item.media) {
+        this.notes[item.media.id] ??= '';
+        this.dates[item.media.id] ??= { startAt: '', endAt: '' };
+      }
+    }
   }
 
   private uniqueById<T extends { id: string }>(rows: T[]): T[] {

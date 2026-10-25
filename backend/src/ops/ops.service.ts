@@ -2125,6 +2125,22 @@ export class OpsService {
     return rows.map((row) => serializePackage(row));
   }
 
+  private async nextPackageCode(raw?: string): Promise<string> {
+    const requested = raw?.trim().toUpperCase();
+    if (requested && requested.length >= 2) {
+      return requested;
+    }
+    const rows = await this.prisma.package.findMany({ select: { code: true } });
+    const used = new Set(rows.map((row) => row.code));
+    let n = rows.length + 1;
+    let code = `PKG-${String(n).padStart(4, "0")}`;
+    while (used.has(code)) {
+      n += 1;
+      code = `PKG-${String(n).padStart(4, "0")}`;
+    }
+    return code;
+  }
+
   async createPackage(dto: UpsertPackageDto, permissions: string[] = []) {
     this.assertPerm(permissions, "PKG-04", "PKG-05");
     const pricing = resolvePackagePricing({
@@ -2135,7 +2151,7 @@ export class OpsService {
     try {
       const row = await this.prisma.package.create({
         data: {
-          code: dto.code.trim().toUpperCase(),
+          code: await this.nextPackageCode(dto.code),
           nameAr: dto.nameAr.trim(),
           nameEn: (dto.nameEn ?? dto.nameAr).trim(),
           durationMonths: dto.durationMonths,

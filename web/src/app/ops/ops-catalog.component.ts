@@ -7,14 +7,15 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
+import { PositiveIntDirective } from './positive-int.directive';
 import { keepSelected } from './ops-ui';
 
-const emptyServiceDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
-const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
+const emptyServiceDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number | '' });
+const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number | '' });
 
 @Component({
   selector: 'app-ops-catalog',
-  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent, PositiveIntDirective],
   template: `
     @if (!selected) {
       <div class="section-head">
@@ -37,7 +38,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="serviceDraft.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="serviceDraft.sortOrder" />
           </div>
           <div class="field full">
             <label>صورة الخدمة</label>
@@ -115,7 +116,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
         </div>
         <div class="field">
           <label>الترتيب</label>
-          <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
         </div>
         <div class="field full">
           <label>صورة الخدمة</label>
@@ -187,7 +188,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
         </div>
         <div class="field">
           <label>الترتيب</label>
-          <input class="input" type="number" [(ngModel)]="subDraft.sortOrder" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="subDraft.sortOrder" />
         </div>
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createSub()">إضافة الخدمة الفرعية</button>
@@ -211,7 +212,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="sub.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="sub.sortOrder" />
           </div>
         </div>
         <div class="ops-drawer-actions">

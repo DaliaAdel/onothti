@@ -7,6 +7,7 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
+import { PositiveIntDirective } from './positive-int.directive';
 import { clip, keepSelected } from './ops-ui';
 
 type SettingKind = 'text' | 'number' | 'idle';
@@ -94,7 +95,7 @@ function ibanError(value: string): string {
 
 @Component({
   selector: 'app-ops-settings',
-  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent],
+  imports: [FormsModule, OpsDrawerComponent, OpsModalComponent, PositiveIntDirective],
   template: `
     <div class="section-head">
       <div>
@@ -135,7 +136,7 @@ function ibanError(value: string): string {
           <div class="form-grid">
             <div class="field">
               <label>المدة</label>
-              <input class="input" type="number" min="1" [(ngModel)]="idleAfter[item.key]" />
+              <input class="input" inputmode="numeric" positiveInt [(ngModel)]="idleAfter[item.key]" />
             </div>
             <div class="field">
               <label>الوحدة</label>
@@ -147,7 +148,7 @@ function ibanError(value: string): string {
             </div>
           </div>
         } @else if (item.kind === 'number') {
-          <input class="input" type="number" min="1" [(ngModel)]="values[item.key]" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="values[item.key]" />
         } @else {
           <textarea class="input" rows="4" [(ngModel)]="values[item.key]"></textarea>
         }

@@ -9,14 +9,15 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
+import { PositiveIntDirective } from './positive-int.directive';
 import { keepSelected } from './ops-ui';
 
-const emptyDeptDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
+const emptyDeptDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number | '' });
 const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId: '' });
 
 @Component({
   selector: 'app-ops-org',
-  imports: [FormsModule, RouterLink, OpsDrawerComponent, OpsModalComponent],
+  imports: [FormsModule, RouterLink, OpsDrawerComponent, OpsModalComponent, PositiveIntDirective],
   template: `
     @if (!selected) {
       <div class="section-head">
@@ -44,7 +45,7 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="deptDraft.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="deptDraft.sortOrder" />
           </div>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createDepartment()">إضافة القسم</button>
@@ -108,7 +109,7 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
           </div>
         </div>
         <div class="ops-drawer-actions" style="margin:0 0 22px">

@@ -6,14 +6,15 @@ import type { OpsCity, OpsRegion } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsModalComponent } from './ops-modal.component';
+import { PositiveIntDirective } from './positive-int.directive';
 import { keepSelected } from './ops-ui';
 
-const emptyRegionDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0 });
+const emptyRegionDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number | '' });
 const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
 
 @Component({
   selector: 'app-ops-geo',
-  imports: [FormsModule, OpsModalComponent],
+  imports: [FormsModule, OpsModalComponent, PositiveIntDirective],
   template: `
     @if (!selected) {
       <div class="section-head">
@@ -36,7 +37,7 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" type="number" [(ngModel)]="regionDraft.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="regionDraft.sortOrder" />
           </div>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">إضافة المنطقة</button>
@@ -97,7 +98,7 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
         </div>
         <div class="field">
           <label>الترتيب</label>
-          <input class="input" type="number" [(ngModel)]="selected.sortOrder" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
         </div>
       </div>
       <div class="ops-drawer-actions" style="margin:0 0 22px">

@@ -8,10 +8,11 @@ import { servicePhoto, type CatalogPackage, type CatalogService } from '../core/
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { PositiveIntDirective } from './positive-int.directive';
 
 @Component({
   selector: 'app-ops-package-services',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PositiveIntDirective],
   template: `
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
@@ -22,7 +23,7 @@ import { ToastService } from '../core/toast.service';
         <div>
           <a class="text-link" routerLink="/ops/packages">→ رجوع للباقات</a>
           <h2>{{ pkg.nameAr }}</h2>
-          <p>{{ pkg.code }} · {{ pkg.durationMonths }} شهر</p>
+          <p>{{ pkg.durationMonths }} شهر</p>
         </div>
         <div class="ops-drawer-actions" style="margin:0">
           @if (canSavePackage) {
@@ -41,15 +42,15 @@ import { ToastService } from '../core/toast.service';
         </div>
         <div class="field">
           <label>المدة بالشهور</label>
-          <input class="input" type="number" [(ngModel)]="pkg.durationMonths" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.durationMonths" />
         </div>
         <div class="field">
           <label>السعر قبل الخصم</label>
-          <input class="input" type="number" min="0" step="0.01" [(ngModel)]="pkg.priceBefore" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.priceBefore" />
         </div>
         <div class="field">
           <label>الخصم %</label>
-          <input class="input" type="number" min="0" max="100" step="0.01" [(ngModel)]="pkg.discountPercent" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.discountPercent" />
         </div>
         <div class="field">
           <label>السعر بعد الخصم</label>
@@ -57,23 +58,23 @@ import { ToastService } from '../core/toast.service';
         </div>
         <div class="field">
           <label>ترتيب الظهور</label>
-          <input class="input" type="number" [(ngModel)]="pkg.rank" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.rank" />
         </div>
         <div class="field">
           <label>عدد الخدمات</label>
-          <input class="input" type="number" [(ngModel)]="pkg.maxServices" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxServices" />
         </div>
         <div class="field">
           <label>عدد الصور</label>
-          <input class="input" type="number" [(ngModel)]="pkg.maxPhotos" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxPhotos" />
         </div>
         <div class="field">
           <label>عدد الفيديو</label>
-          <input class="input" type="number" [(ngModel)]="pkg.maxVideos" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxVideos" />
         </div>
         <div class="field">
           <label>عدد الألبومات</label>
-          <input class="input" type="number" [(ngModel)]="pkg.maxAlbums" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxAlbums" />
         </div>
       </div>
 
@@ -141,7 +142,7 @@ export class OpsPackageServicesComponent implements OnInit {
           void this.router.navigate(['/ops/packages']);
           return;
         }
-        this.shell.set(this.pkg.nameAr, this.pkg.code);
+        this.shell.set(this.pkg.nameAr, `${this.pkg.durationMonths} شهر`);
         const selected = new Set(this.pkg.serviceIds ?? []);
         this.pick = {};
         for (const service of services) {
@@ -185,15 +186,22 @@ export class OpsPackageServicesComponent implements OnInit {
     if (!this.pkg) {
       return;
     }
+    const durationMonths = Number(this.pkg.durationMonths);
+    const priceBefore = Number(this.pkg.priceBefore ?? this.pkg.price);
+    const rank = Number(this.pkg.rank);
+    if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
+      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
+      return;
+    }
     this.saving = true;
     const serviceIds = this.services.filter((service) => this.pick[service.id]).map((service) => service.id);
     this.api
       .opsPatchPackage(this.pkg.id, {
         nameAr: this.pkg.nameAr,
-        durationMonths: Number(this.pkg.durationMonths),
-        priceBefore: Number(this.pkg.priceBefore ?? this.pkg.price),
-        discountPercent: Number(this.pkg.discountPercent ?? 0),
-        rank: Number(this.pkg.rank),
+        durationMonths,
+        priceBefore,
+        discountPercent: Number(this.pkg.discountPercent) || 0,
+        rank,
         maxServices: this.numOrNull(this.pkg.maxServices),
         maxPhotos: this.numOrNull(this.pkg.maxPhotos),
         maxVideos: this.numOrNull(this.pkg.maxVideos),
@@ -203,7 +211,7 @@ export class OpsPackageServicesComponent implements OnInit {
       .subscribe({
         next: (row) => {
           this.pkg = row;
-          this.shell.set(row.nameAr, row.code);
+          this.shell.set(row.nameAr, `${row.durationMonths} شهر`);
           this.saving = false;
           this.toast.show('تم حفظ الباقة');
         },

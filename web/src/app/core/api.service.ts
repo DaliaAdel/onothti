@@ -463,7 +463,7 @@ export class ApiService {
   }
 
   opsCreatePackage(
-    body: Partial<CatalogPackage> & { code: string; nameAr: string; durationMonths: number; rank: number },
+    body: Partial<CatalogPackage> & { nameAr: string; durationMonths: number; rank: number },
   ) {
     return this.http.post<CatalogPackage>(`${this.base}/ops/packages`, body);
   }
