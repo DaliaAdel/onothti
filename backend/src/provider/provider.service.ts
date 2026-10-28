@@ -30,7 +30,7 @@ import {
   queueProfileChange,
 } from "../common/account-rules";
 import { assertMaxChars } from "../common/platform-settings";
-import { assertVisibleCitiesInSameRegion, orderedCitiesFromRows, parseCityIds, resolveCityIds, serializeCityIds } from "../common/geo";
+import { orderedCitiesFromRows, parseCityIds, replaceProviderCities, resolveCityIds } from "../common/geo";
 import { publicUploadUrl } from "../common/upload-url";
 import { withServiceImageUrls } from "../common/service-image";
 import { notifyStaffWithPermission } from "../common/notify";
@@ -76,18 +76,7 @@ export class ProviderService {
     const user = await this.requireProvider(userId);
     const cityIds = resolveCityIds(dto.cityId, dto.cityIds);
     if (cityIds.length) {
-      const cities = await assertVisibleCitiesInSameRegion(this.prisma, cityIds);
-      const currentIds = (user.providerProfile.cities ?? []).map((row) => row.cityId);
-      if (!currentIds.length && user.providerProfile.cityId) {
-        currentIds.push(user.providerProfile.cityId);
-      }
-      await queueProfileChange(
-        this.prisma,
-        userId,
-        ProfileChangeField.CITY,
-        serializeCityIds(currentIds),
-        serializeCityIds(cities.map((city) => city.id)),
-      );
+      await replaceProviderCities(this.prisma, userId, cityIds);
     }
     if (dto.displayName) {
       const name = await assertUniqueDisplayName(

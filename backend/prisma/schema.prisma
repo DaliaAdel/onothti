@@ -23,6 +23,7 @@ model User {
   lastActiveAt    DateTime?      @db.DateTime(0)
   termsAcceptedAt DateTime?      @db.DateTime(0)
   termsVersion    Int?
+  isProtected     Boolean        @default(false)
   createdAt       DateTime       @default(now()) @db.DateTime(0)
   updatedAt       DateTime       @updatedAt @db.DateTime(0)
 

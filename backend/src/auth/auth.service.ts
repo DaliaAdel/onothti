@@ -40,6 +40,7 @@ import {
   assertUniqueEmail,
   pendingChangesFor,
   pendingValue,
+  queueProfileChange,
 } from "../common/account-rules";
 import {
   assertVisibleCitiesInSameRegion,
@@ -75,7 +76,7 @@ export class AuthService {
     });
     const passwordHash = await bcrypt.hash(dto.password ?? randomBytes(24).toString("hex"), 12);
     const status =
-      dto.accountType === AccountType.CUSTOMER
+      dto.accountType === AccountType.CUSTOMER || dto.accountType === AccountType.PROVIDER
         ? AccountStatus.ACTIVE
         : AccountStatus.INACTIVE;
 
@@ -107,6 +108,8 @@ export class AuthService {
         },
       })
       .catch((error: unknown) => this.rethrowUnique(error));
+
+    await queueProfileChange(this.prisma, user.id, ProfileChangeField.DISPLAY_NAME, "", displayName);
 
     const otp = await this.issueOtp(dto.mobile, OtpPurpose.REGISTER);
     return {
@@ -238,7 +241,9 @@ export class AuthService {
     });
     const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
     const status =
-      dto.accountType === AccountType.CUSTOMER ? AccountStatus.ACTIVE : AccountStatus.INACTIVE;
+      dto.accountType === AccountType.CUSTOMER || dto.accountType === AccountType.PROVIDER
+        ? AccountStatus.ACTIVE
+        : AccountStatus.INACTIVE;
 
     const user = await this.prisma.user
       .create({
@@ -279,6 +284,8 @@ export class AuthService {
         include: { providerProfile: true },
       })
       .catch((error: unknown) => this.rethrowUnique(error));
+
+    await queueProfileChange(this.prisma, user.id, ProfileChangeField.DISPLAY_NAME, "", displayName);
 
     return this.issueSession(user, {
       deviceId: dto.deviceId,

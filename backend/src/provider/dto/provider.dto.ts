@@ -236,7 +236,7 @@ export class SubmitPaymentProofDto {
 }
 
 export class CreateProviderTicketDto {
-  @ApiPropertyOptional({ example: "BM-01" })
+  @ApiPropertyOptional({ example: "BM-SUPPORT" })
   @IsString()
   typeCode!: string;
 

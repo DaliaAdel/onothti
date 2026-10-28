@@ -11,7 +11,7 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { clip, newestFirst, opsDate } from './ops-ui';
 
-type ApprovalKind = 'account' | 'name' | 'photo' | 'bio' | 'rating' | 'portfolio' | 'receipt' | 'other';
+type ApprovalKind = 'account' | 'name' | 'photo' | 'bio' | 'rating' | 'portfolio' | 'receipt';
 type ApprovalView = 'all' | 'accounts' | ApprovalKind;
 type Tone = 'pending' | 'approved' | 'rejected';
 
@@ -565,7 +565,6 @@ export class OpsApprovalsComponent implements OnInit {
       rating: 'التقييم',
       portfolio: 'الأعمال',
       receipt: 'الإيصال',
-      other: 'تعديل آخر',
     };
     return labels[kind];
   }
@@ -579,7 +578,6 @@ export class OpsApprovalsComponent implements OnInit {
       rating: '★',
       portfolio: '▦',
       receipt: '▤',
-      other: '…',
     };
     return icons[kind];
   }
@@ -635,7 +633,7 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   chips(group: AccountGroup): KindChip[] {
-    const order: ApprovalKind[] = ['account', 'name', 'photo', 'bio', 'rating', 'portfolio', 'receipt', 'other'];
+    const order: ApprovalKind[] = ['account', 'name', 'photo', 'bio', 'rating', 'portfolio', 'receipt'];
     return order
       .filter((kind) => kind !== 'account')
       .filter((kind) => group.items.some((item) => item.kind === kind))
@@ -992,6 +990,7 @@ export class OpsApprovalsComponent implements OnInit {
       ...(payload.providers ?? []).map((row) => this.fromProvider(row)),
       ...files.map((file) => this.fromFile(file)),
       ...changes
+        .filter((row) => row.field === 'DISPLAY_NAME' || row.field === 'BIO' || row.field === 'AVATAR')
         .filter((row) => row.field !== 'AVATAR' || !fileIds.has(row.newValue))
         .map((row) => this.fromChange(row)),
       ...ratings.map((row) => this.fromRating(row)),
@@ -1117,7 +1116,7 @@ export class OpsApprovalsComponent implements OnInit {
 
   private fromChange(row: OpsProfileChange): ApprovalItem {
     const kind: ApprovalKind =
-      row.field === 'DISPLAY_NAME' ? 'name' : row.field === 'BIO' ? 'bio' : row.field === 'AVATAR' ? 'photo' : 'other';
+      row.field === 'DISPLAY_NAME' ? 'name' : row.field === 'BIO' ? 'bio' : 'photo';
     return {
       id: `change-${row.id}`,
       kind,

@@ -1154,7 +1154,7 @@ export class CreateBannedPhoneDto {
 }
 
 export class CreateOpsTicketDto {
-  @ApiProperty({ enum: STAFF_TICKET_CODES, example: "AD-06" })
+  @ApiProperty({ enum: STAFF_TICKET_CODES, example: "OP-SUPPORT" })
   @IsIn(STAFF_TICKET_CODES)
   typeCode!: string;
 

@@ -1,4 +1,4 @@
-﻿-- CreateTable
+-- CreateTable
 CREATE TABLE IF NOT EXISTS `user` (
     `id` CHAR(36) NOT NULL,
     `accountType` VARCHAR(20) NOT NULL,
@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `avatarFileId` CHAR(36) NULL,
     `mobileVerifiedAt` DATETIME(0) NULL,
     `lastActiveAt` DATETIME(0) NULL,
+    `isProtected` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
     `updatedAt` DATETIME(0) NOT NULL,
 

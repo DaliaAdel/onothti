@@ -20,7 +20,7 @@ export class ProviderLayoutComponent {
     { icon: 'views', label: 'nav.views', route: '/p/views' },
     { icon: 'ratings', label: 'nav.reviews', route: '/p/reviews' },
     { icon: 'package', label: 'nav.package', route: '/p/package' },
-    { icon: 'package', label: 'nav.payment', route: '/p/payment' },
+    // { icon: 'package', label: 'nav.payment', route: '/p/payment' },
     { icon: 'package', label: 'nav.paymentStatus', route: '/p/payment-status' },
     { icon: 'bell', label: 'nav.notifications', route: '/p/notifications' },
     { icon: 'support', label: 'nav.support', route: '/p/support' },

@@ -4,7 +4,7 @@ const mariadb = require("mariadb");
 const LEGACY_TO_MATRIX = {
   USERS_MANAGE: [
     "ACC-01", "ACC-02", "ACC-03", "ACC-04", "ACC-05", "ACC-06", "ACC-07", "ACC-08", "ACC-09",
-    "ACC-10", "ACC-11", "ACC-12", "ACC-13", "ACC-14", "ACC-15", "ACC-16", "ACC-18", "ACC-19", "ACC-20",
+    "ACC-14", "ACC-15", "ACC-16",
     "USR-04",
   ],
   CUSTOMERS_REVIEW: ["PRO-01"],

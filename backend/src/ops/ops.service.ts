@@ -6,9 +6,11 @@ import {
   ACC_CREATE,
   accCodeForRole,
   effectivePermissionCodes,
+  HIDDEN_ROLE_CODES,
   permForStaffPermissions,
   staffHas,
   staffHasExact,
+  SUPER_ROLE_CODE,
 } from "../common/staff-permissions";
 import { notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
 import { ensureTicketTypes } from "../common/ticket-types";
@@ -410,7 +412,7 @@ export class OpsService {
       select: { actorId: true, action: true },
     });
     const staff = await this.prisma.user.findMany({
-      where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED }, isProtected: false },
       select: {
         id: true,
         displayName: true,
@@ -468,6 +470,7 @@ export class OpsService {
 
   roles() {
     return this.prisma.role.findMany({
+      where: { code: { notIn: HIDDEN_ROLE_CODES } },
       include: { permissions: { include: { permission: true } } },
       orderBy: { nameAr: "asc" },
     });
@@ -484,6 +487,9 @@ export class OpsService {
     });
     if (!role) {
       throw new NotFoundException("الدور غير موجود");
+    }
+    if (HIDDEN_ROLE_CODES.includes(role.code)) {
+      throw new ForbiddenException("هذا الدور محمي ولا يمكن تعديله");
     }
     this.assertPerm(permissions, permForStaffPermissions(role.code));
     const uniqueCodes = [...new Set(dto.permissionCodes.map((code) => code.trim()).filter(Boolean))];
@@ -1310,7 +1316,7 @@ export class OpsService {
   async staffUsers(actorId: string, permissions: string[] = []) {
     const scope = await this.orgScope(actorId, permissions);
     const rows = await this.prisma.user.findMany({
-      where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED }, isProtected: false },
       include: {
         staff: {
           include: {
@@ -1327,7 +1333,7 @@ export class OpsService {
 
   async staffByIdScoped(id: string, actorId: string, permissions: string[] = []) {
     const user = await this.prisma.user.findFirst({
-      where: { id, accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+      where: { id, accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED }, isProtected: false },
       include: { staff: { include: this.staffDetailInclude } },
     });
     if (!user?.staff) {
@@ -1349,6 +1355,9 @@ export class OpsService {
       throw new NotFoundException("الدور غير موجود");
     }
     this.assertCanManageRole(permissions, role.code);
+    if (HIDDEN_ROLE_CODES.includes(role.code) || role.code === SUPER_ROLE_CODE) {
+      throw new ForbiddenException("لا يمكن إنشاء هذا المنصب");
+    }
     const scope = await this.orgScope(actorId, permissions);
     let teamId = dto.teamId;
     if (teamId) {
@@ -1423,6 +1432,7 @@ export class OpsService {
     if (!user?.staff) {
       throw new NotFoundException("حساب التشغيل غير موجود");
     }
+    this.assertStaffMutable(user);
     const scope = await this.orgScope(actorId, permissions);
     this.assertStaffInScope(scope, this.staffOrgRef(user.staff, user.id));
     if (id === actorId && (dto.roleId || dto.status) && !this.hasPerm(permissions, "SEC-01")) {
@@ -1511,6 +1521,7 @@ export class OpsService {
     if (!user?.staff) {
       throw new NotFoundException("حساب التشغيل غير موجود");
     }
+    this.assertStaffMutable(user);
     const scope = await this.orgScope(actorId, permissions);
     this.assertStaffInScope(scope, this.staffOrgRef(user.staff, user.id));
     if (id === actorId && !this.hasPerm(permissions, "SEC-01", "ACC-14", "ACC-15")) {
@@ -1561,11 +1572,18 @@ export class OpsService {
         teams: {
           orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }],
           include: {
-            lead: { select: { id: true, displayName: true, accountCode: true } },
+            lead: { select: { id: true, displayName: true, accountCode: true, isProtected: true } },
             members: {
               include: {
                 user: {
-                  select: { id: true, displayName: true, accountCode: true, status: true, mobile: true },
+                  select: {
+                    id: true,
+                    displayName: true,
+                    accountCode: true,
+                    status: true,
+                    mobile: true,
+                    isProtected: true,
+                  },
                 },
                 role: { select: { id: true, code: true, nameAr: true } },
               },
@@ -1754,12 +1772,19 @@ export class OpsService {
       sortOrder: number;
       isActive: boolean;
       leadUserId?: string | null;
-      lead?: { id: string; displayName: string; accountCode?: string } | null;
+      lead?: { id: string; displayName: string; accountCode?: string; isProtected?: boolean } | null;
       members?: {
         userId: string;
         titleAr?: string | null;
         level: number;
-        user: { id: string; displayName: string; accountCode: string; status: string; mobile: string };
+        user: {
+          id: string;
+          displayName: string;
+          accountCode: string;
+          status: string;
+          mobile: string;
+          isProtected?: boolean;
+        };
         role: { id: string; code: string; nameAr: string };
       }[];
     }[];
@@ -1772,7 +1797,9 @@ export class OpsService {
       sortOrder: department.sortOrder,
       isActive: department.isActive,
       teams: department.teams.map((team) => {
-        const members = (team.members ?? []).map((member) => ({
+        const members = (team.members ?? [])
+          .filter((member) => !member.user.isProtected)
+          .map((member) => ({
           id: member.user.id,
           displayName: member.user.displayName,
           accountCode: member.user.accountCode,
@@ -1790,8 +1817,8 @@ export class OpsService {
           nameEn: team.nameEn,
           sortOrder: team.sortOrder,
           isActive: team.isActive,
-          leadUserId: team.leadUserId ?? null,
-          lead: team.lead ?? members.find((row) => row.isLead) ?? null,
+          leadUserId: team.lead && !team.lead.isProtected ? team.leadUserId ?? null : null,
+          lead: team.lead && !team.lead.isProtected ? team.lead : members.find((row) => row.isLead) ?? null,
           memberCount: members.length,
           members,
         };
@@ -1929,6 +1956,12 @@ export class OpsService {
     }
   }
 
+  private assertStaffMutable(user: { isProtected?: boolean | null }) {
+    if (user.isProtected) {
+      throw new ForbiddenException("هذا الحساب محمي ولا يمكن تعديله أو حذفه");
+    }
+  }
+
   private assertCanManageRole(permissions: string[], roleCode: string) {
     const needed = accCodeForRole(roleCode);
     if (!needed || !this.hasPerm(permissions, needed)) {
@@ -1942,7 +1975,7 @@ export class OpsService {
 
   private async assertNotLastManager(userId: string) {
     const rows = await this.prisma.staffUser.findMany({
-      where: { user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE } },
+      where: { user: { accountType: AccountType.STAFF, status: AccountStatus.ACTIVE, isProtected: false } },
       include: {
         grants: { include: { permission: true } },
         role: { include: { permissions: { include: { permission: true } } } },
@@ -2437,7 +2470,7 @@ export class OpsService {
         take: 6,
       }),
       this.prisma.user.count({
-        where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED } },
+        where: { accountType: AccountType.STAFF, status: { not: AccountStatus.DELETED }, isProtected: false },
       }),
       this.prisma.user.count({
         where: {
@@ -2467,7 +2500,9 @@ export class OpsService {
         subtitle: row.accountCode,
         createdAt: row.createdAt,
       })),
-      ...changeRows.map((row) => ({
+      ...changeRows
+        .filter((row) => row.field === "DISPLAY_NAME" || row.field === "BIO" || row.field === "AVATAR")
+        .map((row) => ({
         id: row.id,
         kind: "CHANGE",
         field: row.field,

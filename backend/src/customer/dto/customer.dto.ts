@@ -49,7 +49,7 @@ export class FavoriteDto {
 }
 
 export class CreateCustomerTicketDto {
-  @ApiProperty({ example: "CU-01" })
+  @ApiProperty({ example: "CU-SUPPORT" })
   @IsString()
   typeCode!: string;
 

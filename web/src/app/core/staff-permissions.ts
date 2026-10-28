@@ -14,6 +14,9 @@ export const ACC_ROLE_CODES: Record<string, string> = {
   FINANCE: 'ACC-09',
 };
 
+export const SUPER_ROLE_CODE = 'SUPER';
+export const HIDDEN_ROLE_CODES = [SUPER_ROLE_CODE];
+
 export const ACC_CREATE = ['ACC-01', 'ACC-02', 'ACC-03', 'ACC-04', 'ACC-05', 'ACC-06', 'ACC-07', 'ACC-08', 'ACC-09'];
 export const ACC_VIEW = ['ACC-18', 'ACC-19', 'ACC-20'];
 export const ACC_ORG = ['ACC-10', 'ACC-11', 'ACC-12', 'ACC-13'];
