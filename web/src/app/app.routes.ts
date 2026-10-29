@@ -266,7 +266,7 @@ export const routes: Routes = [
         path: 'permissions',
         loadComponent: () => import('./ops/ops-permissions.component').then((m) => m.OpsPermissionsComponent),
         canActivate: [opsPermissionGuard],
-        data: { opsPage: 'permissions' },
+        data: { opsRolesOnly: true },
       },
       {
         path: 'org',

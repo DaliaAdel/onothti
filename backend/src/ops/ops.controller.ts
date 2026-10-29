@@ -254,7 +254,7 @@ export class OpsController {
   @Patch("roles/:id/permissions")
   @RequirePermission(...ACC_PERMS)
   patchRolePermissions(@Param("id") id: string, @Body() dto: PatchRolePermissionsDto, @CurrentUser() user: AuthUser) {
-    return this.ops.patchRolePermissions(id, dto, user.permissions ?? []);
+    return this.ops.patchRolePermissions(id, dto, user.permissions ?? [], user.roleCode);
   }
 
   @Get("staff")

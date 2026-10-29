@@ -5,6 +5,7 @@ import { ProfileChangeField, Visibility, AccountStatus, AccountType, StaffPermis
 import {
   ACC_CREATE,
   accCodeForRole,
+  canManageRolePermissionSettings,
   effectivePermissionCodes,
   HIDDEN_ROLE_CODES,
   permForStaffPermissions,
@@ -480,7 +481,15 @@ export class OpsService {
     return this.prisma.permission.findMany({ orderBy: [{ sortOrder: "asc" }, { nameAr: "asc" }] });
   }
 
-  async patchRolePermissions(id: string, dto: PatchRolePermissionsDto, permissions: string[] = []) {
+  async patchRolePermissions(
+    id: string,
+    dto: PatchRolePermissionsDto,
+    permissions: string[] = [],
+    actorRoleCode?: string,
+  ) {
+    if (!canManageRolePermissionSettings(actorRoleCode)) {
+      throw new ForbiddenException("تعديل صلاحيات المناصب متاح للسوبر أدمن والمدير الإداري فقط");
+    }
     const role = await this.prisma.role.findUnique({
       where: { id },
       include: { permissions: { include: { permission: true } } },

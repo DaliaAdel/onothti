@@ -1,3 +1,5 @@
+import { canManageRolePermissionSettings } from '../core/staff-permissions';
+
 export const OPS_PAGE_PERMISSIONS = {
   approvals: [
     'PRO-02',
@@ -52,4 +54,10 @@ export function canOpenOpsPage(
   page: OpsPage,
 ): boolean {
   return session.hasAnyPermission(...OPS_PAGE_PERMISSIONS[page]);
+}
+
+export function canOpenPermissionSettings(session: {
+  user: () => { roleCode?: string | null } | null;
+}): boolean {
+  return canManageRolePermissionSettings(session.user()?.roleCode);
 }

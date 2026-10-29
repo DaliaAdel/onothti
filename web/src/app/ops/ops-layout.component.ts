@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { SessionService } from '../core/session.service';
 import { AppShellComponent, NavItem } from '../shared/app-shell.component';
-import { canOpenOpsPage, type OpsPage } from './ops-access';
+import { canOpenOpsPage, canOpenPermissionSettings, type OpsPage } from './ops-access';
 
 @Component({
   selector: 'app-ops-layout',
@@ -73,7 +73,7 @@ export class OpsLayoutComponent implements OnInit {
     if (can('staff')) {
       settingsChildren.push({ icon: 'profile', label: 'حسابات موظفى المنصة', route: '/ops/staff' });
     }
-    if (can('permissions')) {
+    if (canOpenPermissionSettings(this.session)) {
       settingsChildren.push({ icon: 'profile', label: 'إعدادات الصلاحيات', route: '/ops/permissions' });
     }
     if (settingsChildren.length) {

@@ -8,7 +8,7 @@ import type { OpsRole, OpsStaff } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
-import { matrixCodeIsOn, mergeMatrixCodes } from '../core/staff-permissions';
+import { canManageRolePermissionSettings, matrixCodeIsOn, mergeMatrixCodes } from '../core/staff-permissions';
 import { PERMISSION_MATRIX, type PermissionMatrixItem } from './permission-matrix.data';
 
 @Component({
@@ -156,7 +156,10 @@ export class OpsPermissionsComponent implements OnInit {
   }
 
   canSave(): boolean {
-    return Boolean(this.staff || this.selectedRole);
+    if (this.staff) {
+      return true;
+    }
+    return canManageRolePermissionSettings(this.session.user()?.roleCode) && Boolean(this.selectedRole);
   }
 
   toggleName(code: string): string {

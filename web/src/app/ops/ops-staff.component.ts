@@ -4,7 +4,12 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
 import type { OpsOrgDepartment, OpsOrgTeam, OpsRole, OpsStaff } from '../core/models';
-import { ACC_CREATE, accCodeForRole, permForStaffPermissions } from '../core/staff-permissions';
+import {
+  ACC_CREATE,
+  accCodeForRole,
+  canManageRolePermissionSettings,
+  permForStaffPermissions,
+} from '../core/staff-permissions';
 import { PERMISSION_MATRIX } from './permission-matrix.data';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
@@ -300,7 +305,7 @@ export class OpsStaffComponent implements OnInit {
   }
 
   get canPerms(): boolean {
-    return this.session.hasAnyPermission('ACC-14', 'ACC-15');
+    return canManageRolePermissionSettings(this.session.user()?.roleCode);
   }
 
   get canSuspend(): boolean {

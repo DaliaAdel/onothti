@@ -4,6 +4,7 @@ import { catchError, map, of } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
+import { canManageRolePermissionSettings } from '../core/staff-permissions';
 import { OPS_PAGE_PERMISSIONS, type OpsPage } from './ops-access';
 
 function deny(router: Router, toast: ToastService) {
@@ -13,11 +14,9 @@ function deny(router: Router, toast: ToastService) {
 
 export const opsPermissionGuard: CanActivateFn = (route) => {
   const page = route.data['opsPage'] as OpsPage | undefined;
-  if (!page) {
-    return true;
-  }
-  const needed = OPS_PAGE_PERMISSIONS[page];
-  if (!needed?.length) {
+  const rolesOnly = route.data['opsRolesOnly'] === true;
+  const needed = page ? OPS_PAGE_PERMISSIONS[page] : undefined;
+  if (!rolesOnly && !needed?.length) {
     return true;
   }
   const session = inject(SessionService);
@@ -25,10 +24,21 @@ export const opsPermissionGuard: CanActivateFn = (route) => {
   const toast = inject(ToastService);
   const api = inject(ApiService);
 
-  if (session.hasAnyPermission(...needed)) {
+  const allowed = () => {
+    if (rolesOnly && !canManageRolePermissionSettings(session.user()?.roleCode)) {
+      return false;
+    }
+    if (needed?.length && !session.hasAnyPermission(...needed)) {
+      return false;
+    }
+    return true;
+  };
+
+  if (allowed()) {
     return true;
   }
-  if ((session.user()?.permissions ?? []).length) {
+  const canRefresh = !session.user()?.roleCode || !(session.user()?.permissions ?? []).length;
+  if (!canRefresh) {
     return deny(router, toast);
   }
   return api.opsMe().pipe(
@@ -40,7 +50,7 @@ export const opsPermissionGuard: CanActivateFn = (route) => {
         teamId: me.teamId,
         orgTeam: me.orgTeam,
       });
-      return session.hasAnyPermission(...needed) ? true : deny(router, toast);
+      return allowed() ? true : deny(router, toast);
     }),
     catchError(() => of(deny(router, toast))),
   );
