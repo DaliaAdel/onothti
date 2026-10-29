@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { LegalAudience, LegalKind, OpsLegalPage } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -26,7 +27,9 @@ const emptyDraft = () => ({
         <h2>الشروط والسياسات</h2>
         <p>أضيفي صفحة وحددي الجمهور والنوع وهل هي نشطة.</p>
       </div>
-      <button class="btn primary" type="button" (click)="openAdd()">+ إضافة صفحة</button>
+      @if (canManage) {
+        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة صفحة</button>
+      }
     </div>
 
     <app-ops-modal [open]="adding" title="إضافة صفحة" kicker="شروط وسياسات" (closed)="adding = false">
@@ -135,20 +138,27 @@ const emptyDraft = () => ({
           <label>النص</label>
           <textarea class="input" rows="12" [(ngModel)]="item.bodyAr"></textarea>
         </div>
-        <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="save(item)">حفظ الصفحة</button>
-          <button class="btn ghost" type="button" (click)="toggle(item)">
-            {{ item.isActive ? 'اخفاء' : 'اظهار' }}
-          </button>
-        </div>
+        @if (canManage) {
+          <div class="ops-drawer-actions">
+            <button class="btn primary" type="button" (click)="save(item)">حفظ الصفحة</button>
+            <button class="btn ghost" type="button" (click)="toggle(item)">
+              {{ item.isActive ? 'اخفاء' : 'اظهار' }}
+            </button>
+          </div>
+        }
       }
     </app-ops-drawer>
   `,
 })
 export class OpsLegalComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canManage(): boolean {
+    return this.session.hasAnyPermission('LEGAL_MANAGE', 'RAT-05');
+  }
 
   loading = true;
   adding = false;
@@ -185,11 +195,19 @@ export class OpsLegalComponent implements OnInit {
   }
 
   openAdd(): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.draft = emptyDraft();
     this.adding = true;
   }
 
   create(): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     if (this.draft.titleAr.trim().length < 2 || this.draft.bodyAr.trim().length < 4) {
       this.toast.show('أدخلي العنوان والنص');
       return;
@@ -207,6 +225,10 @@ export class OpsLegalComponent implements OnInit {
   }
 
   save(item: OpsLegalPage): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     if (item.titleAr.trim().length < 2 || item.bodyAr.trim().length < 4) {
       this.toast.show('أدخلي العنوان والنص');
       return;
@@ -228,6 +250,10 @@ export class OpsLegalComponent implements OnInit {
   }
 
   toggle(item: OpsLegalPage): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.api.opsPatchLegal(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         Object.assign(item, row);

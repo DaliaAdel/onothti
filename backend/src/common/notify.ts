@@ -1,6 +1,6 @@
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountStatus, AccountType, NotificationType } from "./enums";
-import { effectivePermissionCodes, expandPermissionCodes } from "./staff-permissions";
+import { effectivePermissionCodes, staffHas } from "./staff-permissions";
 
 export async function notifyOncePerDay(
   prisma: PrismaService,
@@ -98,10 +98,7 @@ export async function notifyStaffWithPermission(
   const userIds = [
     ...new Set(
       staff
-        .filter((row) => {
-          const have = expandPermissionCodes(effectivePermissionCodes(row).codes);
-          return expandPermissionCodes(codes).some((code) => have.includes(code));
-        })
+        .filter((row) => staffHas(effectivePermissionCodes(row).codes, ...codes))
         .map((row) => row.userId),
     ),
   ].filter((id) => id !== exceptUserId);

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType, ProfileChangeField, StaffPermission } from "../common/enums";
+import { AccountType, ProfileChangeField } from "../common/enums";
 import { withServiceImageUrls } from "../common/service-image";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -269,7 +269,7 @@ export class CustomerService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.TICKETS_MANAGE],
+      ["TKT-01"],
       "طلب جديد من عميلة",
       `${created.owner.displayName} (${created.owner.accountCode}) · ${created.type.nameAr}`,
       `ticket:${created.id}`,
@@ -300,7 +300,7 @@ export class CustomerService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.RATINGS_REVIEW, StaffPermission.TICKETS_MANAGE],
+      ["RAT-01", "TKT-01"],
       "بلاغ جديد",
       `${reporter?.displayName || "عميلة"} ضد ${target.displayName}: ${dto.reason.trim().slice(0, 80)}`,
       `complaint:${complaint.id}`,

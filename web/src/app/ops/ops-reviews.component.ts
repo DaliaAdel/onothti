@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsComplaint } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -73,15 +74,17 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
         </p>
         <p class="muted small">{{ opsDate(item.createdAt) }}</p>
         <p style="margin:14px 0;white-space:pre-wrap;line-height:1.8">{{ item.reason }}</p>
-        @if (item.status !== 'CLOSED') {
+        @if (item.status !== 'CLOSED' && (canEscalateComplaint || canCloseComplaint)) {
           <textarea class="input" rows="2" placeholder="ملاحظة للمبلِّغة" [(ngModel)]="complaintNotes[item.id]"></textarea>
           <div class="ops-drawer-actions">
-            @if (item.status === 'OPEN') {
+            @if (item.status === 'OPEN' && canEscalateComplaint) {
               <button class="btn soft" type="button" (click)="patchComplaint(item, 'ESCALATED')">تصعيد</button>
             }
-            <button class="btn primary" type="button" (click)="patchComplaint(item, 'CLOSED')">إغلاق</button>
+            @if (canCloseComplaint) {
+              <button class="btn primary" type="button" (click)="patchComplaint(item, 'CLOSED')">إغلاق</button>
+            }
           </div>
-        } @else {
+        } @else if (item.status === 'CLOSED') {
           <p class="muted small">مغلق</p>
         }
       }
@@ -92,8 +95,17 @@ export class OpsReviewsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  private readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  get canEscalateComplaint(): boolean {
+    return this.session.hasAnyPermission('TKT-01', 'RAT-01');
+  }
+
+  get canCloseComplaint(): boolean {
+    return this.session.hasPermission('TKT-02');
+  }
 
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;

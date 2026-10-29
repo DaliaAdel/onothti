@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsCatalogService, OpsSubService } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -23,7 +24,9 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
           <h2>الخدمات والخدمات الفرعية</h2>
           <p>اضغطي على صف الخدمة لعرض خدماتها الفرعية</p>
         </div>
-        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة خدمة</button>
+        @if (canManage) {
+          <button class="btn primary" type="button" (click)="openAdd()">+ إضافة خدمة</button>
+        }
       </div>
 
       <app-ops-modal [open]="adding" title="إضافة خدمة رئيسية" kicker="كتالوج المنصة" (closed)="closeAdd()">
@@ -102,21 +105,23 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
           <h2>{{ selected.nameAr }}</h2>
           <p>{{ selected.nameEn }} · {{ selected.subServices.length }} خدمة فرعية</p>
         </div>
-        <button class="btn primary" type="button" (click)="openAddSub()">+ إضافة خدمة فرعية</button>
+        @if (canManage) {
+          <button class="btn primary" type="button" (click)="openAddSub()">+ إضافة خدمة فرعية</button>
+        }
       </div>
 
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
           <label>الاسم *</label>
-          <input class="input" [(ngModel)]="selected.nameAr" />
+          <input class="input" [(ngModel)]="selected.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
           <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="selected.nameEn" />
+          <input class="input" [(ngModel)]="selected.nameEn" [readOnly]="!canManage" />
         </div>
         <div class="field">
           <label>الترتيب</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" [readOnly]="!canManage" />
         </div>
         <div class="field full">
           <label>صورة الخدمة</label>
@@ -124,19 +129,23 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
             @if (selected.imageUrl) {
               <img class="ops-service-preview" [src]="selected.imageUrl" alt="" />
             }
-            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedImage($event)" />
-            @if (selected.imageUrl) {
-              <button class="btn ghost" type="button" (click)="clearSelectedImage()">حذف الصورة</button>
+            @if (canManage) {
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedImage($event)" />
+              @if (selected.imageUrl) {
+                <button class="btn ghost" type="button" (click)="clearSelectedImage()">حذف الصورة</button>
+              }
             }
           </div>
         </div>
       </div>
-      <div class="ops-drawer-actions" style="margin:0 0 22px">
-        <button class="btn primary" type="button" (click)="saveService(selected)">حفظ الخدمة</button>
-        <button class="btn ghost" type="button" (click)="toggleService(selected)">
-          {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
-        </button>
-      </div>
+      @if (canManage) {
+        <div class="ops-drawer-actions" style="margin:0 0 22px">
+          <button class="btn primary" type="button" (click)="saveService(selected)">حفظ الخدمة</button>
+          <button class="btn ghost" type="button" (click)="toggleService(selected)">
+            {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
+          </button>
+        </div>
+      }
 
       <div class="section-head">
         <div>
@@ -204,31 +213,38 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
         <div class="form-grid">
           <div class="field">
             <label>الاسم *</label>
-            <input class="input" [(ngModel)]="sub.nameAr" />
+            <input class="input" [(ngModel)]="sub.nameAr" [readOnly]="!canManage" />
           </div>
           <div class="field">
             <label>الاسم الإنجليزي *</label>
-            <input class="input" [(ngModel)]="sub.nameEn" />
+            <input class="input" [(ngModel)]="sub.nameEn" [readOnly]="!canManage" />
           </div>
           <div class="field">
             <label>الترتيب</label>
-            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="sub.sortOrder" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="sub.sortOrder" [readOnly]="!canManage" />
           </div>
         </div>
-        <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveSub(sub)">حفظ</button>
-          <button class="btn ghost" type="button" (click)="toggleSub(sub)">
-            {{ sub.isVisible ? 'إخفاء' : 'إظهار' }}
-          </button>
-        </div>
+        @if (canManage) {
+          <div class="ops-drawer-actions">
+            <button class="btn primary" type="button" (click)="saveSub(sub)">حفظ</button>
+            <button class="btn ghost" type="button" (click)="toggleSub(sub)">
+              {{ sub.isVisible ? 'إخفاء' : 'إظهار' }}
+            </button>
+          </div>
+        }
       }
     </app-ops-drawer>
   `,
 })
 export class OpsCatalogComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canManage(): boolean {
+    return this.session.hasPermission('CAT-01');
+  }
 
   loading = true;
   adding = false;
@@ -259,6 +275,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   openAdd(): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.serviceDraft = emptyServiceDraft();
     this.resetDraftImage();
     this.adding = true;
@@ -270,6 +289,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   createService(): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(this.serviceDraft.nameAr, this.serviceDraft.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -325,7 +347,7 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   clearSelectedImage(): void {
-    if (!this.selected) {
+    if (this.denyManage() || !this.selected) {
       return;
     }
     this.api.opsClearServiceImage(this.selected.id).subscribe({
@@ -338,6 +360,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   saveService(service: OpsCatalogService): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(service.nameAr, service.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -359,6 +384,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   toggleService(service: OpsCatalogService): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.api.opsPatchService(service.id, { isVisible: !service.isVisible }).subscribe({
       next: (row) => {
         service.isVisible = row.isVisible;
@@ -369,12 +397,15 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   openAddSub(): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.subDraft = emptySubDraft();
     this.addingSub = true;
   }
 
   createSub(): void {
-    if (!this.selected) {
+    if (this.denyManage() || !this.selected) {
       return;
     }
     if (!this.hasNames(this.subDraft.nameAr, this.subDraft.nameEn)) {
@@ -399,6 +430,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   saveSub(sub: OpsSubService): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(sub.nameAr, sub.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -419,6 +453,9 @@ export class OpsCatalogComponent implements OnInit {
   }
 
   toggleSub(sub: OpsSubService): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.api.opsPatchSubService(sub.id, { isVisible: !sub.isVisible }).subscribe({
       next: (row) => {
         sub.isVisible = row.isVisible;
@@ -462,6 +499,14 @@ export class OpsCatalogComponent implements OnInit {
     }
     this.draftFile = null;
     this.draftPreview = null;
+  }
+
+  private denyManage(): boolean {
+    if (this.canManage) {
+      return false;
+    }
+    this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+    return true;
   }
 
   private hasNames(nameAr: string, nameEn: string): boolean {

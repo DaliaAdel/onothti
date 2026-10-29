@@ -37,69 +37,32 @@ export const MATRIX_TO_LEGACY: Record<string, string[]> = {
   "CAT-01": ["CATALOG_MANAGE"],
   "CAT-02": ["GEO_MANAGE"],
   "USR-01": ["ACCOUNTS_ACTION"],
+  "USR-04": ["USERS_MANAGE"],
   "PRO-01": ["CUSTOMERS_REVIEW"],
   "NOT-01": ["NOTIFY_PROVIDER", "NOTIFY_CUSTOMER"],
   "NOT-02": ["BROADCAST_ALL"],
   "NOT-03": ["BROADCAST_CUSTOMER"],
   "NOT-04": ["BROADCAST_PROVIDER"],
   "PKG-02": ["ESCALATE_FINANCE"],
+  "RAT-05": ["SETTINGS_MANAGE"],
 };
 
-const CHECK_ALIASES: Record<string, string[]> = {
-  ...MATRIX_TO_LEGACY,
-  "CATALOG_MANAGE": ["CAT-01"],
-  "GEO_MANAGE": ["CAT-02"],
-  "ACCOUNTS_ACTION": ["USR-01"],
-  "CUSTOMERS_REVIEW": ["PRO-01"],
-  "NOTIFY_PROVIDER": ["NOT-01"],
-  "NOTIFY_CUSTOMER": ["NOT-01"],
-  "BROADCAST_ALL": ["NOT-02"],
-  "BROADCAST_CUSTOMER": ["NOT-03"],
-  "BROADCAST_PROVIDER": ["NOT-04"],
-  "ESCALATE_FINANCE": ["PKG-02"],
-  "PRO-02": ["RATINGS_REVIEW"],
-  "PRO-03": ["MEDIA_REVIEW"],
-  "PRO-05": ["RATINGS_REVIEW", "PROVIDERS_APPROVE"],
-  "PRO-06": ["MEDIA_REVIEW", "PROVIDERS_APPROVE"],
-  "PRO-07": ["RATINGS_REVIEW", "PROVIDERS_APPROVE"],
-  "PRO-08": ["MEDIA_REVIEW"],
-  "PRO-09": ["MEDIA_REVIEW"],
-  "PRO-10": ["RATINGS_REVIEW"],
-  "USR-04": ["USERS_MANAGE"],
-  "USR-05": ["ACCOUNTS_ACTION"],
-  "USR-06": ["ACCOUNTS_ACTION"],
-  "PKG-01": ["PACKAGES_MANAGE"],
-  "PKG-03": ["PACKAGES_MANAGE"],
-  "PKG-04": ["PACKAGES_MANAGE"],
-  "PKG-05": ["PACKAGES_MANAGE"],
-  "FIN-01": ["PAYMENTS_REVIEW"],
-  "FIN-02": ["PAYMENTS_REVIEW"],
-  "FIN-03": ["PAYMENTS_CONFIRM"],
-  "FIN-04": ["PAYMENTS_CONFIRM"],
-  "FIN-05": ["PAYMENTS_CONFIRM"],
-  "FIN-06": ["PAYMENTS_REVIEW"],
-  "RAT-01": ["RATINGS_REVIEW"],
-  "RAT-02": ["RATINGS_REVIEW"],
-  "RAT-03": ["RATINGS_REVIEW"],
-  "RAT-05": ["SETTINGS_MANAGE"],
-  SETTINGS_MANAGE: ["RAT-05"],
-  "TKT-01": ["TICKETS_MANAGE"],
-  "TKT-02": ["TICKETS_MANAGE"],
-  "TKT-03": ["TICKETS_MANAGE"],
-  "REP-01": ["REPORTS_VIEW"],
-  "REP-02": ["REPORTS_VIEW"],
-  "REP-03": ["REPORTS_VIEW"],
-  "REP-04": ["REPORTS_VIEW"],
-  "REP-05": ["REPORTS_VIEW"],
-  "REP-06": ["REPORTS_VIEW"],
-};
+const LEGACY_TO_MATRIX: Record<string, string> = Object.fromEntries(
+  Object.entries(MATRIX_TO_LEGACY).flatMap(([matrix, legacies]) =>
+    legacies.map((legacy) => [legacy, matrix]),
+  ),
+);
 
 export function expandPermissionCodes(codes: string[]): string[] {
   const next = new Set<string>();
   for (const code of codes) {
     next.add(code);
-    for (const extra of CHECK_ALIASES[code] ?? []) {
+    for (const extra of MATRIX_TO_LEGACY[code] ?? []) {
       next.add(extra);
+    }
+    const matrix = LEGACY_TO_MATRIX[code];
+    if (matrix) {
+      next.add(matrix);
     }
   }
   return [...next];
@@ -125,16 +88,10 @@ export function mergeMatrixCodes(
   current: string[],
 ): string[] {
   const matrixSet = new Set(matrixCodes);
-  const aliasCodes = new Set([
-    ...Object.values(MATRIX_TO_LEGACY).flat(),
-    ...Object.values(CHECK_ALIASES).flat(),
-  ]);
+  const aliasCodes = new Set(Object.values(MATRIX_TO_LEGACY).flat());
   const kept = current.filter((code) => !matrixSet.has(code) && !aliasCodes.has(code));
   const picked = matrixCodes.filter((code) => selected[code]);
-  const mirrored = picked.flatMap((code) => [
-    ...(MATRIX_TO_LEGACY[code] ?? []),
-    ...(CHECK_ALIASES[code] ?? []),
-  ]);
+  const mirrored = picked.flatMap((code) => MATRIX_TO_LEGACY[code] ?? []);
   return [...new Set([...kept, ...picked, ...mirrored])];
 }
 

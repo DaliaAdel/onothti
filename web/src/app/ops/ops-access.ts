@@ -1,6 +1,5 @@
 export const OPS_PAGE_PERMISSIONS = {
   approvals: [
-    'PRO-01',
     'PRO-02',
     'PRO-03',
     'PRO-05',
@@ -10,15 +9,18 @@ export const OPS_PAGE_PERMISSIONS = {
     'PRO-09',
     'RAT-01',
     'FIN-01',
+    'FIN-02',
+    'FIN-03',
+    'FIN-05',
+    'FIN-06',
     'PKG-02',
-    'PROVIDERS_APPROVE',
   ],
-  reviews: ['RAT-01', 'RATINGS_REVIEW', 'PRO-02', 'PRO-05', 'PRO-07'],
+  reviews: ['RAT-01', 'TKT-01', 'TKT-02', 'TKT-03'],
   tickets: ['TKT-01', 'TKT-02', 'TKT-03'],
-  clients: ['PRO-01', 'PROVIDERS_APPROVE', 'NOT-01', 'USR-01', 'USR-04'],
+  clients: ['PRO-01', 'NOT-01', 'USR-01', 'USR-04', 'USR-05', 'USR-06'],
   notices: ['NOT-01', 'NOT-02', 'NOT-03', 'NOT-04'],
   settings: ['SETTINGS_MANAGE', 'RAT-05'],
-  legal: ['LEGAL_MANAGE'],
+  legal: ['LEGAL_MANAGE', 'RAT-05'],
   geo: ['CAT-02'],
   catalog: ['CAT-01'],
   packages: ['PKG-01', 'PKG-03', 'PKG-04', 'PKG-05'],
@@ -39,7 +41,7 @@ export const OPS_PAGE_PERMISSIONS = {
     'ACC-20',
   ],
   permissions: ['ACC-14', 'ACC-15'],
-  events: ['REP-01', 'REP-06'],
+  events: ['REP-01'],
   activity: ['REP-06'],
 } as const;
 

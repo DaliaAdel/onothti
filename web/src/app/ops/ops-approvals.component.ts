@@ -268,7 +268,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                     {{ accountFile.bio || 'لا توجد نبذة بعد.' }}
                   </div>
                 }
-                @if (canDecide(item) && canApproveAccounts) {
+                @if (canAct(item)) {
                   <div class="appr-card-actions">
                     <button class="appr-btn approve" type="button" (click)="reviewProvider(item, true)">اعتماد</button>
                     <button class="appr-btn reject" type="button" (click)="reviewProvider(item, false)">رفض</button>
@@ -289,7 +289,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                     {{ item.change.newValue }}
                   }
                 </div>
-                @if (canDecide(item) && canSeeProfile) {
+                @if (canAct(item)) {
                   <div class="appr-card-actions">
                     <button class="appr-btn approve" type="button" (click)="reviewChange(item, true)">اعتماد</button>
                     <button class="appr-btn reject" type="button" (click)="reviewChange(item, false)">رفض</button>
@@ -303,7 +303,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   {{ item.rating.note || 'بدون ملاحظة' }}
                   <p class="muted small" style="margin:8px 0 0">{{ item.rating.customer.displayName }} → {{ item.rating.provider.displayName }}</p>
                 </div>
-                @if (canDecide(item) && canSeeProfile) {
+                @if (canAct(item)) {
                   <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="ratingNotes[item.rating.id]"></textarea>
                   <div class="appr-card-actions" style="margin-top:10px">
                     <button class="appr-btn approve" type="button" (click)="reviewRating(item, true)">اعتماد</button>
@@ -328,7 +328,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                     {{ item.media.text || item.summary }}
                   }
                 </div>
-                @if (item.media.proofs.length && canApproveMedia(item.media)) {
+                @if (item.media.proofs.length && canActivateReceipt()) {
                   <div class="appr-dates">
                     <div class="field">
                       <label>تاريخ التفعيل</label>
@@ -340,20 +340,26 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                     </div>
                   </div>
                 }
-                <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="notes[item.media.id]"></textarea>
-                <div class="appr-card-actions" style="margin-top:10px">
-                  @if (canEscalate(item.media)) {
-                    <button class="appr-btn finance" type="button" (click)="escalate(item)">تحويل للمالية</button>
-                  }
-                  @if (canApproveMedia(item.media) && canDecide(item)) {
-                    <button class="appr-btn approve" type="button" (click)="reviewMedia(item, true)">اعتماد</button>
-                    <button class="appr-btn reject" type="button" (click)="reviewMedia(item, false)">رفض</button>
-                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
-                  }
-                  @if (item.media.purpose === 'RECEIPT' && canSeeReceipts && itemTone(item) === 'pending') {
-                    <button class="appr-btn ghost" type="button" (click)="clearer(item)">طلب صورة أوضح</button>
-                  }
-                </div>
+                @if (canAct(item) || canEscalate(item.media) || canRequestClearer()) {
+                  <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="notes[item.media.id]"></textarea>
+                  <div class="appr-card-actions" style="margin-top:10px">
+                    @if (canEscalate(item.media)) {
+                      <button class="appr-btn finance" type="button" (click)="escalate(item)">تحويل للمالية</button>
+                    }
+                    @if (canApproveMedia(item.media) && canDecide(item)) {
+                      <button class="appr-btn approve" type="button" (click)="reviewMedia(item, true)">اعتماد</button>
+                    }
+                    @if (canRejectMedia(item.media) && canDecide(item)) {
+                      <button class="appr-btn reject" type="button" (click)="reviewMedia(item, false)">رفض</button>
+                    }
+                    @if (canAct(item)) {
+                      <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
+                    }
+                    @if (item.media.purpose === 'RECEIPT' && canRequestClearer() && itemTone(item) === 'pending') {
+                      <button class="appr-btn ghost" type="button" (click)="clearer(item)">طلب صورة أوضح</button>
+                    }
+                  </div>
+                }
               }
             </section>
           }
@@ -418,12 +424,32 @@ export class OpsApprovalsComponent implements OnInit {
 
   kindTabs: { id: ApprovalKind; label: string; visible: boolean }[] = [];
 
+  get canSeeNames(): boolean {
+    return this.session.hasAnyPermission('PRO-02', 'PRO-05');
+  }
+
+  get canSeeBios(): boolean {
+    return this.session.hasAnyPermission('PRO-02', 'PRO-07');
+  }
+
+  get canSeePhotos(): boolean {
+    return this.session.hasAnyPermission('PRO-03', 'PRO-06');
+  }
+
+  get canSeeRatings(): boolean {
+    return this.session.hasAnyPermission('RAT-01');
+  }
+
+  get canSeePortfolio(): boolean {
+    return this.session.hasAnyPermission('PRO-08', 'PRO-09');
+  }
+
   get canSeeProfile(): boolean {
-    return this.session.hasAnyPermission('PRO-02', 'PRO-05', 'PRO-07', 'RAT-01');
+    return this.canSeeNames || this.canSeeBios;
   }
 
   get canSeeContent(): boolean {
-    return this.session.hasAnyPermission('PRO-03', 'PRO-06', 'PRO-08', 'PRO-09');
+    return this.canSeePhotos || this.canSeePortfolio;
   }
 
   get canSeeReceipts(): boolean {
@@ -431,7 +457,7 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   get canApproveAccounts(): boolean {
-    return this.session.hasAnyPermission('PROVIDERS_APPROVE', 'PRO-05', 'PRO-06', 'PRO-07');
+    return this.session.hasAnyPermission('PRO-05', 'PRO-06', 'PRO-07');
   }
 
   get pendingCount(): number {
@@ -694,15 +720,95 @@ export class OpsApprovalsComponent implements OnInit {
     this.lightboxUrl = url || null;
   }
 
+  canActivateReceipt(): boolean {
+    return this.session.hasPermission('FIN-03');
+  }
+
   canApproveMedia(file: OpsMediaItem): boolean {
     if (file.purpose === 'RECEIPT') {
-      return this.session.hasPermission('FIN-03');
+      return this.canActivateReceipt();
     }
-    return this.canSeeContent;
+    if (file.purpose === 'AVATAR') {
+      return this.session.hasAnyPermission('PRO-03', 'PRO-06');
+    }
+    if (file.mime?.startsWith('video/')) {
+      return this.session.hasPermission('PRO-09');
+    }
+    return this.session.hasPermission('PRO-08');
+  }
+
+  canRejectMedia(file: OpsMediaItem): boolean {
+    if (file.purpose === 'RECEIPT') {
+      return this.session.hasPermission('FIN-05');
+    }
+    return this.canApproveMedia(file);
   }
 
   canDecide(item: ApprovalItem): boolean {
     return this.itemTone(item) !== 'approved';
+  }
+
+  canAct(item: ApprovalItem): boolean {
+    if (!this.canDecide(item)) {
+      return false;
+    }
+    if (item.provider) {
+      return this.canApproveAccounts;
+    }
+    if (item.change) {
+      return this.canReviewChange(item);
+    }
+    if (item.rating) {
+      return this.session.hasAnyPermission('RAT-02', 'RAT-03');
+    }
+    if (item.media) {
+      return this.canApproveMedia(item.media) || this.canRejectMedia(item.media);
+    }
+    return false;
+  }
+
+  canRequestClearer(): boolean {
+    return this.session.hasPermission('FIN-06');
+  }
+
+  canSeeItem(item: ApprovalItem): boolean {
+    if (item.kind === 'account' || item.provider) {
+      return this.canApproveAccounts;
+    }
+    if (item.kind === 'name') {
+      return this.canSeeNames;
+    }
+    if (item.kind === 'bio') {
+      return this.canSeeBios;
+    }
+    if (item.kind === 'photo') {
+      return this.canSeePhotos;
+    }
+    if (item.kind === 'rating') {
+      return this.canSeeRatings;
+    }
+    if (item.kind === 'portfolio') {
+      return this.canSeePortfolio;
+    }
+    if (item.kind === 'receipt') {
+      return this.canSeeReceipts;
+    }
+    return false;
+  }
+
+  canReviewChange(item: ApprovalItem): boolean {
+    const field = item.change?.field;
+    const provider = item.accountType === 'PROVIDER';
+    if (field === 'DISPLAY_NAME') {
+      return this.session.hasPermission(provider ? 'PRO-05' : 'PRO-02');
+    }
+    if (field === 'AVATAR') {
+      return this.session.hasPermission(provider ? 'PRO-06' : 'PRO-03');
+    }
+    if (field === 'BIO') {
+      return this.session.hasPermission(provider ? 'PRO-07' : 'PRO-02');
+    }
+    return false;
   }
 
   canEscalate(file: OpsMediaItem): boolean {
@@ -832,11 +938,11 @@ export class OpsApprovalsComponent implements OnInit {
 
   private refreshTabs(): void {
     this.kindTabs = [
-      { id: 'name', label: 'الاسم', visible: this.canSeeProfile },
-      { id: 'photo', label: 'الصورة', visible: this.canSeeContent },
-      { id: 'bio', label: 'النبذة', visible: this.canSeeProfile },
-      { id: 'rating', label: 'التقييم', visible: this.canSeeProfile },
-      { id: 'portfolio', label: 'أعمال', visible: this.canSeeContent },
+      { id: 'name', label: 'الاسم', visible: this.canSeeNames },
+      { id: 'photo', label: 'الصورة', visible: this.canSeePhotos },
+      { id: 'bio', label: 'النبذة', visible: this.canSeeBios },
+      { id: 'rating', label: 'التقييم', visible: this.canSeeRatings },
+      { id: 'portfolio', label: 'أعمال', visible: this.canSeePortfolio },
       { id: 'receipt', label: 'إيصالات', visible: this.canSeeReceipts },
     ];
   }
@@ -873,6 +979,9 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   private matchesFilters(item: ApprovalItem): boolean {
+    if (!this.canSeeItem(item)) {
+      return false;
+    }
     if (this.roleFilter && item.accountType !== this.roleFilter) {
       return false;
     }
@@ -921,8 +1030,8 @@ export class OpsApprovalsComponent implements OnInit {
     this.decidedLoaded = false;
     const filesEnabled = this.canSeeContent || this.canSeeReceipts;
     forkJoin({
-      changes: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('PENDING')),
-      ratings: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('PENDING')),
+      changes: this.listOrEmpty(this.canSeeProfile || this.canSeePhotos, this.api.opsProfileChanges('PENDING')),
+      ratings: this.listOrEmpty(this.canSeeRatings, this.api.opsRatings('PENDING')),
       files: this.listOrEmpty(filesEnabled, this.api.opsMedia()),
       providers: this.listOrEmpty(this.canApproveAccounts, this.api.opsPendingProviders()),
     }).subscribe({

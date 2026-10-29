@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { AccountStatus, AccountType, ProfileChangeField, StaffPermission, Visibility } from "./enums";
+import { AccountStatus, AccountType, ProfileChangeField, Visibility } from "./enums";
 import { notifyStaffWithPermission } from "./notify";
 import { idleCutoffFor } from "./platform-settings";
 
@@ -114,9 +114,15 @@ export async function queueProfileChange(
       CITY: "المدينة",
       WHATSAPP: "واتساب",
     };
+    const codes =
+      field === ProfileChangeField.AVATAR
+        ? ["PRO-03", "PRO-06"]
+        : field === ProfileChangeField.BIO
+          ? ["PRO-02", "PRO-07"]
+          : ["PRO-02", "PRO-05"];
     await notifyStaffWithPermission(
       prisma,
-      [StaffPermission.RATINGS_REVIEW],
+      codes,
       "طلب اعتماد جديد",
       `${who} ${owner.displayName} (${owner.accountCode}) حدّثت ${labels[field] || field}`,
       `change:${created.id}`,

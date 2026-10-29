@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AccountType, ProfileChangeField, StaffPermission, Visibility } from "../common/enums";
+import { AccountType, ProfileChangeField, Visibility } from "../common/enums";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AddPortfolioDto,
@@ -592,7 +592,7 @@ export class ProviderService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.RATINGS_REVIEW, StaffPermission.MEDIA_REVIEW],
+      ["PRO-08", "PRO-09"],
       "عمل جديد بانتظار الاعتماد",
       `${owner?.displayName || "خبيرة"} (${owner?.accountCode || ""}) أضافت ${kind === "VIDEO" ? "فيديو" : "صورة"} للألبوم`,
       `portfolio:${file.id}`,
@@ -827,7 +827,7 @@ export class ProviderService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.PAYMENTS_REVIEW, StaffPermission.ESCALATE_FINANCE],
+      ["FIN-01", "PKG-02"],
       "إيصال تحويل جديد",
       `${owner?.displayName || "خبيرة"} (${owner?.accountCode || ""}) رفعت إيصال ${pkg.nameAr}`,
       `receipt:${file.id}`,
@@ -888,7 +888,7 @@ export class ProviderService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.TICKETS_MANAGE],
+      ["TKT-01"],
       "طلب جديد من خبيرة",
       `${created.owner.displayName} (${created.owner.accountCode}) · ${created.type.nameAr}`,
       `ticket:${created.id}`,

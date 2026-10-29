@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { AccountStatus, AccountType, StaffPermission, Visibility } from "../common/enums";
+import { AccountStatus, AccountType, Visibility } from "../common/enums";
 import { publicUploadUrl } from "../common/upload-url";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchProvidersDto } from "./dto/search-providers.dto";
@@ -444,7 +444,7 @@ export class DiscoveryService {
     });
     await notifyStaffWithPermission(
       this.prisma,
-      [StaffPermission.RATINGS_REVIEW],
+      ["RAT-01", "RAT-02"],
       "تقييم بانتظار الاعتماد",
       `${customer.displayName} قيّمت ${provider.displayName} بـ ${stars} نجوم`,
       `rating:${rating.id}`,

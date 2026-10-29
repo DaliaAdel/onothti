@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import type { AccountType, SessionUser, SignupDraft } from './models';
-import { expandPermissionCodes, staffHasExact } from './staff-permissions';
+import { staffHas, staffHasExact } from './staff-permissions';
 
 const TOKEN_KEY = 'onothiti_token';
 const USER_KEY = 'onothiti_user';
@@ -94,8 +94,7 @@ export class SessionService {
   }
 
   hasAnyPermission(...codes: string[]): boolean {
-    const perms = this.user()?.permissions ?? [];
-    return expandPermissionCodes(codes).some((code) => perms.includes(code));
+    return staffHas(this.user()?.permissions ?? [], ...codes);
   }
 
   hasExactPermission(...codes: string[]): boolean {

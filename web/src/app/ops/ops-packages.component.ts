@@ -46,9 +46,9 @@ import { PositiveIntDirective } from './positive-int.directive';
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
-        <p>الباقات العادية للاشتراك. اضغطي على صف لتعديلها وتحديد خدماتها</p>
+        <p>{{ canEditFeatures ? 'الباقات العادية للاشتراك. اضغطي على صف لتعديلها وتحديد خدماتها' : 'الباقات العادية للاشتراك. اضغطي على صف لعرض التفاصيل' }}</p>
       </div>
-      @if (canEditPackage) {
+      @if (canEditFeatures) {
         <button class="btn primary" type="button" (click)="openAdd()">+ إضافة باقة</button>
       }
     </div>
@@ -223,16 +223,20 @@ export class OpsPackagesComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
-  get canEditPackage(): boolean {
-    return this.session.hasAnyPermission('PKG-04', 'PKG-05');
+  get canEditFeatures(): boolean {
+    return this.session.hasPermission('PKG-04');
+  }
+
+  get canEditPrices(): boolean {
+    return this.session.hasPermission('PKG-05');
   }
 
   get canCampaign(): boolean {
-    return this.session.hasAnyPermission('PKG-03');
+    return this.session.hasPermission('PKG-03');
   }
 
   get canAddPromo(): boolean {
-    return this.canEditPackage && this.canCampaign;
+    return this.canEditFeatures && this.canCampaign;
   }
 
   get regularPackages(): CatalogPackage[] {
@@ -292,6 +296,10 @@ export class OpsPackagesComponent implements OnInit {
   }
 
   create(): void {
+    if (!this.canEditFeatures) {
+      this.toast.show('ليست لديكِ صلاحية تعديل مزايا الباقات');
+      return;
+    }
     const fields = this.packageFields();
     if (!fields) {
       return;
@@ -342,6 +350,10 @@ export class OpsPackagesComponent implements OnInit {
   }
 
   createPromo(): void {
+    if (!this.canAddPromo) {
+      this.toast.show('ليست لديكِ صلاحية إضافة باقة ترويجية');
+      return;
+    }
     const fields = this.packageFields();
     if (!fields) {
       return;

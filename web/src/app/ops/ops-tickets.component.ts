@@ -110,7 +110,9 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
             </p>
           }
         }
-        <textarea class="input" rows="3" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
+        @if (canReply) {
+          <textarea class="input" rows="3" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
+        }
         <div class="ops-drawer-actions">
           @if (canReply) {
             <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>

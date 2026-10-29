@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsCity, OpsRegion } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsModalComponent } from './ops-modal.component';
@@ -22,7 +23,9 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
           <h2>المناطق والمدن</h2>
           <p>اضغطي على صف المنطقة لعرض مدنها</p>
         </div>
-        <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
+        @if (canManage) {
+          <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
+        }
       </div>
 
       <app-ops-modal [open]="adding" title="إضافة منطقة" kicker="التغطية الجغرافية" (closed)="adding = false">
@@ -84,29 +87,33 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
           <h2>{{ selected.nameAr }}</h2>
           <p>{{ selected.nameEn }} · {{ selected.cities.length }} مدينة</p>
         </div>
-        <button class="btn primary" type="button" (click)="openAddCity()">+ إضافة مدينة</button>
+        @if (canManage) {
+          <button class="btn primary" type="button" (click)="openAddCity()">+ إضافة مدينة</button>
+        }
       </div>
 
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
           <label>الاسم *</label>
-          <input class="input" [(ngModel)]="selected.nameAr" />
+          <input class="input" [(ngModel)]="selected.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
           <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="selected.nameEn" />
+          <input class="input" [(ngModel)]="selected.nameEn" [readOnly]="!canManage" />
         </div>
         <div class="field">
           <label>الترتيب</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" [readOnly]="!canManage" />
         </div>
       </div>
-      <div class="ops-drawer-actions" style="margin:0 0 22px">
-        <button class="btn primary" type="button" (click)="saveRegion(selected)">حفظ المنطقة</button>
-        <button class="btn ghost" type="button" (click)="toggleRegion(selected)">
-          {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
-        </button>
-      </div>
+      @if (canManage) {
+        <div class="ops-drawer-actions" style="margin:0 0 22px">
+          <button class="btn primary" type="button" (click)="saveRegion(selected)">حفظ المنطقة</button>
+          <button class="btn ghost" type="button" (click)="toggleRegion(selected)">
+            {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
+          </button>
+        </div>
+      }
 
       <div class="section-head">
         <div>
@@ -154,19 +161,21 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
           <label>الاسم *</label>
-          <input class="input" [(ngModel)]="selectedCity.nameAr" />
+          <input class="input" [(ngModel)]="selectedCity.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
           <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="selectedCity.nameEn" />
+          <input class="input" [(ngModel)]="selectedCity.nameEn" [readOnly]="!canManage" />
         </div>
       </div>
-      <div class="ops-drawer-actions" style="margin:0 0 22px">
-        <button class="btn primary" type="button" (click)="saveCity(selectedCity)">حفظ المدينة</button>
-        <button class="btn ghost" type="button" (click)="toggleCity(selectedCity)">
-          {{ selectedCity.isVisible ? 'إخفاء' : 'إظهار' }}
-        </button>
-      </div>
+      @if (canManage) {
+        <div class="ops-drawer-actions" style="margin:0 0 22px">
+          <button class="btn primary" type="button" (click)="saveCity(selectedCity)">حفظ المدينة</button>
+          <button class="btn ghost" type="button" (click)="toggleCity(selectedCity)">
+            {{ selectedCity.isVisible ? 'إخفاء' : 'إظهار' }}
+          </button>
+        </div>
+      }
     }
 
     <app-ops-modal [open]="addingCity" title="إضافة مدينة" [kicker]="selected?.nameAr || ''" (closed)="addingCity = false">
@@ -186,8 +195,13 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
 })
 export class OpsGeoComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canManage(): boolean {
+    return this.session.hasPermission('CAT-02');
+  }
 
   loading = true;
   adding = false;
@@ -228,6 +242,9 @@ export class OpsGeoComponent implements OnInit {
   }
 
   createRegion(): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(this.regionDraft.nameAr, this.regionDraft.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -251,6 +268,9 @@ export class OpsGeoComponent implements OnInit {
   }
 
   saveRegion(region: OpsRegion): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(region.nameAr, region.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -274,6 +294,9 @@ export class OpsGeoComponent implements OnInit {
   }
 
   toggleRegion(region: OpsRegion): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.api.opsPatchRegion(region.id, { isVisible: !region.isVisible }).subscribe({
       next: (row) => {
         region.isVisible = row.isVisible;
@@ -284,12 +307,15 @@ export class OpsGeoComponent implements OnInit {
   }
 
   openAddCity(): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.cityDraft = emptyCityDraft();
     this.addingCity = true;
   }
 
   createCity(): void {
-    if (!this.selected) {
+    if (this.denyManage() || !this.selected) {
       return;
     }
     if (!this.hasNames(this.cityDraft.nameAr, this.cityDraft.nameEn)) {
@@ -315,6 +341,9 @@ export class OpsGeoComponent implements OnInit {
   }
 
   saveCity(city: OpsCity): void {
+    if (this.denyManage()) {
+      return;
+    }
     if (!this.hasNames(city.nameAr, city.nameEn)) {
       this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
       return;
@@ -336,6 +365,9 @@ export class OpsGeoComponent implements OnInit {
   }
 
   toggleCity(city: OpsCity): void {
+    if (this.denyManage()) {
+      return;
+    }
     this.api.opsPatchCity(city.id, { isVisible: !city.isVisible }).subscribe({
       next: (row) => {
         city.isVisible = row.isVisible;
@@ -343,6 +375,14 @@ export class OpsGeoComponent implements OnInit {
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير ظهور المدينة')),
     });
+  }
+
+  private denyManage(): boolean {
+    if (this.canManage) {
+      return false;
+    }
+    this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+    return true;
   }
 
   private hasNames(nameAr: string, nameEn: string): boolean {

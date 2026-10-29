@@ -2177,7 +2177,10 @@ export class OpsService {
   }
 
   async createPackage(dto: UpsertPackageDto, permissions: string[] = []) {
-    this.assertPerm(permissions, "PKG-04", "PKG-05");
+    this.assertPerm(permissions, "PKG-04");
+    if (dto.isPromotional) {
+      this.assertPerm(permissions, "PKG-03");
+    }
     const pricing = resolvePackagePricing({
       price: dto.price,
       priceBefore: dto.priceBefore,
@@ -2350,7 +2353,7 @@ export class OpsService {
     return pkg;
   }
 
-  async dashboard() {
+  async dashboard(permissions: string[] = []) {
     const now = new Date();
     const week = new Date(now);
     week.setDate(week.getDate() + 7);
@@ -2532,6 +2535,7 @@ export class OpsService {
         createdAt: row.createdAt,
       })),
     ]
+      .filter((row) => this.inboxAllowed(row.kind, "field" in row ? String(row.field) : "", permissions))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 12);
     return {
@@ -2755,7 +2759,7 @@ export class OpsService {
     const amount = Number(proof.amount);
     const body = `تم تحويل إيصال ${file.uploadedBy.displayName} (${file.uploadedBy.accountCode}) — ${proof.subscription.package.nameAr} بقيمة ${amount} ر.س`;
     await this.notifyStaffWithPermission(
-      [StaffPermission.PAYMENTS_REVIEW, StaffPermission.PAYMENTS_CONFIRM],
+      ["FIN-01", "FIN-02", "FIN-03"],
       "إيصال يحتاج اعتماد المالية",
       body,
       `receipt:${id}`,
@@ -3091,6 +3095,40 @@ export class OpsService {
       },
     });
     return { id: pkg.id, code: pkg.code, nameAr: pkg.nameAr };
+  }
+
+  private inboxAllowed(kind: string, field: string, permissions: string[]) {
+    if (kind === "RECEIPT") {
+      return this.canSeeReceipts(permissions);
+    }
+    if (kind === "AVATAR") {
+      return this.hasPerm(permissions, "PRO-03", "PRO-06");
+    }
+    if (kind === "MEDIA") {
+      return this.hasPerm(permissions, "PRO-08", "PRO-09");
+    }
+    if (kind === "PROVIDER") {
+      return this.hasPerm(permissions, "PRO-05", "PRO-06", "PRO-07");
+    }
+    if (kind === "CHANGE") {
+      if (field === "DISPLAY_NAME") {
+        return this.hasPerm(permissions, "PRO-02", "PRO-05");
+      }
+      if (field === "BIO") {
+        return this.hasPerm(permissions, "PRO-02", "PRO-07");
+      }
+      return this.hasPerm(permissions, "PRO-03", "PRO-06");
+    }
+    if (kind === "RATING") {
+      return this.hasPerm(permissions, "RAT-01");
+    }
+    if (kind === "COMPLAINT") {
+      return this.hasPerm(permissions, "RAT-01", "TKT-01");
+    }
+    if (kind === "TICKET") {
+      return this.hasPerm(permissions, "TKT-01", "TKT-03");
+    }
+    return false;
   }
 
   private canApproveContent(permissions: string[]) {

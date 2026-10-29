@@ -8,7 +8,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AccountStatus, AccountType } from "../common/enums";
-import { effectivePermissionCodes, expandPermissionCodes } from "../common/staff-permissions";
+import { effectivePermissionCodes, staffHas } from "../common/staff-permissions";
 import { PrismaService } from "../prisma/prisma.service";
 
 export const PERMISSION_KEY = "ops_permission";
@@ -60,7 +60,7 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
     const have: string[] = context.switchToHttp().getRequest().user?.permissions ?? [];
-    if (expandPermissionCodes(needed).some((code) => have.includes(code))) {
+    if (staffHas(have, ...needed)) {
       return true;
     }
     throw new ForbiddenException("ليست لديكِ صلاحية هذا الإجراء");

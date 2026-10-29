@@ -29,28 +29,30 @@ import { PositiveIntDirective } from './positive-int.directive';
           @if (canSavePackage) {
             <button class="btn primary" type="button" [disabled]="saving" (click)="save()">حفظ الباقة</button>
           }
-          <button class="btn ghost" type="button" [disabled]="saving" (click)="toggle()">
-            {{ pkg.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
-          </button>
+          @if (canEditFeatures) {
+            <button class="btn ghost" type="button" [disabled]="saving" (click)="toggle()">
+              {{ pkg.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
+            </button>
+          }
         </div>
       </div>
 
       <div class="form-grid" style="margin-bottom:22px">
         <div class="field">
           <label>الاسم</label>
-          <input class="input" [(ngModel)]="pkg.nameAr" />
+          <input class="input" [(ngModel)]="pkg.nameAr" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>المدة بالشهور</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.durationMonths" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.durationMonths" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>السعر قبل الخصم</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.priceBefore" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.priceBefore" [readOnly]="!canEditPrices" />
         </div>
         <div class="field">
           <label>الخصم %</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.discountPercent" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.discountPercent" [readOnly]="!canEditPrices" />
         </div>
         <div class="field">
           <label>السعر بعد الخصم</label>
@@ -58,23 +60,23 @@ import { PositiveIntDirective } from './positive-int.directive';
         </div>
         <div class="field">
           <label>ترتيب الظهور</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.rank" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.rank" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>عدد الخدمات</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxServices" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxServices" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>عدد الصور</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxPhotos" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxPhotos" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>عدد الفيديو</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxVideos" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxVideos" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
           <label>عدد الألبومات</label>
-          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxAlbums" />
+          <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxAlbums" [readOnly]="!canEditFeatures" />
         </div>
       </div>
 
@@ -82,18 +84,18 @@ import { PositiveIntDirective } from './positive-int.directive';
         <div class="form-grid" style="margin-bottom:22px">
           <div class="field">
             <label>البداية</label>
-            <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" />
+            <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" [readOnly]="!canCampaign" />
           </div>
           <div class="field">
             <label>النهاية</label>
-            <input class="input" type="date" [(ngModel)]="campaignDraft.endDate" />
+            <input class="input" type="date" [(ngModel)]="campaignDraft.endDate" [readOnly]="!canCampaign" />
           </div>
           <div class="field">
             <label>مدة التنشيط بالأيام</label>
-            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" />
+            <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" [readOnly]="!canCampaign" />
           </div>
           <label class="ops-check" [class.on]="campaignDraft.clipToEndDate">
-            <input type="checkbox" name="editClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" />
+            <input type="checkbox" name="editClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" [disabled]="!canCampaign" />
             <span class="ops-check-copy">
               <b>مرتبط بتاريخ نهاية الحملة</b>
               <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
@@ -105,22 +107,24 @@ import { PositiveIntDirective } from './positive-int.directive';
       <div class="section-head">
         <div>
           <h2>خدمات الباقة</h2>
-          <p>عدددي الخدمات الرئيسية المتاحة لخبيرات هذه الباقة</p>
+          <p>{{ canEditFeatures ? 'عدددي الخدمات الرئيسية المتاحة لخبيرات هذه الباقة' : 'الخدمات الرئيسية المتاحة لخبيرات هذه الباقة' }}</p>
         </div>
       </div>
       <div class="pkg-services-page">
         <div class="pkg-services-box">
           <div class="pkg-services-toolbar">
             <span><b>{{ pickedCount() }}</b> من {{ services.length }} خدمة</span>
-            <div class="pkg-services-links">
-              <button class="text-link" type="button" (click)="setAll(true)">تعدديد الكل</button>
-              <button class="text-link" type="button" (click)="setAll(false)">مسح</button>
-            </div>
+            @if (canEditFeatures) {
+              <div class="pkg-services-links">
+                <button class="text-link" type="button" (click)="setAll(true)">تعدديد الكل</button>
+                <button class="text-link" type="button" (click)="setAll(false)">مسح</button>
+              </div>
+            }
           </div>
           <div class="pkg-services-grid">
             @for (service of services; track service.id) {
               <label class="pkg-service" [class.on]="pick[service.id]">
-                <input type="checkbox" [name]="'svc-' + service.id" [(ngModel)]="pick[service.id]" />
+                <input type="checkbox" [name]="'svc-' + service.id" [(ngModel)]="pick[service.id]" [disabled]="!canEditFeatures" />
                 <img [src]="photoOf(service)" alt="" />
                 <span>{{ service.nameAr }}</span>
                 <i>✓</i>
@@ -140,8 +144,20 @@ export class OpsPackageServicesComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
 
+  get canEditFeatures(): boolean {
+    return this.session.hasPermission('PKG-04');
+  }
+
+  get canEditPrices(): boolean {
+    return this.session.hasPermission('PKG-05');
+  }
+
+  get canCampaign(): boolean {
+    return this.session.hasPermission('PKG-03');
+  }
+
   get canSavePackage(): boolean {
-    return this.session.hasAnyPermission('PKG-04', 'PKG-05');
+    return this.canEditFeatures || this.canEditPrices || this.canCampaign;
   }
 
   pkg: CatalogPackage | null = null;
@@ -202,6 +218,9 @@ export class OpsPackageServicesComponent implements OnInit {
   }
 
   setAll(on: boolean): void {
+    if (!this.canEditFeatures) {
+      return;
+    }
     for (const service of this.services) {
       this.pick[service.id] = on;
     }
@@ -222,6 +241,10 @@ export class OpsPackageServicesComponent implements OnInit {
     if (!this.pkg) {
       return;
     }
+    if (!this.canSavePackage) {
+      this.toast.show('ليست لديكِ صلاحية تعديل الباقة');
+      return;
+    }
     const durationMonths = Number(this.pkg.durationMonths);
     const priceBefore = Number(this.pkg.priceBefore ?? this.pkg.price);
     const rank = Number(this.pkg.rank);
@@ -230,40 +253,54 @@ export class OpsPackageServicesComponent implements OnInit {
       return;
     }
     this.saving = true;
-    const serviceIds = this.services.filter((service) => this.pick[service.id]).map((service) => service.id);
-    this.api
-      .opsPatchPackage(this.pkg.id, {
-        nameAr: this.pkg.nameAr,
-        durationMonths,
-        priceBefore,
-        discountPercent: Number(this.pkg.discountPercent) || 0,
-        rank,
-        maxServices: this.numOrNull(this.pkg.maxServices),
-        maxPhotos: this.numOrNull(this.pkg.maxPhotos),
-        maxVideos: this.numOrNull(this.pkg.maxVideos),
-        maxAlbums: this.numOrNull(this.pkg.maxAlbums),
-        serviceIds,
-      })
-      .subscribe({
-        next: (row) => {
-          this.pkg = row;
-          this.shell.set(row.nameAr, `${row.durationMonths} شهر`);
-          if (row.isPromotional) {
-            this.saveCampaign(row);
-            return;
-          }
-          this.saving = false;
-          this.toast.show('تم حفظ الباقة');
-        },
-        error: (err) => {
-          this.saving = false;
-          this.toast.show(apiMessage(err, 'تعذر حفظ الباقة'));
-        },
-      });
+    const body: Partial<CatalogPackage> = {};
+    if (this.canEditFeatures) {
+      body.nameAr = this.pkg.nameAr;
+      body.durationMonths = durationMonths;
+      body.rank = rank;
+      body.maxServices = this.numOrNull(this.pkg.maxServices);
+      body.maxPhotos = this.numOrNull(this.pkg.maxPhotos);
+      body.maxVideos = this.numOrNull(this.pkg.maxVideos);
+      body.maxAlbums = this.numOrNull(this.pkg.maxAlbums);
+      body.serviceIds = this.services.filter((service) => this.pick[service.id]).map((service) => service.id);
+    }
+    if (this.canEditPrices) {
+      body.priceBefore = priceBefore;
+      body.discountPercent = Number(this.pkg.discountPercent) || 0;
+    }
+    if (!Object.keys(body).length) {
+      if (this.pkg.isPromotional && this.canCampaign) {
+        this.saveCampaign(this.pkg);
+        return;
+      }
+      this.saving = false;
+      this.toast.show('ليست لديكِ صلاحية تعديل الباقة');
+      return;
+    }
+    this.api.opsPatchPackage(this.pkg.id, body).subscribe({
+      next: (row) => {
+        this.pkg = row;
+        this.shell.set(row.nameAr, `${row.durationMonths} شهر`);
+        if (row.isPromotional && this.canCampaign) {
+          this.saveCampaign(row);
+          return;
+        }
+        this.saving = false;
+        this.toast.show('تم حفظ الباقة');
+      },
+      error: (err) => {
+        this.saving = false;
+        this.toast.show(apiMessage(err, 'تعذر حفظ الباقة'));
+      },
+    });
   }
 
   toggle(): void {
     if (!this.pkg) {
+      return;
+    }
+    if (!this.canEditFeatures) {
+      this.toast.show('ليست لديكِ صلاحية إيقاف أو إظهار الباقة');
       return;
     }
     this.api.opsPatchPackage(this.pkg.id, { isActive: !this.pkg.isActive }).subscribe({
@@ -278,6 +315,11 @@ export class OpsPackageServicesComponent implements OnInit {
   }
 
   private saveCampaign(pkg: CatalogPackage): void {
+    if (!this.canCampaign) {
+      this.saving = false;
+      this.toast.show('تم حفظ الباقة');
+      return;
+    }
     const benefitDays = Number(this.campaignDraft.benefitDays);
     if (!benefitDays || benefitDays <= 0) {
       this.saving = false;

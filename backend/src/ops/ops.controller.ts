@@ -89,8 +89,8 @@ export class OpsController {
   }
 
   @Get("dashboard")
-  dashboard() {
-    return this.ops.dashboard();
+  dashboard(@CurrentUser() user: AuthUser) {
+    return this.ops.dashboard(user.permissions ?? []);
   }
 
   @Get("media")
@@ -144,7 +144,7 @@ export class OpsController {
   }
 
   @Post("packages")
-  @RequirePermission(StaffPermission.PKG_04, StaffPermission.PKG_05)
+  @RequirePermission(StaffPermission.PKG_04)
   createPackage(@Body() dto: UpsertPackageDto, @CurrentUser() user: AuthUser) {
     return this.ops.createPackage(dto, user.permissions ?? []);
   }
@@ -323,19 +323,19 @@ export class OpsController {
   }
 
   @Get("legal")
-  @RequirePermission(StaffPermission.LEGAL_MANAGE)
+  @RequirePermission(StaffPermission.LEGAL_MANAGE, StaffPermission.RAT_05)
   legalPages() {
     return this.ops.legalPages();
   }
 
   @Post("legal")
-  @RequirePermission(StaffPermission.LEGAL_MANAGE)
+  @RequirePermission(StaffPermission.LEGAL_MANAGE, StaffPermission.RAT_05)
   createLegal(@Body() dto: CreateLegalDto) {
     return this.ops.createLegal(dto);
   }
 
   @Patch("legal/:id")
-  @RequirePermission(StaffPermission.LEGAL_MANAGE)
+  @RequirePermission(StaffPermission.LEGAL_MANAGE, StaffPermission.RAT_05)
   patchLegal(@Param("id") id: string, @Body() dto: PatchLegalDto) {
     return this.ops.patchLegal(id, dto);
   }

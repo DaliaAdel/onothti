@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsBankAccount, OpsWelcome } from '../core/models';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
@@ -153,7 +154,9 @@ function ibanError(value: string): string {
           <textarea class="input" rows="4" [(ngModel)]="values[item.key]"></textarea>
         }
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveSetting(item)">حفظ</button>
+          @if (canManage) {
+            <button class="btn primary" type="button" (click)="saveSetting(item)">حفظ</button>
+          }
         </div>
       }
     </app-ops-drawer>
@@ -163,7 +166,9 @@ function ibanError(value: string): string {
         <h2>رسائل الترحيب</h2>
         <p>إدارة رسائل الترحيب والتحفيز التى تظهر للعميلة والخبيرة عند تسجيل الدخول</p>
       </div>
-      <button class="btn primary" type="button" (click)="addingWelcome = true">+ إضافة رسالة</button>
+      @if (canManage) {
+        <button class="btn primary" type="button" (click)="addingWelcome = true">+ إضافة رسالة</button>
+      }
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
@@ -196,10 +201,12 @@ function ibanError(value: string): string {
       @if (selectedWelcome; as item) {
         <textarea class="input" rows="5" maxlength="400" [(ngModel)]="item.bodyAr"></textarea>
         <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
-          <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
-            {{ item.isActive ? 'إخفاء' : 'إظهار' }}
-          </button>
+          @if (canManage) {
+            <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
+            <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
+              {{ item.isActive ? 'إخفاء' : 'إظهار' }}
+            </button>
+          }
         </div>
       }
     </app-ops-drawer>
@@ -234,7 +241,9 @@ function ibanError(value: string): string {
         <h2>الحساب البنكي للمنصة</h2>
         <p>إدارة بيانات الحساب البنكي التى تظهر للخبيرة عند سداد قيمة الاشتراك او تجديد الباقة</p>
       </div>
-      <button class="btn primary" type="button" (click)="openAddBank()">+ إضافة حساب</button>
+      @if (canManage) {
+        <button class="btn primary" type="button" (click)="openAddBank()">+ إضافة حساب</button>
+      }
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
@@ -316,12 +325,14 @@ function ibanError(value: string): string {
             }
           </div>
         </div>
-        <div class="ops-drawer-actions">
-          <button class="btn primary" type="button" (click)="saveBank(item)">حفظ</button>
-          <button class="btn ghost" type="button" (click)="toggleBank(item)">
-            {{ item.isActive ? 'إيقاف' : 'تفعيل' }}
-          </button>
-        </div>
+        @if (canManage) {
+          <div class="ops-drawer-actions">
+            <button class="btn primary" type="button" (click)="saveBank(item)">حفظ</button>
+            <button class="btn ghost" type="button" (click)="toggleBank(item)">
+              {{ item.isActive ? 'إيقاف' : 'تفعيل' }}
+            </button>
+          </div>
+        }
       }
     </app-ops-drawer>
     <app-ops-modal [open]="addingBank" title="إضافة حساب بنكي" kicker="تحويل الاشتراك" (closed)="closeAddBank()">
@@ -382,8 +393,13 @@ function ibanError(value: string): string {
 })
 export class OpsSettingsComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+
+  get canManage(): boolean {
+    return this.session.hasAnyPermission('RAT-05', 'SETTINGS_MANAGE');
+  }
 
   readonly clip = clip;
 
@@ -431,6 +447,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   saveSetting(item: (typeof SETTING_META)[number]): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     let value = this.values[item.key] ?? '';
     if (item.kind === 'idle') {
       const amount = Number(this.idleAfter[item.key]);
@@ -457,6 +477,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   saveWelcome(item: OpsWelcome): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     const bodyAr = item.bodyAr.trim();
     if (bodyAr.length < 4) {
       this.toast.show('أدخلي نص الرسالة');
@@ -472,6 +496,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   toggleWelcome(item: OpsWelcome): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.api.opsPatchWelcome(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         item.isActive = row.isActive;
@@ -482,6 +510,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   createWelcome(): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     if (this.welcomeDraft.bodyAr.trim().length < 4) {
       this.toast.show('أدخلي نص الرسالة');
       return;
@@ -503,6 +535,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   openAddBank(): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.bankDraft = { bankName: '', iban: '', accountName: '' };
     this.bankDraftErrors = emptyBankErrors();
     this.addingBank = true;
@@ -581,6 +617,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   saveBank(item: OpsBankAccount): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     item.bankName = lettersOnly(item.bankName).trim();
     item.iban = ibanOnly(item.iban);
     item.accountName = lettersOnly(item.accountName).trim();
@@ -604,6 +644,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   toggleBank(item: OpsBankAccount): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.api.opsPatchBank(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         item.isActive = row.isActive;
@@ -614,6 +658,10 @@ export class OpsSettingsComponent implements OnInit {
   }
 
   createBank(): void {
+    if (!this.canManage) {
+      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      return;
+    }
     this.bankDraft.bankName = lettersOnly(this.bankDraft.bankName).trim();
     this.bankDraft.iban = ibanOnly(this.bankDraft.iban);
     this.bankDraft.accountName = lettersOnly(this.bankDraft.accountName).trim();

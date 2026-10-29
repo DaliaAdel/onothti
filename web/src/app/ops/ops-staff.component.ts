@@ -197,7 +197,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         }
         <div class="field">
           <label>الاسم</label>
-          <input class="input" [name]="'staffName-' + item.id" [(ngModel)]="nameById[item.id]" />
+          <input class="input" [name]="'staffName-' + item.id" [(ngModel)]="nameById[item.id]" [disabled]="!canManageRole(item)" />
         </div>
         <div class="field">
           <label>نوع الحساب</label>
@@ -209,7 +209,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>القسم</label>
-          <select class="input" [(ngModel)]="departmentById[item.id]" (ngModelChange)="onItemDepartmentChange(item)">
+          <select class="input" [(ngModel)]="departmentById[item.id]" (ngModelChange)="onItemDepartmentChange(item)" [disabled]="!canMoveStaff">
             @for (department of departments; track department.id) {
               <option [value]="department.id">{{ department.nameAr }}</option>
             }
@@ -217,7 +217,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>الفريق</label>
-          <select class="input" [(ngModel)]="teamById[item.id]">
+          <select class="input" [(ngModel)]="teamById[item.id]" [disabled]="!canMoveStaff">
             @for (team of teamsFor(departmentById[item.id]); track team.id) {
               <option [value]="team.id">{{ team.nameAr }}</option>
             }
@@ -225,7 +225,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
         </div>
         <div class="field">
           <label>المنصب</label>
-          <input class="input" [(ngModel)]="titleById[item.id]" placeholder="مدير التشغيل" />
+          <input class="input" [(ngModel)]="titleById[item.id]" placeholder="مدير التشغيل" [disabled]="!canManageRole(item)" />
         </div>
         <div class="ops-drawer-actions">
           @if (canManageRole(item) || canMoveStaff) {

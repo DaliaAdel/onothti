@@ -247,19 +247,17 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       @if (selected) {
         <p class="muted small">تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
         <div class="form-grid">
-          <div class="field">
-            <label>الحالة</label>
-            <select class="input" [(ngModel)]="nextStatus[selected.id]">
-              <option value="INACTIVE">غير نشط</option>
-              <option value="ACTIVE">نشط</option>
-              <option value="RESTRICTED">مقيّد</option>
-              <option value="UNRESTRICTED">غير مقيّد</option>
-              <option value="SUSPENDED">معطل</option>
-              <option value="CANCELLED">رقم محذوف</option>
-              <option value="DELETED">محذوف</option>
-            </select>
-          </div>
-          @if (selected.accountType === 'PROVIDER') {
+          @if (statusOptions().length) {
+            <div class="field">
+              <label>الحالة</label>
+              <select class="input" [(ngModel)]="nextStatus[selected.id]">
+                @for (option of statusOptions(); track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+          }
+          @if (selected.accountType === 'PROVIDER' && canChangePackage()) {
             <div class="field">
               <label>باقة الخبيرة</label>
               <select class="input" [(ngModel)]="nextPackage[selected.id]">
@@ -543,7 +541,33 @@ export class OpsClientsComponent implements OnInit {
   }
 
   hasAccountsAction(): boolean {
-    return this.session.hasAnyPermission('USR-01', 'USR-05', 'USR-06');
+    return this.session.hasAnyPermission('USR-01', 'USR-05', 'USR-06') || this.canChangePackage();
+  }
+
+  canChangePackage(): boolean {
+    return this.session.hasAnyPermission('USR-01', 'PKG-04');
+  }
+
+  statusOptions(): { value: string; label: string }[] {
+    const options: { value: string; label: string }[] = [];
+    if (this.session.hasPermission('USR-01')) {
+      options.push(
+        { value: 'INACTIVE', label: 'غير نشط' },
+        { value: 'ACTIVE', label: 'نشط' },
+        { value: 'SUSPENDED', label: 'معطل' },
+        { value: 'CANCELLED', label: 'رقم محذوف' },
+      );
+    }
+    if (this.session.hasPermission('USR-05')) {
+      options.push(
+        { value: 'RESTRICTED', label: 'مقيّد' },
+        { value: 'UNRESTRICTED', label: 'غير مقيّد' },
+      );
+    }
+    if (this.session.hasPermission('USR-06')) {
+      options.push({ value: 'DELETED', label: 'محذوف' });
+    }
+    return options;
   }
 
   applyAccount(item: OpsManagedAccount): void {
