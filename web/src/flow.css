@@ -179,21 +179,23 @@ app-auth-layout{
   align-items:center;
   justify-content:center;
   text-align:center;
-  padding:12px;
+  padding:0;
   min-width:0;
 }
 .auth-logo-lockup img{
+  display:block;
   width:min(280px,46vw);
   height:auto;
   object-fit:contain;
-  border-radius:32px;
-  box-shadow:0 18px 40px -18px rgba(92,48,32,.35);
+  border-radius:22.5%;
+  box-shadow:none;
   background:transparent;
+  filter:drop-shadow(0 10px 18px rgba(92,48,32,.16));
 }
 .auth-logo-lockup p{
   display:block!important;
   width:auto;
-  margin:18px 0 0;
+  margin:6px 0 0;
   color:var(--primary);
   font-size:clamp(15px,1.6vw,20px);
   font-weight:800;
@@ -300,9 +302,9 @@ app-auth-layout{
     gap:8px;
     padding:56px 16px 16px;
   }
-  .auth-logo-lockup{padding:0 12px 4px}
-  .auth-logo-lockup img{width:min(108px,30vw);border-radius:20px;box-shadow:0 10px 24px -12px rgba(92,48,32,.32)}
-  .auth-logo-lockup p{margin-top:8px;font-size:13px}
+  .auth-logo-lockup{padding:0}
+  .auth-logo-lockup img{width:min(108px,30vw);border-radius:22.5%;filter:drop-shadow(0 6px 12px rgba(92,48,32,.14))}
+  .auth-logo-lockup p{margin-top:4px;font-size:13px}
   .auth-layout .auth-panel{
     height:auto;
     overflow:auto;

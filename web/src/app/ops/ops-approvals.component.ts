@@ -1042,9 +1042,7 @@ export class OpsApprovalsComponent implements OnInit {
           this.openAccountKey(openAccount);
         }
         this.loading = false;
-        if (this.selectedGroup || this.statusFilter === 'approved' || this.statusFilter === 'rejected') {
-          this.loadDecided();
-        }
+        this.loadDecided();
       },
       error: (err) => {
         this.loading = false;
@@ -1060,10 +1058,16 @@ export class OpsApprovalsComponent implements OnInit {
     this.decidedLoading = true;
     const filesEnabled = this.canSeeContent || this.canSeeReceipts;
     forkJoin({
-      changesApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('APPROVED')),
-      changesRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsProfileChanges('REJECTED')),
-      ratingsApproved: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('APPROVED')),
-      ratingsRejected: this.listOrEmpty(this.canSeeProfile, this.api.opsRatings('REJECTED')),
+      changesApproved: this.listOrEmpty(
+        this.canSeeProfile || this.canSeePhotos,
+        this.api.opsProfileChanges('APPROVED'),
+      ),
+      changesRejected: this.listOrEmpty(
+        this.canSeeProfile || this.canSeePhotos,
+        this.api.opsProfileChanges('REJECTED'),
+      ),
+      ratingsApproved: this.listOrEmpty(this.canSeeRatings, this.api.opsRatings('APPROVED')),
+      ratingsRejected: this.listOrEmpty(this.canSeeRatings, this.api.opsRatings('REJECTED')),
       filesApproved: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'APPROVED' })),
       filesRejected: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'REJECTED' })),
     }).subscribe({
