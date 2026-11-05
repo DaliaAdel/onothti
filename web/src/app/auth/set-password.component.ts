@@ -7,10 +7,11 @@ import { apiMessage, displayPhone } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
+import { PasswordInputComponent } from '../shared/password-input.component';
 
 @Component({
   selector: 'app-set-password',
-  imports: [FormsModule, RouterLink, AuthLayoutComponent],
+  imports: [FormsModule, RouterLink, AuthLayoutComponent, PasswordInputComponent],
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
@@ -20,26 +21,18 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> اختاري كلمة مرور جديدة لدخول لوحة  المعلومات في المرات القادمة.</p>
         <div class="field">
           <label>{{ locale.t('auth.password') }}</label>
-          <input
-            class="input"
+          <app-password-input
             name="password"
-            type="password"
-            [(ngModel)]="password"
-            required
-            minlength="8"
+            [(value)]="password"
             autocomplete="new-password"
             [placeholder]="locale.t('auth.passwordHint')"
           />
         </div>
         <div class="field">
           <label>{{ locale.t('auth.confirm') }}</label>
-          <input
-            class="input"
+          <app-password-input
             name="confirm"
-            type="password"
-            [(ngModel)]="confirm"
-            required
-            minlength="8"
+            [(value)]="confirm"
             autocomplete="new-password"
             [placeholder]="locale.t('auth.confirmPlaceholder')"
           />

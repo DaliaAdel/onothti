@@ -6,11 +6,12 @@ import type { OpsStaff } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { PasswordInputComponent } from '../shared/password-input.component';
 import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-profile',
-  imports: [FormsModule],
+  imports: [FormsModule, PasswordInputComponent],
   template: `
     <div class="section-head" style="margin-top:0">
       <div>
@@ -59,15 +60,15 @@ import { opsDate } from './ops-ui';
           <h3 style="margin:0 0 12px;color:var(--plum)">تغيير كلمة المرور</h3>
           <div class="field">
             <label>كلمة المرور الحالية</label>
-            <input class="input" type="password" [(ngModel)]="currentPassword" autocomplete="current-password" />
+            <app-password-input name="currentPassword" [(value)]="currentPassword" autocomplete="current-password" [required]="false" [minlength]="0" />
           </div>
           <div class="field">
             <label>كلمة المرور الجديدة</label>
-            <input class="input" type="password" [(ngModel)]="newPassword" autocomplete="new-password" />
+            <app-password-input name="newPassword" [(value)]="newPassword" autocomplete="new-password" [required]="false" />
           </div>
           <div class="field">
             <label>تأكيد كلمة المرور</label>
-            <input class="input" type="password" [(ngModel)]="confirm" autocomplete="new-password" />
+            <app-password-input name="confirm" [(value)]="confirm" autocomplete="new-password" [required]="false" />
           </div>
           <button class="btn primary" style="margin-top:14px" type="button" (click)="changePassword()">حفظ كلمة المرور</button>
         </article>

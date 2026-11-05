@@ -7,10 +7,11 @@ import { apiMessage, displayPhone } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
+import { PasswordInputComponent } from '../shared/password-input.component';
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormsModule, RouterLink, AuthLayoutComponent],
+  imports: [FormsModule, RouterLink, AuthLayoutComponent, PasswordInputComponent],
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
@@ -20,11 +21,11 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> أدخلي كلمة المرور الجديدة مرتين.</p>
         <div class="field">
           <label>{{ locale.t('auth.password') }}</label>
-          <input class="input" name="password" type="password" [(ngModel)]="password" required minlength="8" autocomplete="new-password" />
+          <app-password-input name="password" [(value)]="password" autocomplete="new-password" />
         </div>
         <div class="field">
           <label>{{ locale.t('auth.confirm') }}</label>
-          <input class="input" name="confirm" type="password" [(ngModel)]="confirm" required minlength="8" autocomplete="new-password" />
+          <app-password-input name="confirm" [(value)]="confirm" autocomplete="new-password" />
         </div>
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>

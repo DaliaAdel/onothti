@@ -19,7 +19,7 @@ const ar = {
   'nav.myServices': 'خدماتي',
   'nav.portfolio': 'ألبوماتي',
   'nav.reviews': 'التقييمات',
-  'nav.views': 'المشاهدات والإحصاءات',
+  'nav.views': 'المشاهدات و الاحصائيات',
   'nav.package': 'الاشتراك والباقات',
   'nav.payment': 'إثبات التحويل',
   'nav.paymentStatus': 'حالة الدفع',

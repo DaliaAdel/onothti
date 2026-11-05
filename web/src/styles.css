@@ -19,6 +19,12 @@
 .otp input{height:54px;font-size:18px}
 .field-label{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .field-label .link{color:var(--plum);font-size:11px;font-weight:700;text-decoration:none}
+app-password-input{display:block}
+.password-field{position:relative}
+.password-field .input{padding-inline-end:46px}
+.password-toggle{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;color:#8a746c;display:grid;place-items:center;cursor:pointer;padding:0;border-radius:10px}
+.password-toggle:hover{color:var(--plum);background:rgba(188,141,122,.1)}
+.password-toggle svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .field-error,.auth-error{color:var(--danger);font-size:10px;line-height:1.7;margin-top:0;overflow-wrap:anywhere}
 .auth-error a{color:var(--plum);font-weight:700;margin-inline-start:6px;text-decoration:underline}
 .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}

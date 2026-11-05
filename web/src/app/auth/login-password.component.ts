@@ -7,10 +7,11 @@ import { apiMessage, displayPhone } from '../core/phone';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
+import { PasswordInputComponent } from '../shared/password-input.component';
 
 @Component({
   selector: 'app-login-password',
-  imports: [FormsModule, RouterLink, AuthLayoutComponent],
+  imports: [FormsModule, RouterLink, AuthLayoutComponent, PasswordInputComponent],
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
@@ -23,13 +24,9 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
             <label>{{ locale.t('auth.password') }}</label>
             <a class="link" routerLink="/login/forgot">نسيت كلمة المرور؟</a>
           </div>
-          <input
-            class="input"
+          <app-password-input
             name="password"
-            type="password"
-            [(ngModel)]="password"
-            required
-            minlength="8"
+            [(value)]="password"
             autocomplete="current-password"
             [placeholder]="locale.t('auth.passwordHint')"
           />

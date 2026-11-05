@@ -70,6 +70,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                 <th>الجوال</th>
                 <th>المدينة</th>
                 <th>الباقة</th>
+                <th>الأيام المتبقية</th>
                 <th>الحالة</th>
                 <th>التاريخ</th>
                 @if (showNotifyColumn) {
@@ -88,6 +89,13 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                   <td>
                     @if (item.accountType === 'PROVIDER') {
                       {{ item.package?.nameAr || 'بدون باقة' }}
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td>
+                    @if (item.accountType === 'PROVIDER') {
+                      {{ remainingDaysLabel(item) }}
                       @if (item.subscriptionEndAt) {
                         <div class="muted small">حتى {{ opsDate(item.subscriptionEndAt) }}</div>
                       }
@@ -603,6 +611,21 @@ export class OpsClientsComponent implements OnInit {
         },
         error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحساب')),
       });
+  }
+
+  remainingDaysLabel(item: OpsManagedAccount): string {
+    if (!item.subscriptionEndAt) {
+      return '—';
+    }
+    const date = new Date(item.subscriptionEndAt);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+    const days = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
+    if (days === 0) {
+      return 'منتهية';
+    }
+    return `${days} يوم`;
   }
 
   typeAr(type: string): string {
