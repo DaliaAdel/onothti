@@ -13,7 +13,7 @@ import {
   staffHasExact,
   SUPER_ROLE_CODE,
 } from "../common/staff-permissions";
-import { notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
+import { notifyOpsAndFinance, notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
 import { ensureTicketTypes } from "../common/ticket-types";
 import { assertUniqueDisplayName, assertUniqueEmail } from "../common/account-rules";
 import {
@@ -171,7 +171,14 @@ export class OpsService {
     });
   }
 
-  async reviewChange(id: string, approve: boolean, reopen = false, permissions: string[] = []) {
+  async reviewChange(
+    id: string,
+    approve: boolean,
+    reopen = false,
+    permissions: string[] = [],
+    actorId?: string,
+    skipPeerNotify = false,
+  ) {
     const change = await this.prisma.profileChangeRequest.findUnique({
       where: { id },
       include: { user: { include: { providerProfile: true, customerProfile: true } } },
@@ -188,7 +195,15 @@ export class OpsService {
       if (change.status === "PENDING") {
         return change;
       }
-      await this.notifyOwner(change.userId, "أُعيد التعديل للمراجعة", "سيُراجع المشغّل التعديل مرة أخرى");
+      await this.notifyOwner(change.userId, "أُعيد التعديل للمراجعة", "سيُراجع المشغّل التعديل مرة أخرى", `change:${id}`);
+      if (!skipPeerNotify) {
+        await this.notifyOpsPeers(
+          actorId,
+          `إعادة ${this.changeFieldLabel(change.field)} للمراجعة`,
+          `${await this.actorLabel(actorId)} أعادت ${this.changeFieldLabel(change.field)} لحساب ${change.user.displayName} (${change.user.accountCode})`,
+          `change:${id}`,
+        );
+      }
       return this.prisma.profileChangeRequest.update({
         where: { id },
         data: { status: "PENDING", reviewedAt: null },
@@ -204,7 +219,17 @@ export class OpsService {
       change.userId,
       approve ? "تم اعتماد تعديل الملف" : "تم رفض تعديل الملف",
       approve ? "اعتمد المشغّل التعديل على ملفك" : "لم يُعتمد التعديل المطلوب على الملف",
+      `change:${id}`,
     );
+    if (!skipPeerNotify) {
+      const field = this.changeFieldLabel(change.field);
+      await this.notifyOpsPeers(
+        actorId,
+        approve ? `اعتماد ${field}` : `رفض ${field}`,
+        `${await this.actorLabel(actorId)} ${approve ? "اعتمدت" : "رفضت"} ${field} لحساب ${change.user.displayName} (${change.user.accountCode})`,
+        `change:${id}`,
+      );
+    }
     return this.prisma.profileChangeRequest.update({
       where: { id },
       data: {
@@ -245,9 +270,9 @@ export class OpsService {
     });
     const title =
       dto.status === "CLOSED" ? "تم إغلاق البلاغ" : dto.status === "ESCALATED" ? "تم تصعيد البلاغ" : "تحديث البلاغ";
-    await this.notifyOwner(row.reporterId, title, dto.note?.trim() || title);
+    await this.notifyOwner(row.reporterId, title, dto.note?.trim() || title, `complaint:${id}`);
     if (row.targetUserId && dto.status === "CLOSED") {
-      await this.notifyOwner(row.targetUserId, "تم إغلاق بلاغ مرتبط بحسابك", dto.note?.trim() || title);
+      await this.notifyOwner(row.targetUserId, "تم إغلاق بلاغ مرتبط بحسابك", dto.note?.trim() || title, `complaint:${id}`);
     }
     return updated;
   }
@@ -269,8 +294,14 @@ export class OpsService {
     });
   }
 
-  async reviewRating(id: string, dto: ReviewRatingDto) {
-    const rating = await this.prisma.rating.findUnique({ where: { id } });
+  async reviewRating(id: string, dto: ReviewRatingDto, actorId?: string) {
+    const rating = await this.prisma.rating.findUnique({
+      where: { id },
+      include: {
+        customer: { select: { displayName: true, accountCode: true } },
+        provider: { select: { displayName: true, accountCode: true } },
+      },
+    });
     if (!rating) {
       throw new NotFoundException("التقييم غير موجود");
     }
@@ -285,8 +316,14 @@ export class OpsService {
         where: { id },
         data: { status: "PENDING" },
       });
-      await this.notifyOwner(rating.providerUserId, "أُعيد تقييم للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى");
-      await this.notifyOwner(rating.customerUserId, "أُعيد تقييمك للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى");
+      await this.notifyOwner(rating.providerUserId, "أُعيد تقييم للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى", `rating:${id}`);
+      await this.notifyOwner(rating.customerUserId, "أُعيد تقييمك للمراجعة", dto.note?.trim() || "سيُراجع التقييم مرة أخرى", `rating:${id}`);
+      await this.notifyOpsPeers(
+        actorId,
+        "إعادة تقييم للمراجعة",
+        `${await this.actorLabel(actorId)} أعادت تقييم ${rating.customer?.displayName || "عميلة"} على حساب ${rating.provider?.displayName || "خبيرة"}`,
+        `rating:${id}`,
+      );
       return updated;
     }
     if (rating.status !== "PENDING" && rating.status !== "REJECTED") {
@@ -304,11 +341,19 @@ export class OpsService {
       rating.providerUserId,
       dto.approve ? "تم اعتماد تقييم جديد" : "رُفض تقييم على ملفك",
       dto.note?.trim() || (dto.approve ? "ظهر تقييم جديد بعد المراجعة" : "لم يُعتمد التقييم"),
+      `rating:${id}`,
     );
     await this.notifyOwner(
       rating.customerUserId,
       dto.approve ? "تم نشر تقييمك" : "لم يُعتمد تقييمك",
       dto.note?.trim() || (dto.approve ? "سيظهر تقييمك في ملف الخبيرة" : "المراجعة لم تعتمد التقييم"),
+      `rating:${id}`,
+    );
+    await this.notifyOpsPeers(
+      actorId,
+      dto.approve ? "اعتماد تقييم" : "رفض تقييم",
+      `${await this.actorLabel(actorId)} ${dto.approve ? "اعتمدت" : "رفضت"} تقييم ${rating.customer?.displayName || "عميلة"} على حساب ${rating.provider?.displayName || "خبيرة"}`,
+      `rating:${id}`,
     );
     return updated;
   }
@@ -736,6 +781,41 @@ export class OpsService {
     });
   }
 
+  async deleteService(id: string) {
+    const row = await this.prisma.service.findUnique({
+      where: { id },
+      include: { _count: { select: { providers: true } } },
+    });
+    if (!row) {
+      throw new NotFoundException("الخدمة غير موجودة");
+    }
+    if (row._count.providers) {
+      throw new BadRequestException("لا يمكن حذف الخدمة لأنها مرتبطة بخبيرات. أخفيها من الظهور بدل الحذف");
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.profileViewDaily.deleteMany({ where: { serviceId: id } });
+      await tx.searchLog.updateMany({ where: { serviceId: id }, data: { serviceId: null } });
+      await tx.subService.deleteMany({ where: { serviceId: id } });
+      await tx.service.delete({ where: { id } });
+    });
+    return { ok: true };
+  }
+
+  async deleteSubService(id: string) {
+    const row = await this.prisma.subService.findUnique({
+      where: { id },
+      include: { _count: { select: { providers: true } } },
+    });
+    if (!row) {
+      throw new NotFoundException("الخدمة الفرعية غير موجودة");
+    }
+    if (row._count.providers) {
+      throw new BadRequestException("لا يمكن حذف الخدمة الفرعية لأنها مرتبطة بخبيرات. أخفيها من الظهور بدل الحذف");
+    }
+    await this.prisma.subService.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async ticketTypes() {
     await ensureTicketTypes(this.prisma);
     return this.prisma.ticketType.findMany({
@@ -852,6 +932,7 @@ export class OpsService {
         ticket.ownerId,
         dto.status === "CLOSED" || dto.status === "RESOLVED" ? "تم إغلاق طلبك" : "تحديث على طلبك",
         this.ticketStatusLabel(dto.status),
+        `ticket:${id}`,
       );
     }
     return this.ticketById(id);
@@ -871,7 +952,7 @@ export class OpsService {
         data: { status: "IN_PROGRESS", assigneeId: actorId },
       });
     }
-    await this.notifyOwner(ticket.ownerId, "رد على طلبك", dto.body.trim().slice(0, 160));
+    await this.notifyOwner(ticket.ownerId, "رد على طلبك", dto.body.trim().slice(0, 160), `ticket:${id}`);
     return this.ticketById(id);
   }
 
@@ -1243,7 +1324,7 @@ export class OpsService {
     ]
       .filter(Boolean)
       .join(" · ");
-    await this.notifyOwner(id, "تحديث الحساب", summary);
+    await this.notifyOwner(id, "تحديث الحساب", summary, `account:${id}`);
 
     return this.accountDetail(id);
   }
@@ -1271,6 +1352,7 @@ export class OpsService {
         userId: user.id,
         audience: user.accountType,
         type: "SYSTEM",
+        ref: `account:${user.id}`,
         titleAr,
         titleEn: titleAr,
         bodyAr,
@@ -1807,14 +1889,14 @@ export class OpsService {
       isActive: department.isActive,
       teams: department.teams.map((team) => {
         const members = (team.members ?? [])
-          .filter((member) => !member.user.isProtected)
+          .filter((member) => member.user && !member.user.isProtected)
           .map((member) => ({
           id: member.user.id,
           displayName: member.user.displayName,
           accountCode: member.user.accountCode,
           status: member.user.status,
           mobile: member.user.mobile,
-          titleAr: member.titleAr || member.role.nameAr,
+          titleAr: member.titleAr || member.role?.nameAr || "",
           role: member.role,
           isLead: team.leadUserId === member.user.id,
         }));
@@ -2364,6 +2446,7 @@ export class OpsService {
 
   async dashboard(permissions: string[] = []) {
     const now = new Date();
+    const onlineSince = new Date(now.getTime() - 5 * 60 * 1000);
     const week = new Date(now);
     week.setDate(week.getDate() + 7);
     const [
@@ -2387,6 +2470,8 @@ export class OpsService {
       activeAccounts,
       eventsToday,
       escalatedTickets,
+      onlineCustomers,
+      onlineProviders,
     ] = await Promise.all([
       this.prisma.mediaFile.count({
         where: {
@@ -2496,9 +2581,25 @@ export class OpsService {
       this.prisma.ticket.count({
         where: { priority: 1, status: { in: ["SENT", "IN_PROGRESS"] } },
       }),
+      this.prisma.user.count({
+        where: {
+          accountType: AccountType.CUSTOMER,
+          status: { not: AccountStatus.DELETED },
+          lastActiveAt: { gte: onlineSince },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          accountType: AccountType.PROVIDER,
+          status: { not: AccountStatus.DELETED },
+          lastActiveAt: { gte: onlineSince },
+        },
+      }),
     ]);
     const inbox = [
-      ...mediaRows.map((row) => ({
+      ...mediaRows
+        .filter((row) => row.uploadedBy)
+        .map((row) => ({
         id: row.id,
         kind: row.proofs.length ? "RECEIPT" : row.storageKey.startsWith("avatars/") ? "AVATAR" : "MEDIA",
         title: row.uploadedBy.displayName,
@@ -2513,7 +2614,7 @@ export class OpsService {
         createdAt: row.createdAt,
       })),
       ...changeRows
-        .filter((row) => row.field === "DISPLAY_NAME" || row.field === "BIO" || row.field === "AVATAR")
+        .filter((row) => row.user && (row.field === "DISPLAY_NAME" || row.field === "BIO" || row.field === "AVATAR"))
         .map((row) => ({
         id: row.id,
         kind: "CHANGE",
@@ -2522,21 +2623,27 @@ export class OpsService {
         subtitle: row.user.accountCode,
         createdAt: row.createdAt,
       })),
-      ...ratingRows.map((row) => ({
+      ...ratingRows
+        .filter((row) => row.customer && row.provider)
+        .map((row) => ({
         id: row.id,
         kind: "RATING",
         title: `${row.customer.displayName} → ${row.provider.displayName}`,
         subtitle: `${row.stars} نجوم`,
         createdAt: row.createdAt,
       })),
-      ...complaintRows.map((row) => ({
+      ...complaintRows
+        .filter((row) => row.reporter)
+        .map((row) => ({
         id: row.id,
         kind: "COMPLAINT",
         title: row.reporter.displayName,
-        subtitle: row.reason.slice(0, 80),
+        subtitle: (row.reason ?? "").slice(0, 80),
         createdAt: row.createdAt,
       })),
-      ...ticketRows.map((row) => ({
+      ...ticketRows
+        .filter((row) => row.owner && row.type)
+        .map((row) => ({
         id: row.id,
         kind: "TICKET",
         title: row.refNo,
@@ -2562,6 +2669,8 @@ export class OpsService {
       activeAccounts,
       eventsToday,
       escalatedTickets,
+      onlineCustomers,
+      onlineProviders,
       inbox,
     };
   }
@@ -2618,7 +2727,7 @@ export class OpsService {
       orderBy: { createdAt: "desc" },
       take: 200,
     });
-    return files.map((file) => this.toMediaItem(file));
+    return files.filter((file) => file.uploadedBy).map((file) => this.toMediaItem(file));
   }
 
   async reviewMedia(id: string, dto: ReviewMediaDto, actorId?: string, permissions: string[] = []) {
@@ -2672,8 +2781,15 @@ export class OpsService {
           file.uploadedById,
           "أُعيد الملف للمراجعة",
           dto.note?.trim() || "سيُراجع المشغّل الملف مرة أخرى",
+          this.mediaOwnerRef(file, id),
         );
       }
+      await this.notifyOpsPeers(
+        actorId,
+        `إعادة ${this.mediaActionLabel(file)} للمراجعة`,
+        `${await this.actorLabel(actorId)} أعادت ${this.mediaActionLabel(file)} لحساب ${file.uploadedBy?.displayName || ""} (${file.uploadedBy?.accountCode || ""})`.trim(),
+        `media:${id}`,
+      );
       return this.mediaById(id);
     }
     if (dto.requestClearer) {
@@ -2691,6 +2807,13 @@ export class OpsService {
         file.uploadedById,
         "طلب صورة أوضح",
         dto.note?.trim() || "يرجى رفع إثبات أوضح للمراجعة",
+        this.mediaOwnerRef(file, id),
+      );
+      await this.notifyOpsPeers(
+        actorId,
+        "طلب صورة أوضح",
+        `${await this.actorLabel(actorId)} طلبت صورة أوضح لإيصال ${file.uploadedBy?.displayName || ""} (${file.uploadedBy?.accountCode || ""})`.trim(),
+        `media:${id}`,
       );
       return this.mediaById(id);
     }
@@ -2714,7 +2837,7 @@ export class OpsService {
       },
     });
     if (avatarChange) {
-      await this.reviewChange(avatarChange.id, dto.approve, false, permissions);
+      await this.reviewChange(avatarChange.id, dto.approve, false, permissions, actorId, true);
     } else if (dto.approve && file.storageKey.startsWith("avatars/")) {
       await this.prisma.user.update({
         where: { id: file.uploadedById },
@@ -2736,6 +2859,14 @@ export class OpsService {
       dto.approve ? "تم اعتماد الملف" : "تم رفض الملف",
       dto.note?.trim() ||
         (dto.approve ? "اعتمد المشغّل الملف المرفوع" : "رفض المشغّل الملف المرفوع"),
+      this.mediaOwnerRef(file, id),
+    );
+    const mediaLabel = this.mediaActionLabel(file);
+    await this.notifyOpsPeers(
+      actorId,
+      dto.approve ? `اعتماد ${mediaLabel}` : `رفض ${mediaLabel}`,
+      `${await this.actorLabel(actorId)} ${dto.approve ? "اعتمدت" : "رفضت"} ${mediaLabel} لحساب ${file.uploadedBy?.displayName || ""} (${file.uploadedBy?.accountCode || ""})`.trim(),
+      `media:${id}`,
     );
     await this.audit(actorId, dto.approve ? "MEDIA_APPROVE" : "MEDIA_REJECT", "MediaFile", id, {
       status,
@@ -2766,13 +2897,14 @@ export class OpsService {
     });
     const proof = file.proofs[0];
     const amount = Number(proof.amount);
-    const body = `تم تحويل إيصال ${file.uploadedBy.displayName} (${file.uploadedBy.accountCode}) — ${proof.subscription.package.nameAr} بقيمة ${amount} ر.س`;
-    await this.notifyStaffWithPermission(
-      ["FIN-01", "FIN-02", "FIN-03"],
-      "إيصال يحتاج اعتماد المالية",
-      body,
-      `receipt:${id}`,
+    const ownerName = file.uploadedBy?.displayName || "حساب";
+    const ownerCode = file.uploadedBy?.accountCode || "";
+    const packageName = proof.subscription?.package?.nameAr || "الباقة";
+    await this.notifyOpsPeers(
       actorId,
+      "تحويل إيصال للمالية",
+      `${await this.actorLabel(actorId)} حوّلت إيصال ${ownerName}${ownerCode ? ` (${ownerCode})` : ""} — ${packageName} بقيمة ${amount} ر.س`,
+      `receipt:${id}`,
     );
     await this.audit(actorId, "RECEIPT_ESCALATE", "MediaFile", id, {
       owner: file.uploadedBy.accountCode,
@@ -2852,7 +2984,13 @@ export class OpsService {
           },
         },
       });
-      await this.notifyOwner(id, "أُعيد الحساب للمراجعة", dto.reason?.trim() || "سيُراجع المشغّل الحساب مرة أخرى");
+      await this.notifyOwner(id, "أُعيد الحساب للمراجعة", dto.reason?.trim() || "سيُراجع المشغّل الحساب مرة أخرى", `account:${id}`);
+      await this.notifyOpsPeers(
+        actorId,
+        "إعادة حساب خبيرة للمراجعة",
+        `${await this.actorLabel(actorId)} أعادت حساب ${user.displayName} (${user.accountCode}) للمراجعة`,
+        `provider:${id}`,
+      );
       await this.audit(actorId ?? null, "PROVIDER_REOPEN", "User", id);
       return { ok: true, approve: false, reopen: true };
     }
@@ -2900,6 +3038,13 @@ export class OpsService {
       dto.approve ? "تم اعتماد الحساب" : "تم إيقاف الحساب",
       dto.reason?.trim() ||
         (dto.approve ? "اعتمد المشغّل ملف الخبيرة" : "لم يُعتمد ملف الخبيرة"),
+      `account:${id}`,
+    );
+    await this.notifyOpsPeers(
+      actorId,
+      dto.approve ? "اعتماد حساب خبيرة" : "إيقاف حساب خبيرة",
+      `${await this.actorLabel(actorId)} ${dto.approve ? "اعتمدت" : "أوقفت"} حساب ${user.displayName} (${user.accountCode})`,
+      `provider:${id}`,
     );
     await this.audit(actorId ?? null, dto.approve ? "PROVIDER_APPROVE" : "PROVIDER_REJECT", "User", id);
     return { ok: true, approve: dto.approve };
@@ -2951,12 +3096,12 @@ export class OpsService {
       opsStatus: string;
       financeStatus: string;
       amount: { toString(): string } | number;
-      subscription: {
+      subscription?: {
         status: string;
         startAt: Date;
         endAt: Date;
-        package: { code: string; nameAr: string; durationMonths: number };
-      };
+        package?: { code: string; nameAr: string; durationMonths: number } | null;
+      } | null;
     }[];
   }) {
     const purpose = file.proofs.length
@@ -2979,20 +3124,29 @@ export class OpsService {
       text: url ? null : file.storageKey,
       owner: file.uploadedBy,
       portfolio: file.portfolio,
-      proofs: file.proofs.map((proof) => ({
-        id: proof.id,
-        opsStatus: proof.opsStatus,
-        financeStatus: proof.financeStatus,
-        amount: Number(proof.amount),
-        subscriptionStatus: proof.subscription.status,
-        startAt: proof.subscription.startAt,
-        endAt: proof.subscription.endAt,
-        package: {
-          code: proof.subscription.package.code,
-          nameAr: proof.subscription.package.nameAr,
-          durationMonths: proof.subscription.package.durationMonths,
-        },
-      })),
+      proofs: file.proofs.flatMap((proof) => {
+        const subscription = proof.subscription;
+        const pkg = subscription?.package;
+        if (!subscription || !pkg) {
+          return [];
+        }
+        return [
+          {
+            id: proof.id,
+            opsStatus: proof.opsStatus,
+            financeStatus: proof.financeStatus,
+            amount: Number(proof.amount),
+            subscriptionStatus: subscription.status,
+            startAt: subscription.startAt,
+            endAt: subscription.endAt,
+            package: {
+              code: pkg.code,
+              nameAr: pkg.nameAr,
+              durationMonths: pkg.durationMonths,
+            },
+          },
+        ];
+      }),
     };
   }
 
@@ -3172,6 +3326,60 @@ export class OpsService {
     return "PRO-08";
   }
 
+  private changeFieldLabel(field: string): string {
+    if (field === ProfileChangeField.DISPLAY_NAME) {
+      return "اسم العرض";
+    }
+    if (field === ProfileChangeField.BIO) {
+      return "النبذة";
+    }
+    if (field === ProfileChangeField.AVATAR) {
+      return "صورة العرض";
+    }
+    return "تعديل الملف";
+  }
+
+  private mediaOwnerRef(file: { storageKey: string; portfolio: unknown[]; proofs: unknown[] }, id: string): string {
+    if (file.proofs.length) {
+      return `receipt:${id}`;
+    }
+    if (file.portfolio.length) {
+      return `portfolio:${id}`;
+    }
+    if (file.storageKey.startsWith("avatars/")) {
+      return `account:${file.storageKey}`;
+    }
+    return `media:${id}`;
+  }
+
+  private mediaActionLabel(file: { storageKey: string; portfolio: unknown[]; proofs: unknown[] }): string {
+    if (file.proofs.length) {
+      return "إيصال";
+    }
+    if (file.portfolio.length) {
+      return "عمل من المعرض";
+    }
+    if (file.storageKey.startsWith("avatars/")) {
+      return "صورة العرض";
+    }
+    return "ملف";
+  }
+
+  private async actorLabel(actorId?: string) {
+    if (!actorId) {
+      return "موظفة التشغيل";
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: actorId },
+      select: { displayName: true },
+    });
+    return user?.displayName?.trim() || "موظفة التشغيل";
+  }
+
+  private notifyOpsPeers(actorId: string | undefined, titleAr: string, bodyAr: string, ref: string) {
+    return notifyOpsAndFinance(this.prisma, { actorId, titleAr, bodyAr, ref });
+  }
+
   private notifyStaffWithPermission(
     codes: string[],
     titleAr: string,
@@ -3182,11 +3390,12 @@ export class OpsService {
     return notifyStaffByPermission(this.prisma, codes, titleAr, bodyAr, ref, exceptUserId);
   }
 
-  private notifyOwner(userId: string, titleAr: string, bodyAr: string) {
+  private notifyOwner(userId: string, titleAr: string, bodyAr: string, ref?: string) {
     return this.prisma.notification.create({
       data: {
         userId,
         type: "SYSTEM",
+        ref: ref ?? null,
         titleAr,
         titleEn: titleAr,
         bodyAr,

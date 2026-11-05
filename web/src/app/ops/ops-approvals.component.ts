@@ -1,9 +1,10 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, forkJoin, of, type Observable } from 'rxjs';
+import { catchError, finalize, forkJoin, of, type Observable } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
+import { InitialsPipe } from '../core/name-initials';
 import { apiMessage } from '../core/phone';
 import type { OpsManagedAccount, OpsMediaItem, OpsPendingProvider, OpsProfileChange, OpsRating } from '../core/models';
 import { SessionService } from '../core/session.service';
@@ -48,7 +49,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
 
 @Component({
   selector: 'app-ops-approvals',
-  imports: [FormsModule],
+  imports: [FormsModule, InitialsPipe],
   template: `
     <div class="appr">
       <div class="appr-head">
@@ -130,7 +131,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                         @if (group.previewUrl) {
                           <img [src]="group.previewUrl" alt="" />
                         } @else {
-                          {{ group.name.slice(0, 1) }}
+                          {{ group.name | initials }}
                         }
                       </div>
                       <div>
@@ -185,7 +186,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                         @if (item.previewUrl && !item.isVideo && !item.isPdf) {
                           <img [src]="item.previewUrl" alt="" />
                         } @else {
-                          {{ item.accountName.slice(0, 1) }}
+                          {{ item.accountName | initials }}
                         }
                       </div>
                       <div>
@@ -231,7 +232,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
               @if (group.previewUrl) {
                 <img [src]="group.previewUrl" alt="" />
               } @else {
-                {{ group.name.slice(0, 1) }}
+                {{ group.name | initials }}
               }
             </div>
             <div>
@@ -1034,18 +1035,18 @@ export class OpsApprovalsComponent implements OnInit {
       ratings: this.listOrEmpty(this.canSeeRatings, this.api.opsRatings('PENDING')),
       files: this.listOrEmpty(filesEnabled, this.api.opsMedia()),
       providers: this.listOrEmpty(this.canApproveAccounts, this.api.opsPendingProviders()),
-    }).subscribe({
+    })
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
       next: (payload) => {
         this.setItems(this.rowsFrom(payload));
         const openAccount = this.route.snapshot.queryParamMap.get('account');
         if (!this.selectedGroup && openAccount) {
           this.openAccountKey(openAccount);
         }
-        this.loading = false;
         this.loadDecided();
       },
       error: (err) => {
-        this.loading = false;
         this.toast.show(apiMessage(err, 'تعذر تحميل الاعتمادات'));
       },
     });
@@ -1070,7 +1071,14 @@ export class OpsApprovalsComponent implements OnInit {
       ratingsRejected: this.listOrEmpty(this.canSeeRatings, this.api.opsRatings('REJECTED')),
       filesApproved: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'APPROVED' })),
       filesRejected: this.listOrEmpty(filesEnabled, this.api.opsMedia({ status: 'REJECTED' })),
-    }).subscribe({
+    })
+      .pipe(
+        finalize(() => {
+          this.decidedLoaded = true;
+          this.decidedLoading = false;
+        }),
+      )
+      .subscribe({
       next: (payload) => {
         this.setItems([
           ...this.items,
@@ -1080,11 +1088,6 @@ export class OpsApprovalsComponent implements OnInit {
             ratings: [...payload.ratingsApproved, ...payload.ratingsRejected],
           }),
         ]);
-        this.decidedLoaded = true;
-        this.decidedLoading = false;
-      },
-      error: () => {
-        this.decidedLoading = false;
       },
     });
   }
@@ -1101,12 +1104,12 @@ export class OpsApprovalsComponent implements OnInit {
     const fileIds = new Set(files.map((row) => row.id));
     return [
       ...(payload.providers ?? []).map((row) => this.fromProvider(row)),
-      ...files.map((file) => this.fromFile(file)),
+      ...files.filter((file) => file.owner).map((file) => this.fromFile(file)),
       ...changes
-        .filter((row) => row.field === 'DISPLAY_NAME' || row.field === 'BIO' || row.field === 'AVATAR')
+        .filter((row) => row.user && (row.field === 'DISPLAY_NAME' || row.field === 'BIO' || row.field === 'AVATAR'))
         .filter((row) => row.field !== 'AVATAR' || !fileIds.has(row.newValue))
         .map((row) => this.fromChange(row)),
-      ...ratings.map((row) => this.fromRating(row)),
+      ...ratings.filter((row) => row.customer && row.provider).map((row) => this.fromRating(row)),
     ];
   }
 
@@ -1214,7 +1217,7 @@ export class OpsApprovalsComponent implements OnInit {
       accountType: file.owner.accountType,
       summary:
         kind === 'receipt' && proof
-          ? `إيصال ${proof.package.nameAr} · ${proof.amount} ر.س`
+          ? `إيصال ${proof.package?.nameAr || ''} · ${proof.amount} ر.س`
           : kind === 'portfolio'
             ? file.kind === 'VIDEO'
               ? 'فيديو أعمال'

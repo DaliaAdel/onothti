@@ -374,6 +374,7 @@ export interface ProviderTicket {
 export interface AppNotification {
   id: string;
   type?: string;
+  ref?: string | null;
   titleAr?: string;
   titleEn?: string;
   bodyAr?: string;
@@ -455,6 +456,8 @@ export interface OpsDashboard {
   activeAccounts?: number;
   eventsToday?: number;
   escalatedTickets?: number;
+  onlineCustomers?: number;
+  onlineProviders?: number;
   inbox?: OpsInboxItem[];
 }
 

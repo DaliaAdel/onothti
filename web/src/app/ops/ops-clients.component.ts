@@ -20,7 +20,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       <div class="section-head">
         <div>
           <h2>حسابات عملاء المنصة</h2>
-          <p>اضغطي على صف لعرض ملف الخبيرة أو العميلة</p>
+          <p>اختر حسابًا لعرض تفاصيله وإدارته.</p>
         </div>
       </div>
 

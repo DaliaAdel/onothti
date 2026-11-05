@@ -5,12 +5,13 @@ import { ApiService } from '../core/api.service';
 import type { CatalogRegion, ProviderCard } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
+import { InitialsPipe } from '../core/name-initials';
 import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-list',
-  imports: [FormsModule, RouterLink, FavoriteBtnComponent, IconComponent],
+  imports: [FormsModule, RouterLink, FavoriteBtnComponent, IconComponent, InitialsPipe],
   template: `
     <form class="search-row" (ngSubmit)="apply()">
       <label class="searchbox">
@@ -44,7 +45,7 @@ import { IconComponent } from '../shared/icon.component';
       <div class="grid two">
         @for (provider of providers; track provider.id) {
           <article class="card hover provider">
-            <div class="provider-photo">{{ provider.displayName.slice(0, 1) }}</div>
+            <div class="provider-photo">{{ provider.displayName | initials }}</div>
             <div>
               <h3>{{ provider.displayName }}</h3>
               <p>{{ serviceLine(provider) }} · {{ provider.city?.nameAr || cityName }}</p>

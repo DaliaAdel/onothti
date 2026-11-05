@@ -5,6 +5,7 @@ import { apiMessage } from '../core/phone';
 import type { OpsCatalogService, OpsSubService } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ToastService } from '../core/toast.service';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
@@ -71,6 +72,9 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
                 <th>فرعية</th>
                 <th>الترتيب</th>
                 <th>الظهور</th>
+                @if (canManage) {
+                  <th></th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -92,6 +96,11 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
                       {{ service.isVisible ? 'ظاهرة' : 'مخفية' }}
                     </span>
                   </td>
+                  @if (canManage) {
+                    <td>
+                      <button class="btn ghost" type="button" (click)="removeService(service, $event)">حذف</button>
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
@@ -144,6 +153,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
           <button class="btn ghost" type="button" (click)="toggleService(selected)">
             {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
           </button>
+          <button class="btn ghost" type="button" (click)="removeService(selected)">حذف</button>
         </div>
       }
 
@@ -230,6 +240,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
             <button class="btn ghost" type="button" (click)="toggleSub(sub)">
               {{ sub.isVisible ? 'إخفاء' : 'إظهار' }}
             </button>
+            <button class="btn ghost" type="button" (click)="removeSub(sub)">حذف</button>
           </div>
         }
       }
@@ -241,6 +252,7 @@ export class OpsCatalogComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   get canManage(): boolean {
     return this.session.hasPermission('CAT-01');
@@ -396,6 +408,36 @@ export class OpsCatalogComponent implements OnInit {
     });
   }
 
+  async removeService(service: OpsCatalogService, event?: Event): Promise<void> {
+    event?.stopPropagation();
+    if (this.denyManage()) {
+      return;
+    }
+    const subCount = service.subServices.length;
+    const message = subCount
+      ? `سيتم حذف «${service.nameAr}» وكل خدماتها الفرعية (${subCount}). هل تريدين المتابعة؟`
+      : `سيتم حذف «${service.nameAr}». هل تريدين المتابعة؟`;
+    const ok = await this.confirm.ask({
+      title: 'تأكيد الحذف',
+      message,
+      confirmLabel: 'حذف',
+      cancelLabel: 'إلغاء',
+    });
+    if (!ok) {
+      return;
+    }
+    this.api.opsDeleteService(service.id).subscribe({
+      next: () => {
+        this.toast.show('تم حذف الخدمة');
+        if (this.selected?.id === service.id) {
+          this.closeService();
+        }
+        this.load();
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الخدمة')),
+    });
+  }
+
   openAddSub(): void {
     if (this.denyManage()) {
       return;
@@ -462,6 +504,29 @@ export class OpsCatalogComponent implements OnInit {
         this.toast.show(row.isVisible ? 'الخدمة الفرعية ظاهرة' : 'تم إخفاء الخدمة الفرعية');
       },
       error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
+    });
+  }
+
+  async removeSub(sub: OpsSubService): Promise<void> {
+    if (this.denyManage()) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: 'تأكيد الحذف',
+      message: `سيتم حذف «${sub.nameAr}». هل تريدين المتابعة؟`,
+      confirmLabel: 'حذف',
+      cancelLabel: 'إلغاء',
+    });
+    if (!ok) {
+      return;
+    }
+    this.api.opsDeleteSubService(sub.id).subscribe({
+      next: () => {
+        this.toast.show('تم حذف الخدمة الفرعية');
+        this.selectedSub = null;
+        this.load();
+      },
+      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الخدمة الفرعية')),
     });
   }
 

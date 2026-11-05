@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FavoritesService } from '../core/favorites.service';
+import { InitialsPipe } from '../core/name-initials';
 import { serviceIcon, servicePhoto, type FavoriteRow } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
@@ -10,7 +11,7 @@ type FavTab = 'SERVICE' | 'PROVIDER';
 
 @Component({
   selector: 'app-customer-favorites',
-  imports: [RouterLink, FavoriteBtnComponent, IconComponent],
+  imports: [RouterLink, FavoriteBtnComponent, IconComponent, InitialsPipe],
   template: `
     @if (!favorites.loaded()) {
       <p class="loading">جاري تحميل المفضلة...</p>
@@ -66,7 +67,7 @@ type FavTab = 'SERVICE' | 'PROVIDER';
         <div class="grid two">
           @for (row of rows; track row.targetType + row.targetId) {
             <article class="card hover provider">
-              <div class="provider-photo">{{ label(row).slice(0, 1) }}</div>
+              <div class="provider-photo">{{ label(row) | initials }}</div>
               <div>
                 <h3>{{ label(row) }}</h3>
                 <p>خبيرة</p>

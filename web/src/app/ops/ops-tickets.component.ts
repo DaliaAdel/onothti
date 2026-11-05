@@ -18,7 +18,7 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
     <div class="section-head">
       <div>
         <h2>الطلبات</h2>
-        <p>اختاري النوع ثم اكتبي عنوان المشكلة</p>
+        <p>اختار النوع ثم اكتب عنوان المشكلة</p>
       </div>
       @if (canReply) {
         <button class="btn primary" type="button" (click)="openAdd()">+ إضافة طلب</button>
@@ -155,11 +155,11 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
       </div>
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">حفظ وتوجيه الطلب</button>
     </app-ops-modal>
-    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="اختاري نوع الطلب ثم عنوان المشكلة" (closed)="adding = false">
+    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="اختار نوع الطلب ثم عنوان المشكلة" (closed)="adding = false">
       <div class="field">
         <label>نوع الطلب *</label>
         <select class="input" [(ngModel)]="draft.typeCode">
-          <option value="">اختاري النوع</option>
+          <option value="">اختار النوع</option>
           @for (type of types; track type.id) {
             <option [value]="type.code">{{ type.nameAr }}</option>
           }
@@ -167,7 +167,7 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
       </div>
       <div class="field">
         <label>عنوان المشكلة *</label>
-        <input class="input" [(ngModel)]="draft.title" placeholder="اكتبي عنوان المشكلة" />
+        <input class="input" [(ngModel)]="draft.title" placeholder="اكتب عنوان المشكلة" />
       </div>
       <div class="field">
         <label>التفاصيل</label>
@@ -289,7 +289,7 @@ export class OpsTicketsComponent implements OnInit {
       return;
     }
     if (this.draft.title.trim().length < 2) {
-      this.toast.show('اكتبي عنوان المشكلة');
+      this.toast.show('اكتب عنوان المشكلة');
       return;
     }
     this.api

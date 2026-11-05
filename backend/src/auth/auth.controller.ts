@@ -88,6 +88,13 @@ export class AuthController {
     return this.auth.me(user.sub);
   }
 
+  @Post("ping")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  ping(@CurrentUser() user: AuthUser) {
+    return this.auth.touchLastActive(user.sub);
+  }
+
   @Post("logout")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

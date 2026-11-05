@@ -12,6 +12,14 @@ export class ToastService {
     if (this.timer) {
       clearTimeout(this.timer);
     }
-    this.timer = setTimeout(() => this.visible.set(false), 2600);
+    this.timer = setTimeout(() => this.hide(), 3200);
+  }
+
+  hide(): void {
+    this.visible.set(false);
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
   }
 }

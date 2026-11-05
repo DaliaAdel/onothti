@@ -6,6 +6,7 @@ import { LocaleService } from '../core/locale.service';
 import { apiMessage } from '../core/phone';
 import { isLiveSubscription, servicePhoto, type CatalogService, type ProviderServiceRow, type ProviderSubscription } from '../core/models';
 import { ShellService } from '../core/shell.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ToastService } from '../core/toast.service';
 
 @Component({
@@ -167,6 +168,7 @@ export class ProviderServicesPageComponent implements OnInit {
   private readonly shell = inject(ShellService);
   readonly toast = inject(ToastService);
   readonly locale = inject(LocaleService);
+  private readonly confirm = inject(ConfirmService);
 
   catalog: CatalogService[] = [];
   items: ProviderServiceRow[] = [];
@@ -318,14 +320,20 @@ export class ProviderServicesPageComponent implements OnInit {
     return names.length ? names.join('، ') : 'الخدمة الرئيسية';
   }
 
-  removeMain(group: { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }): void {
+  async removeMain(group: { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }): Promise<void> {
     const name = this.locale.localizedName(group.service);
     const subCount = group.items.length;
     const message =
       subCount > 1
         ? `سيتم حذف «${name}» وكل خدماتها الفرعية (${subCount}). هل تريدين المتابعة؟`
         : `سيتم حذف «${name}» وكل خدماتها الفرعية. هل تريدين المتابعة؟`;
-    if (!window.confirm(message)) {
+    const ok = await this.confirm.ask({
+      title: 'تأكيد الحذف',
+      message,
+      confirmLabel: 'حذف',
+      cancelLabel: 'إلغاء',
+    });
+    if (!ok) {
       return;
     }
     this.deleteMainService(group.serviceId);
@@ -338,9 +346,15 @@ export class ProviderServicesPageComponent implements OnInit {
     this.removeMain(this.editingGroup);
   }
 
-  removeSub(item: ProviderServiceRow): void {
+  async removeSub(item: ProviderServiceRow): Promise<void> {
     const name = item.subService ? this.locale.localizedName(item.subService) : 'هذه الخدمة الفرعية';
-    if (!window.confirm(`سيتم حذف «${name}». هل تريدين المتابعة؟`)) {
+    const ok = await this.confirm.ask({
+      title: 'تأكيد الحذف',
+      message: `سيتم حذف «${name}». هل تريدين المتابعة؟`,
+      confirmLabel: 'حذف',
+      cancelLabel: 'إلغاء',
+    });
+    if (!ok) {
       return;
     }
     this.loading = true;

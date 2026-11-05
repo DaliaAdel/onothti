@@ -32,6 +32,16 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
           <b>{{ dash?.activeProviders ?? '—' }}</b>
           <span>حساب خبيرة نشط</span>
         </a>
+        <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
+          <div class="top"><span>عميلات أونلاين</span><span class="head-icon online"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.onlineCustomers ?? 0 }}</b>
+          <span>متواجدة الآن</span>
+        </a>
+        <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
+          <div class="top"><span>خبيرات أونلاين</span><span class="head-icon online"><app-icon name="expert" /></span></div>
+          <b>{{ dash?.onlineProviders ?? 0 }}</b>
+          <span>متواجدة الآن</span>
+        </a>
       } @else {
         <article class="stat">
           <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
@@ -42,6 +52,16 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
           <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
           <b>{{ dash?.activeProviders ?? '—' }}</b>
           <span>حساب خبيرة نشط</span>
+        </article>
+        <article class="stat">
+          <div class="top"><span>عميلات أونلاين</span><span class="head-icon online"><app-icon name="profile" /></span></div>
+          <b>{{ dash?.onlineCustomers ?? 0 }}</b>
+          <span>متواجدة الآن</span>
+        </article>
+        <article class="stat">
+          <div class="top"><span>خبيرات أونلاين</span><span class="head-icon online"><app-icon name="expert" /></span></div>
+          <b>{{ dash?.onlineProviders ?? 0 }}</b>
+          <span>متواجدة الآن</span>
         </article>
       }
       <article class="stat">

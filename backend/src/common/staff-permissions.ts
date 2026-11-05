@@ -24,7 +24,8 @@ export const ACC_ORG = ["ACC-10", "ACC-11", "ACC-12", "ACC-13"];
 export const ACC_PERMS = ["ACC-14", "ACC-15"];
 export const ACC_STAFF = [...ACC_CREATE, ...ACC_VIEW, ...ACC_ORG, ...ACC_PERMS, "ACC-16"];
 export const OPS_ROLE_CODES = ["OM", "OL", "OE", "OPERATOR", "OPS_LEAD"];
-export const ADMIN_FINANCE_ROLE_CODES = ["AM", "AL", "AE", "ADMIN", "FM", "FL", "FE", "FINANCE"];
+export const FINANCE_ROLE_CODES = ["FM", "FL", "FE", "FINANCE"];
+export const ADMIN_FINANCE_ROLE_CODES = ["AM", "AL", "AE", "ADMIN", ...FINANCE_ROLE_CODES];
 
 export const PRO_CONTENT = ["PRO-01", "PRO-02", "PRO-03", "PRO-05", "PRO-06", "PRO-07", "PRO-08", "PRO-09", "PRO-10"];
 export const FIN_CODES = ["FIN-01", "FIN-02", "FIN-03", "FIN-04", "FIN-05", "FIN-06", "PKG-02"];

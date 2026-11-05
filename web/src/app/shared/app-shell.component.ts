@@ -8,6 +8,7 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
+import { nameInitials } from '../core/name-initials';
 import { BrandComponent } from './brand.component';
 import { IconComponent } from './icon.component';
 
@@ -228,6 +229,9 @@ export class AppShellComponent implements OnInit {
         this.unread = items.filter((item) => !item.readAt).length;
       },
     });
+    this.pingPresence();
+    const timer = setInterval(() => this.pingPresence(), 45_000);
+    this.destroyRef.onDestroy(() => clearInterval(timer));
   }
 
   toggleMenu(): void {
@@ -261,8 +265,25 @@ export class AppShellComponent implements OnInit {
     }
   }
 
+  @HostListener('document:visibilitychange')
+  onVisibility(): void {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      this.pingPresence();
+    }
+  }
+
   logout(): void {
     this.logoutOpen = true;
+  }
+
+  private pingPresence(): void {
+    if (this.loggingOut || !this.session.isLoggedIn) {
+      return;
+    }
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return;
+    }
+    this.api.pingPresence().subscribe({ error: () => undefined });
   }
 
   cancelLogout(): void {

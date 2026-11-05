@@ -1,10 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { mediaUrl } from '../core/media';
+import { InitialsPipe } from '../core/name-initials';
 import type { OpsManagedAccount } from '../core/models';
 import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-account-file',
+  imports: [InitialsPipe],
   template: `
     <article class="card" style="margin-bottom:18px">
       <div class="avatar-pick" [class.has-photo]="true" style="margin-bottom:16px">
@@ -12,7 +14,7 @@ import { opsDate } from './ops-ui';
           <img [src]="mediaUrl(account.avatarUrl)" [alt]="account.displayName" />
         } @else {
           <div class="profile-photo" style="width:72px;height:72px;font-size:28px;border-width:0">
-            {{ account.displayName.slice(0, 1) }}
+            {{ account.displayName | initials }}
           </div>
         }
         <div>

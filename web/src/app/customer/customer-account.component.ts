@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
+import { InitialsPipe } from '../core/name-initials';
 import { apiMessage } from '../core/phone';
 import type { CatalogRegion } from '../core/models';
 import { SessionService } from '../core/session.service';

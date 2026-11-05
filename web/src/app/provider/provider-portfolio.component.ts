@@ -7,6 +7,7 @@ import { mediaUrl } from '../core/media';
 import { apiMessage } from '../core/phone';
 import { isLiveSubscription, type ProviderAlbum, type ProviderPortfolioItem } from '../core/models';
 import { ShellService } from '../core/shell.service';
+import { ConfirmService } from '../core/confirm.service';
 import { ToastService } from '../core/toast.service';
 
 @Component({
@@ -146,6 +147,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   readonly mediaUrl = mediaUrl;
   albums: ProviderAlbum[] = [];
   album: ProviderAlbum | null = null;
@@ -266,8 +268,14 @@ export class ProviderPortfolioPageComponent implements OnInit {
     });
   }
 
-  deleteAlbum(album: ProviderAlbum): void {
-    if (!window.confirm('سيتم حذف الألبوم وكل محتواه. هل تريدين المتابعة؟')) {
+  async deleteAlbum(album: ProviderAlbum): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'تأكيد الحذف',
+      message: 'سيتم حذف الألبوم وكل محتواه. هل تريدين المتابعة؟',
+      confirmLabel: 'حذف',
+      cancelLabel: 'إلغاء',
+    });
+    if (!ok) {
       return;
     }
     this.api.removeProviderAlbum(album.id).subscribe({

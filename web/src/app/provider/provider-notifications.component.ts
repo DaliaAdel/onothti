@@ -1,60 +1,65 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { LocaleService } from '../core/locale.service';
 import type { AppNotification } from '../core/models';
+import { notificationLink } from '../core/notification-link';
+import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
-import { IconComponent } from '../shared/icon.component';
+import { NotifyListComponent } from '../shared/notify-list.component';
 
 @Component({
   selector: 'app-provider-notifications',
-  imports: [IconComponent],
+  imports: [NotifyListComponent],
   template: `
     <div class="page-head">
       <div>
         <h1>الإشعارات</h1>
         <p>تحديثات الحساب والاشتراك والطلبات</p>
       </div>
-      <button class="btn ghost" type="button" (click)="readAll()">تحديد الكل كمقروء</button>
+      <div class="notify-actions">
+        @if (unread) {
+          <span class="notify-badge">{{ unread }} غير مقروء</span>
+        }
+        <button class="btn ghost" type="button" (click)="readAll()">تحديد الكل كمقروء</button>
+      </div>
     </div>
-    <div class="card">
-      @if (!items.length) {
-        <p class="muted small" style="margin:0">لا توجد إشعارات حاليًا.</p>
-      } @else {
-        <div class="list">
-          @for (item of items; track item.id) {
-            <div class="list-row notification-row">
-              <div class="notification-mark" [class.success]="!!item.readAt" [class.warning]="!item.readAt">
-                <span class="ico"><app-icon name="bell" /></span>
-              </div>
-              <div class="copy">
-                <b>{{ locale.localizedName({ nameAr: item.titleAr, nameEn: item.titleEn }, 'إشعار') }}</b>
-                <p>{{ locale.localizedName({ nameAr: item.bodyAr, nameEn: item.bodyEn }) }}</p>
-              </div>
-              <span class="small muted">{{ when(item.createdAt) }}</span>
-            </div>
-          }
-        </div>
-      }
-    </div>
+    <app-notify-list [items]="items" (opened)="open($event)" />
   `,
 })
 export class ProviderNotificationsComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
-  readonly locale = inject(LocaleService);
   items: AppNotification[] = [];
+
+  get unread(): number {
+    return this.items.filter((item) => !item.readAt).length;
+  }
 
   ngOnInit(): void {
     this.shell.set('الإشعارات');
     this.reload();
   }
 
+  open(item: AppNotification): void {
+    this.markRead(item);
+    void this.router.navigateByUrl(notificationLink(this.session.user()?.accountType, item));
+  }
+
   readAll(): void {
     this.api.readAllNotifications().subscribe({ next: () => this.reload() });
   }
 
-  when(value: string): string {
-    return value.slice(0, 16).replace('T', ' ');
+  private markRead(item: AppNotification): void {
+    if (item.readAt) {
+      return;
+    }
+    this.api.readNotification(item.id).subscribe({
+      next: () => {
+        item.readAt = new Date().toISOString();
+      },
+    });
   }
 
   private reload(): void {

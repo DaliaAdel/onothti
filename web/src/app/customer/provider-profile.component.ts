@@ -7,12 +7,13 @@ import { apiMessage } from '../core/phone';
 import type { ProviderProfile } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { InitialsPipe } from '../core/name-initials';
 import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
 import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-profile',
-  imports: [FormsModule, FavoriteBtnComponent, IconComponent],
+  imports: [FormsModule, FavoriteBtnComponent, IconComponent, InitialsPipe],
   template: `
     @if (loading) {
       <p class="loading">جاري تحميل الملف...</p>
@@ -21,7 +22,7 @@ import { IconComponent } from '../shared/icon.component';
     } @else {
       <div class="profile-cover"></div>
       <div class="profile-head">
-        <div class="profile-photo">{{ profile.displayName.slice(0, 1) }}</div>
+        <div class="profile-photo">{{ profile.displayName | initials }}</div>
         <div>
           <h2>{{ profile.displayName }}</h2>
           <span class="badge">★ {{ profile.ratingAvg ?? '—' }}@if (profile.ratingCount) { · {{ profile.ratingCount }} تقييمًا }</span>

@@ -169,6 +169,10 @@ export class ApiService {
     return this.http.get<SessionUser>(`${this.base}/auth/me`);
   }
 
+  pingPresence() {
+    return this.http.post<{ ok: boolean }>(`${this.base}/auth/ping`, {});
+  }
+
   cities() {
     return this.http.get<CatalogCity[]>(`${this.base}/catalog/cities`);
   }
@@ -715,6 +719,10 @@ export class ApiService {
     return this.http.patch<OpsCatalogService>(`${this.base}/ops/catalog/${id}`, body);
   }
 
+  opsDeleteService(id: string) {
+    return this.http.delete<{ ok: boolean }>(`${this.base}/ops/catalog/${id}`);
+  }
+
   opsUploadServiceImage(id: string, file: File) {
     const data = new FormData();
     data.append('file', file);
@@ -731,6 +739,10 @@ export class ApiService {
 
   opsPatchSubService(id: string, body: Partial<Pick<OpsSubService, 'nameAr' | 'nameEn' | 'sortOrder' | 'isVisible'>>) {
     return this.http.patch<OpsSubService>(`${this.base}/ops/sub-services/${id}`, body);
+  }
+
+  opsDeleteSubService(id: string) {
+    return this.http.delete<{ ok: boolean }>(`${this.base}/ops/sub-services/${id}`);
   }
 
   opsTicketTypes() {

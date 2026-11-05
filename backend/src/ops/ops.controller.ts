@@ -212,7 +212,7 @@ export class OpsController {
   @Post("profile-changes/:id/review")
   @RequirePermission(...PRO_CONTENT)
   reviewChange(@Param("id") id: string, @Body() dto: ReviewChangeDto, @CurrentUser() user: AuthUser) {
-    return this.ops.reviewChange(id, dto.approve !== false, dto.reopen === true, user.permissions ?? []);
+    return this.ops.reviewChange(id, dto.approve !== false, dto.reopen === true, user.permissions ?? [], user.sub);
   }
 
   @Get("ratings")
@@ -358,6 +358,12 @@ export class OpsController {
     return this.ops.patchService(id, dto);
   }
 
+  @Delete("catalog/:id")
+  @RequirePermission(StaffPermission.CAT_01)
+  deleteService(@Param("id") id: string) {
+    return this.ops.deleteService(id);
+  }
+
   @Post("catalog/:id/image")
   @RequirePermission(StaffPermission.CAT_01)
   @ApiConsumes("multipart/form-data")
@@ -393,6 +399,12 @@ export class OpsController {
   @RequirePermission(StaffPermission.CAT_01)
   patchSubService(@Param("id") id: string, @Body() dto: PatchSubServiceDto) {
     return this.ops.patchSubService(id, dto);
+  }
+
+  @Delete("sub-services/:id")
+  @RequirePermission(StaffPermission.CAT_01)
+  deleteSubService(@Param("id") id: string) {
+    return this.ops.deleteSubService(id);
   }
 
   @Get("ticket-types")

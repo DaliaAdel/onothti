@@ -365,7 +365,7 @@ export class OpsStaffComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('مستخدمو التشغيل', 'أدوار وصلاحيات المشغّلات');
+    this.shell.set('مستخدمى التشغيل', 'أدوار وصلاحيات المشغّلات');
     const teamId = this.route.snapshot.queryParamMap.get('teamId');
     if (teamId) {
       this.teamFilter = teamId;

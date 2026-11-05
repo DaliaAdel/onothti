@@ -52,6 +52,8 @@ import { publicUploadUrl } from "../common/upload-url";
 
 @Injectable()
 export class AuthService {
+  private readonly lastTouchAt = new Map<string, number>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -344,6 +346,22 @@ export class AuthService {
     }
 
     return { verified: true };
+  }
+
+  async touchLastActive(userId: string) {
+    const now = Date.now();
+    const previous = this.lastTouchAt.get(userId) ?? 0;
+    if (now - previous < 45_000) {
+      return { ok: true as const };
+    }
+    this.lastTouchAt.set(userId, now);
+    await this.prisma.user
+      .update({
+        where: { id: userId },
+        data: { lastActiveAt: new Date() },
+      })
+      .catch(() => undefined);
+    return { ok: true as const };
   }
 
   async me(userId: string) {

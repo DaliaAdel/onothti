@@ -1,6 +1,11 @@
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountStatus, AccountType, NotificationType } from "./enums";
-import { effectivePermissionCodes, staffHas } from "./staff-permissions";
+import {
+  effectivePermissionCodes,
+  FINANCE_ROLE_CODES,
+  OPS_ROLE_CODES,
+  staffHas,
+} from "./staff-permissions";
 
 export async function notifyOncePerDay(
   prisma: PrismaService,
@@ -115,6 +120,77 @@ export async function notifyStaffWithPermission(
       titleEn: titleAr,
       bodyAr,
       bodyEn: bodyAr,
+      status: "SENT",
+    })),
+  });
+}
+
+function staffDept(row: {
+  role?: { code: string } | null;
+  orgTeam?: { department?: { code: string } | null } | null;
+}): "OPS" | "FINANCE" | "ADMIN" | "OTHER" {
+  const dept = row.orgTeam?.department?.code?.trim().toUpperCase();
+  if (dept === "OPS" || dept === "FINANCE" || dept === "ADMIN") {
+    return dept;
+  }
+  const role = row.role?.code ?? "";
+  if (OPS_ROLE_CODES.includes(role)) {
+    return "OPS";
+  }
+  if (FINANCE_ROLE_CODES.includes(role)) {
+    return "FINANCE";
+  }
+  if (role === "AM" || role === "AL" || role === "AE" || role === "ADMIN" || role === "SUPER") {
+    return "ADMIN";
+  }
+  return "OTHER";
+}
+
+export async function notifyOpsAndFinance(
+  prisma: PrismaService,
+  input: {
+    actorId?: string;
+    titleAr: string;
+    bodyAr: string;
+    ref: string;
+  },
+) {
+  const staff = await prisma.staffUser.findMany({
+    where: {
+      user: { status: AccountStatus.ACTIVE, accountType: AccountType.STAFF, isProtected: false },
+    },
+    include: {
+      role: { select: { code: true } },
+      orgTeam: { select: { department: { select: { code: true } } } },
+    },
+  });
+  const actor = staff.find((row) => row.userId === input.actorId);
+  const actorDept = actor ? staffDept(actor) : "OTHER";
+  if (actorDept !== "OPS" && actorDept !== "FINANCE") {
+    return;
+  }
+  const userIds = staff
+    .filter((row) => {
+      if (row.userId === input.actorId) {
+        return false;
+      }
+      const dept = staffDept(row);
+      return dept === "OPS" || dept === "FINANCE";
+    })
+    .map((row) => row.userId);
+  if (!userIds.length) {
+    return;
+  }
+  await prisma.notification.createMany({
+    data: userIds.map((userId) => ({
+      userId,
+      audience: AccountType.STAFF,
+      type: "SYSTEM",
+      ref: input.ref,
+      titleAr: input.titleAr,
+      titleEn: input.titleAr,
+      bodyAr: input.bodyAr,
+      bodyEn: input.bodyAr,
       status: "SENT",
     })),
   });
