@@ -433,6 +433,10 @@ export class ApiService {
     return this.http.get<OpsDashboard>(`${this.base}/ops/dashboard`);
   }
 
+  opsPresence() {
+    return this.http.get<{ onlineCustomers: number; onlineProviders: number }>(`${this.base}/ops/presence`);
+  }
+
   opsMedia(query: { status?: string; kind?: string; purpose?: string; accountType?: string } = {}) {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(query)) {

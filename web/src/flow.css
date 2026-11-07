@@ -414,6 +414,10 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
 .sidebar-top .brand{padding:0 0 0;border:0;min-width:0;flex:1}
 .topbar{gap:10px}
 .topbar .crumb{min-width:0;flex:1}
+.online-pills{display:flex;align-items:center;gap:6px;flex:none}
+.online-pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--border);background:#fff;border-radius:999px;color:var(--muted);font-size:11px;white-space:nowrap}
+.online-pill b{color:var(--primary-dark);font-size:13px;line-height:1}
+.online-dot{width:8px;height:8px;border-radius:50%;background:#2f9e6b;box-shadow:0 0 0 3px #2f9e6b29;flex:none}
 .crumb b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .main{overflow-x:clip}
 .app:has(.photo-service:hover) .sidebar,
@@ -499,6 +503,8 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
   .content,.content.reveal{padding:18px 14px 32px!important}
   .topbar{height:64px!important;padding:0 12px!important;gap:8px}
   .top-actions{flex:none;min-width:0}
+  .online-pill{min-height:32px;padding:0 8px;gap:5px}
+  .online-label{display:none}
 }
 
 @media(max-width:780px){
@@ -542,6 +548,92 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
   .auth-layout .signup-box{padding-bottom:0}
   .auth-layout .signup-box h2{font-size:24px}
   .auth-layout .signup-box .auth-grid{grid-template-columns:1fr 1fr!important}
+}
+
+.app .topbar{
+  display:flex;
+  align-items:center;
+  min-width:0;
+  flex-wrap:nowrap;
+  overflow:visible;
+}
+.app .crumb{
+  min-width:0;
+  overflow:hidden;
+}
+.app .top-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  gap:8px;
+  min-width:0;
+  flex:none;
+}
+.app .menu-toggle,
+.app .icon-btn,
+.app .avatar,
+.app .lang-switch,
+.app .online-pills{
+  flex:none;
+}
+.app .city{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  max-width:180px;
+  overflow:hidden;
+}
+.app .city-text{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media(max-width:1100px){
+  .online-label{display:none}
+  .app .city{max-width:132px;padding:8px 10px}
+  .app .online-pill{min-height:34px;padding:0 8px}
+}
+
+@media(max-width:900px){
+  .app .crumb small{display:none}
+  .app .crumb b{font-size:14px}
+  .app .city-text{display:none}
+  .ops-app .top-actions>.city{display:none!important}
+  .app .city{
+    width:36px;
+    height:36px;
+    max-width:36px;
+    padding:0;
+    justify-content:center;
+    border-radius:12px;
+  }
+  .app .icon-btn,
+  .app .avatar,
+  .app .menu-toggle{
+    width:36px;
+    height:36px;
+  }
+  .app .lang-switch button{min-height:32px;padding:0 8px;font-size:11px}
+}
+
+.sidebar-lang{display:none;width:100%;justify-content:stretch;margin:0 0 10px}
+.sidebar-lang button{flex:1}
+
+@media(max-width:640px){
+  .app .topbar{gap:6px}
+  .app .top-actions{gap:5px}
+  .app .online-pill{min-height:30px;padding:0 7px}
+  .app .online-pill b{font-size:12px}
+  .app .top-actions .lang-switch{display:none!important}
+  .sidebar-lang{display:flex}
+}
+
+@media(max-width:420px){
+  .app .online-pills{gap:4px}
+  .app .city{display:none!important}
 }
 
 @media(max-width:520px){

@@ -93,6 +93,11 @@ export class OpsController {
     return this.ops.dashboard(user.permissions ?? []);
   }
 
+  @Get("presence")
+  presence() {
+    return this.ops.onlinePresence();
+  }
+
   @Get("media")
   @RequirePermission(...PRO_CONTENT, ...FIN_CODES, StaffPermission.RAT_01)
   media(

@@ -82,12 +82,7 @@ export class CustomerService {
       await replaceCustomerCities(this.prisma, userId, cityIds);
     }
     if (dto.displayName) {
-      const name = await assertUniqueDisplayName(
-        this.prisma,
-        AccountType.CUSTOMER,
-        dto.displayName,
-        userId,
-      );
+      const name = assertDisplayName(dto.displayName);
       await queueProfileChange(
         this.prisma,
         userId,

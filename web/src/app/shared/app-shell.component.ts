@@ -70,6 +70,10 @@ export interface NavItem {
           }
         </nav>
         <div class="sidebar-foot">
+          <div class="lang-switch sidebar-lang" role="group" aria-label="Language">
+            <button type="button" [class.active]="locale.lang() === 'ar'" (click)="locale.set('ar')">عربي</button>
+            <button type="button" [class.active]="locale.lang() === 'en'" (click)="locale.set('en')">EN</button>
+          </div>
           <button class="logout" type="button" (click)="logout()">
             <span class="ico nav-icon"><app-icon name="logout" /></span>
             تسجيل الخروج
@@ -99,11 +103,23 @@ export interface NavItem {
           </div>
           <div class="top-actions">
             @if (home === '/ops') {
+              <div class="online-pills" aria-label="المتواجدون الآن">
+                <span class="online-pill" title="عميلات أونلاين">
+                  <i class="online-dot" aria-hidden="true"></i>
+                  <span class="online-label">عميلات</span>
+                  <b>{{ onlineCustomers }}</b>
+                </span>
+                <span class="online-pill" title="خبيرات أونلاين">
+                  <i class="online-dot" aria-hidden="true"></i>
+                  <span class="online-label">خبيرات</span>
+                  <b>{{ onlineProviders }}</b>
+                </span>
+              </div>
               <a class="city" [routerLink]="profileRoute">{{ roleLabel }}</a>
             } @else {
               <a class="city" [routerLink]="profileRoute">
                 <span class="ico"><app-icon name="pin" /></span>
-                {{ cityLabel }}
+                <span class="city-text">{{ cityLabel }}</span>
               </a>
             }
             <div class="lang-switch" role="group" aria-label="Language">
@@ -175,6 +191,8 @@ export class AppShellComponent implements OnInit {
   }
 
   unread = 0;
+  onlineCustomers = 0;
+  onlineProviders = 0;
 
   get cityLabel(): string {
     return this.session.user()?.city
@@ -220,6 +238,11 @@ export class AppShellComponent implements OnInit {
     this.pingPresence();
     const timer = setInterval(() => this.pingPresence(), 45_000);
     this.destroyRef.onDestroy(() => clearInterval(timer));
+    if (this.home === '/ops') {
+      this.refreshOpsPresence();
+      const presenceTimer = setInterval(() => this.refreshOpsPresence(), 45_000);
+      this.destroyRef.onDestroy(() => clearInterval(presenceTimer));
+    }
   }
 
   toggleMenu(): void {
@@ -262,6 +285,16 @@ export class AppShellComponent implements OnInit {
 
   logout(): void {
     this.logoutOpen = true;
+  }
+
+  private refreshOpsPresence(): void {
+    this.api.opsPresence().subscribe({
+      next: (data) => {
+        this.onlineCustomers = data.onlineCustomers;
+        this.onlineProviders = data.onlineProviders;
+      },
+      error: () => undefined,
+    });
   }
 
   private pingPresence(): void {

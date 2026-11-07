@@ -392,12 +392,7 @@ export class OpsService {
     if (!dto.displayName?.trim()) {
       return this.toStaff(user);
     }
-    const displayName = await assertUniqueDisplayName(
-      this.prisma,
-      AccountType.STAFF,
-      dto.displayName,
-      userId,
-    );
+    const displayName = assertDisplayName(dto.displayName);
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { displayName },
@@ -1464,7 +1459,7 @@ export class OpsService {
     if (banned) {
       throw new ConflictException("هذا الرقم محظور ولا يمكن إنشاء حساب عليه");
     }
-    const displayName = await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName);
+    const displayName = assertDisplayName(dto.displayName);
     const passwordHash = await bcrypt.hash(randomBytes(24).toString("hex"), 12);
     const orgTeam = await this.resolveOrgTeam(teamId, this.teamForRole(role.code, dto.team));
     if (!orgTeam && scope.mode !== "all") {
@@ -1559,7 +1554,7 @@ export class OpsService {
       await this.assertNotLastManager(id);
     }
     const displayName = dto.displayName
-      ? await assertUniqueDisplayName(this.prisma, AccountType.STAFF, dto.displayName, id)
+      ? assertDisplayName(dto.displayName)
       : user.displayName;
     if (dto.teamId !== undefined && dto.teamId !== user.staff.teamId) {
       this.assertPerm(permissions, "ACC-13");
@@ -2444,9 +2439,29 @@ export class OpsService {
     return pkg;
   }
 
+  async onlinePresence() {
+    const onlineSince = new Date(Date.now() - 5 * 60 * 1000);
+    const [onlineCustomers, onlineProviders] = await Promise.all([
+      this.prisma.user.count({
+        where: {
+          accountType: AccountType.CUSTOMER,
+          status: { not: AccountStatus.DELETED },
+          lastActiveAt: { gte: onlineSince },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          accountType: AccountType.PROVIDER,
+          status: { not: AccountStatus.DELETED },
+          lastActiveAt: { gte: onlineSince },
+        },
+      }),
+    ]);
+    return { onlineCustomers, onlineProviders };
+  }
+
   async dashboard(permissions: string[] = []) {
     const now = new Date();
-    const onlineSince = new Date(now.getTime() - 5 * 60 * 1000);
     const week = new Date(now);
     week.setDate(week.getDate() + 7);
     const [
@@ -2470,8 +2485,7 @@ export class OpsService {
       activeAccounts,
       eventsToday,
       escalatedTickets,
-      onlineCustomers,
-      onlineProviders,
+      presence,
     ] = await Promise.all([
       this.prisma.mediaFile.count({
         where: {
@@ -2581,20 +2595,7 @@ export class OpsService {
       this.prisma.ticket.count({
         where: { priority: 1, status: { in: ["SENT", "IN_PROGRESS"] } },
       }),
-      this.prisma.user.count({
-        where: {
-          accountType: AccountType.CUSTOMER,
-          status: { not: AccountStatus.DELETED },
-          lastActiveAt: { gte: onlineSince },
-        },
-      }),
-      this.prisma.user.count({
-        where: {
-          accountType: AccountType.PROVIDER,
-          status: { not: AccountStatus.DELETED },
-          lastActiveAt: { gte: onlineSince },
-        },
-      }),
+      this.onlinePresence(),
     ]);
     const inbox = [
       ...mediaRows
@@ -2669,8 +2670,7 @@ export class OpsService {
       activeAccounts,
       eventsToday,
       escalatedTickets,
-      onlineCustomers,
-      onlineProviders,
+      ...presence,
       inbox,
     };
   }
@@ -3517,12 +3517,7 @@ export class OpsService {
     };
   }) {
     if (change.field === ProfileChangeField.DISPLAY_NAME) {
-      const name = await assertUniqueDisplayName(
-        this.prisma,
-        change.user.accountType,
-        change.newValue,
-        change.userId,
-      );
+      const name = assertDisplayName(change.newValue);
       await this.prisma.user.update({ where: { id: change.userId }, data: { displayName: name } });
       return;
     }

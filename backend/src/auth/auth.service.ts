@@ -69,7 +69,7 @@ export class AuthService {
     if (existing) {
       throw new ConflictException("رقم الجوال مسجل بالفعل");
     }
-    const displayName = await assertUniqueDisplayName(this.prisma, dto.accountType, dto.displayName);
+    const displayName = assertDisplayName(dto.displayName);
     const email = await assertUniqueEmail(this.prisma, dto.email);
     const termsVersion = await this.prisma.getSettingInt("terms_version", 1);
 
@@ -234,7 +234,7 @@ export class AuthService {
       create: cities.map((city, sortOrder) => ({ cityId: city.id, sortOrder })),
     };
 
-    const displayName = await assertUniqueDisplayName(this.prisma, dto.accountType, dto.displayName);
+    const displayName = assertDisplayName(dto.displayName);
     const email = await assertUniqueEmail(this.prisma, dto.email);
     const termsVersion = await this.prisma.getSettingInt("terms_version", 1);
 

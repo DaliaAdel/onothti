@@ -79,12 +79,7 @@ export class ProviderService {
       await replaceProviderCities(this.prisma, userId, cityIds);
     }
     if (dto.displayName) {
-      const name = await assertUniqueDisplayName(
-        this.prisma,
-        AccountType.PROVIDER,
-        dto.displayName,
-        userId,
-      );
+      const name = assertDisplayName(dto.displayName);
       await queueProfileChange(
         this.prisma,
         userId,

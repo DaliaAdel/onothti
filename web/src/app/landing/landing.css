@@ -133,14 +133,29 @@ footer{grid-template-columns:1.45fr .62fr .72fr .62fr 1fr 1.2fr;gap:30px}footer 
   .landing-page>.site-header{
     grid-template-columns:minmax(0,1fr) auto auto auto;
     grid-template-areas:"brand store actions menu";
-    column-gap:10px;
+    column-gap:8px;
+    padding:0 16px;
   }
   .landing-page>.site-header nav{display:none}
+  .landing-page>.site-header .header-store-links button.store-badge{
+    width:36px;
+    height:36px;
+    padding:0;
+    justify-content:center;
+    gap:0;
+  }
+  .landing-page>.site-header .header-store-links .store-badge span{display:none}
+  .landing-page>.site-header .header-actions .btn{
+    min-height:36px;
+    padding:8px 12px;
+    white-space:nowrap;
+  }
   .landing-page>.site-header .menu-button{
     display:grid;
     place-items:center;
     width:40px;
     height:40px;
+    flex:none;
   }
   .landing-page>.site-header.menu-open{
     grid-template-columns:minmax(0,1fr) auto auto auto;
@@ -170,14 +185,7 @@ footer{grid-template-columns:1.45fr .62fr .72fr .62fr 1fr 1.2fr;gap:30px}footer 
 }
 
 @media(max-width:980px){
-  .landing-page>.site-header .header-store-links button.store-badge{
-    width:36px;
-    height:36px;
-    padding:0;
-    justify-content:center;
-    gap:0;
-  }
-  .landing-page>.site-header .header-store-links .store-badge span{display:none}
+  .landing-page>.site-header .site-brand span{font-size:12px}
 }
 
 @media(max-width:860px){
@@ -188,14 +196,37 @@ footer{grid-template-columns:1.45fr .62fr .72fr .62fr 1fr 1.2fr;gap:30px}footer 
     padding:0 14px;
     column-gap:8px;
   }
-  .landing-page>.site-header.menu-open{
-    grid-template-columns:minmax(0,1fr) auto auto;
-    grid-template-rows:74px auto auto;
-    grid-template-areas:
-      "brand actions menu"
-      "nav nav nav"
-      "store store store";
+  .landing-page>.site-header .header-store-links{display:none}
+  .landing-page>.site-header .header-actions .text-btn{display:none}
+  .landing-page>.site-header .header-actions .primary{
+    min-height:36px;
+    padding:8px 12px;
+    font-size:12px!important;
+    white-space:nowrap;
   }
+  .landing-page>.site-header.menu-open{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:74px auto auto auto;
+    grid-template-areas:
+      "brand menu"
+      "nav nav"
+      "actions actions"
+      "store store";
+  }
+  .landing-page>.site-header.menu-open .header-actions{
+    display:flex;
+    width:100%;
+    justify-content:stretch;
+    gap:8px;
+    padding:10px 0;
+    border-top:1px solid var(--border);
+  }
+  .landing-page>.site-header.menu-open .header-actions .btn{
+    flex:1;
+    min-height:42px;
+    font-size:13px!important;
+  }
+  .landing-page>.site-header.menu-open .header-actions .text-btn{display:inline-flex!important}
   .landing-page>.site-header.menu-open .header-store-links{
     display:flex;
     width:100%;
@@ -215,16 +246,6 @@ footer{grid-template-columns:1.45fr .62fr .72fr .62fr 1fr 1.2fr;gap:30px}footer 
   .landing-page>.site-header.menu-open .header-store-links .store-badge span{
     display:grid!important;
   }
-  .landing-page>.site-header .header-store-links{display:none}
-  .landing-page>.site-header .header-actions .text-btn{display:none}
-  .landing-page>.site-header .header-actions .primary{
-    min-height:36px;
-    padding:8px 12px;
-    font-size:12px!important;
-    white-space:nowrap;
-  }
-  .landing-page>.site-header.menu-open .header-store-links{display:flex}
-  .landing-page>.site-header.menu-open .header-actions .text-btn{display:inline-flex!important}
   .landing-page>main{padding-top:74px}
 }
 
@@ -296,4 +317,48 @@ footer{grid-template-columns:1.45fr .62fr .72fr .62fr 1fr 1.2fr;gap:30px}footer 
   }
   .all-service-chips span,.impact-points span{font-size:12px!important}
   .quote p{font-size:18px!important}
+}
+
+.landing-page .service-grid{
+  width:calc(100% + 240px);
+  max-width:none;
+  margin:-120px;
+  padding:120px;
+  overflow:visible;
+  position:relative;
+  z-index:1;
+  isolation:isolate;
+}
+.landing-page .service-grid .photo-service-card{
+  position:relative;
+  z-index:0;
+  height:auto;
+  transform:scale(1);
+  transform-origin:center center;
+  transition:transform .3s cubic-bezier(.2,.75,.2,1),box-shadow .3s ease,border-color .25s ease;
+}
+.landing-page .service-grid .photo-service-card:hover{
+  transform:translateY(-6px) scale(1.5);
+  z-index:50;
+  box-shadow:0 24px 52px rgba(86,47,50,.14);
+  border-color:#dfc7bd;
+}
+.landing-page .service-grid .photo-service-card:hover img{
+  transform:none;
+}
+.landing-page:has(.photo-service-card:hover),
+.landing-page:has(.photo-service-card:hover) .landing-page{
+  overflow-x:visible;
+}
+@media(min-width:1001px){
+  .landing-page .service-grid .photo-service-card:nth-child(3n+1):hover{transform-origin:right center}
+  .landing-page .service-grid .photo-service-card:nth-child(3n):hover{transform-origin:left center}
+  html[dir=ltr] .landing-page .service-grid .photo-service-card:nth-child(3n+1):hover{transform-origin:left center}
+  html[dir=ltr] .landing-page .service-grid .photo-service-card:nth-child(3n):hover{transform-origin:right center}
+}
+@media(max-width:1000px) and (min-width:681px){
+  .landing-page .service-grid .photo-service-card:nth-child(odd):hover{transform-origin:right center}
+  .landing-page .service-grid .photo-service-card:nth-child(even):hover{transform-origin:left center}
+  html[dir=ltr] .landing-page .service-grid .photo-service-card:nth-child(odd):hover{transform-origin:left center}
+  html[dir=ltr] .landing-page .service-grid .photo-service-card:nth-child(even):hover{transform-origin:right center}
 }
