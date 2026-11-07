@@ -14,38 +14,10 @@ export function normalizeEmail(value?: string | null) {
   return email ? email : null;
 }
 
-export async function assertUniqueDisplayName(
-  prisma: PrismaService,
-  accountType: string,
-  displayName: string,
-  excludeUserId?: string,
-) {
+export function assertDisplayName(displayName: string) {
   const name = normalizeDisplayName(displayName);
   if (name.length < 2) {
     throw new BadRequestException("اسم العرض قصير");
-  }
-  const taken = await prisma.user.findFirst({
-    where: {
-      accountType,
-      displayName: name,
-      status: { not: AccountStatus.DELETED },
-      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
-    },
-  });
-  if (taken) {
-    throw new ConflictException("اسم العرض مستخدم لهذا النوع من الحساب");
-  }
-  const pending = await prisma.profileChangeRequest.findFirst({
-    where: {
-      field: ProfileChangeField.DISPLAY_NAME,
-      status: "PENDING",
-      newValue: name,
-      ...(excludeUserId ? { userId: { not: excludeUserId } } : {}),
-      user: { accountType },
-    },
-  });
-  if (pending) {
-    throw new ConflictException("اسم العرض مستخدم لهذا النوع من الحساب");
   }
   return name;
 }

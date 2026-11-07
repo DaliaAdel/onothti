@@ -6,6 +6,7 @@ import type { OpsStaff } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { IconComponent } from '../shared/icon.component';
 import { PasswordInputComponent } from '../shared/password-input.component';
 import { opsDate } from './ops-ui';
 

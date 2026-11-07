@@ -15,7 +15,7 @@ import {
 } from "../common/staff-permissions";
 import { notifyOpsAndFinance, notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
 import { ensureTicketTypes } from "../common/ticket-types";
-import { assertUniqueDisplayName, assertUniqueEmail } from "../common/account-rules";
+import { assertDisplayName, assertUniqueEmail } from "../common/account-rules";
 import {
   CreateCityDto,
   PatchCampaignDto,

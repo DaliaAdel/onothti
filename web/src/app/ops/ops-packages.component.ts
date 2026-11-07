@@ -8,12 +8,13 @@ import { type CatalogPackage, type CatalogService, type OpsCampaign } from '../c
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { LocaleDateDirective } from '../shared/locale-date.directive';
 import { OpsModalComponent } from './ops-modal.component';
 import { PositiveIntDirective } from './positive-int.directive';
 
 @Component({
   selector: 'app-ops-packages',
-  imports: [FormsModule, NgTemplateOutlet, OpsModalComponent, PositiveIntDirective],
+  imports: [FormsModule, NgTemplateOutlet, OpsModalComponent, PositiveIntDirective, LocaleDateDirective],
   template: `
     <ng-template #packageForm>
       <div class="form-grid">

@@ -14,7 +14,7 @@ import {
   UpdateCustomerProfileDto,
 } from "./dto/customer.dto";
 import {
-  assertUniqueDisplayName,
+  assertDisplayName,
   assertUniqueEmail,
   pendingChangesFor,
   pendingValue,

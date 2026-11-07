@@ -17,8 +17,16 @@ export function opsDate(value?: string | null): string {
   if (Number.isNaN(date.getTime())) {
     return value.slice(0, 16).replace('T', ' ');
   }
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const isEn = document.documentElement.lang.toLowerCase().startsWith('en');
+  return new Intl.DateTimeFormat(isEn ? 'en-GB' : 'ar-SA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: isEn,
+    numberingSystem: 'latn',
+  }).format(date);
 }
 
 export function ticketTitle(item: { title?: string | null; body?: string; refNo?: string }): string {

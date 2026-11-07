@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -115,7 +115,7 @@ import { ToastService } from '../core/toast.service';
       } @else {
         <div class="album-grid">
           @for (item of albums; track item.id; let i = $index) {
-            <div class="card album-card" (click)="openAlbum(item)">
+            <div class="card album-card" [class.menu-open]="openMenuId === item.id" (click)="openAlbum(item)">
               <div class="album-cover" [class.has-photo]="!!item.coverUrl" [style.background]="coverStyle(item, i)">
                 <span>عرض المحتوى</span>
               </div>
@@ -125,15 +125,17 @@ import { ToastService } from '../core/toast.service';
                   <p class="small muted album-status">{{ item.isActive ? 'نشط' : 'غير نشط' }} · {{ item.itemCount }} عنصر</p>
                 </div>
                 @if (!item.virtual) {
-                  <details class="album-menu" (click)="$event.stopPropagation()">
-                    <summary>•••</summary>
-                    <div>
-                      <button type="button" (click)="setAlbumActive(item, true)">نشط</button>
-                      <button type="button" (click)="setAlbumActive(item, false)">غير نشط</button>
-                      <button type="button" (click)="renameAlbum(item)">إعادة التسمية</button>
-                      <button type="button" class="danger-action" (click)="deleteAlbum(item)">حذف الألبوم</button>
-                    </div>
-                  </details>
+                  <div class="album-menu" [class.open]="openMenuId === item.id" (click)="$event.stopPropagation()">
+                    <button class="album-menu-toggle" type="button" aria-label="خيارات الألبوم" (click)="toggleAlbumMenu(item.id, $event)">•••</button>
+                    @if (openMenuId === item.id) {
+                      <div class="album-menu-panel">
+                        <button type="button" (click)="setAlbumActive(item, true)">نشط</button>
+                        <button type="button" (click)="setAlbumActive(item, false)">غير نشط</button>
+                        <button type="button" (click)="renameAlbum(item)">إعادة التسمية</button>
+                        <button type="button" class="danger-action" (click)="deleteAlbum(item)">حذف الألبوم</button>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             </div>
@@ -161,6 +163,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   packageName = 'الباقة';
   fileName = '';
   loading = false;
+  openMenuId = '';
 
   get photos(): number {
     return this.allItems.filter((item) => item.kind !== 'VIDEO').length;
@@ -203,7 +206,22 @@ export class ProviderPortfolioPageComponent implements OnInit {
     return `linear-gradient(${135 + index * 12}deg,var(--soft),${tint})`;
   }
 
+  toggleAlbumMenu(id: string, event: Event): void {
+    event.stopPropagation();
+    this.openMenuId = this.openMenuId === id ? '' : id;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeAlbumMenu(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('.album-menu')) {
+      return;
+    }
+    this.openMenuId = '';
+  }
+
   openAlbum(album: ProviderAlbum): void {
+    this.openMenuId = '';
     this.api.providerAlbum(album.id).subscribe({
       next: (data) => {
         this.album = data.album;
@@ -245,6 +263,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   }
 
   setAlbumActive(album: ProviderAlbum, isActive: boolean): void {
+    this.openMenuId = '';
     this.api.patchProviderAlbum(album.id, { isActive }).subscribe({
       next: () => {
         this.toast.show(isActive ? 'الألبوم نشط' : 'الألبوم غير نشط');
@@ -255,6 +274,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   }
 
   renameAlbum(album: ProviderAlbum): void {
+    this.openMenuId = '';
     const name = window.prompt('اكتبي اسم الألبوم الجديد', album.name)?.trim();
     if (!name || name === album.name) {
       return;
@@ -269,6 +289,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   }
 
   async deleteAlbum(album: ProviderAlbum): Promise<void> {
+    this.openMenuId = '';
     const ok = await this.confirm.ask({
       title: 'تأكيد الحذف',
       message: 'سيتم حذف الألبوم وكل محتواه. هل تريدين المتابعة؟',

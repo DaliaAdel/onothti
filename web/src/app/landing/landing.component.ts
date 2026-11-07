@@ -9,21 +9,23 @@ import { RouterLink } from '@angular/router';
   template: `
     <div class="landing-page" [class.menu-open]="menuOpen">
       <header class="site-header" [class.scrolled]="scrolled" [class.menu-open]="menuOpen">
-        <a class="site-brand" href="#top" aria-label="منصة الأنوثة والجمال">
+        <a class="site-brand" href="#top" aria-label="منصة الأنوثة والجمال" (click)="menuOpen = false">
           <img src="/assets/logo-auth.png" alt="شعار منصة الأنوثة والجمال" />
           <span>منصة الأنوثة والجمال</span>
         </a>
-        <nav aria-label="التنقل الرئيسي">
+        <nav id="landing-nav" aria-label="التنقل الرئيسي" (click)="menuOpen = false">
           <a href="#services">الخدمات</a>
           <a href="#how">كيف تعمل المنصة؟</a>
           <a href="#experts">للخبيرات</a>
           <a href="#about">لماذا نحن؟</a>
-          <a class="header-menu-login" routerLink="/login">تسجيل الدخول</a>
         </nav>
         <div class="header-store-links" aria-label="تحميل التطبيق">
           <button class="store-badge google-play-badge" type="button" (click)="soon('Google Play')" aria-label="Get it on Google Play">
             <svg class="play-mark" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#fff" d="M4.1 2.4c-.6.3-1 1-1 1.7v15.8c0 .7.4 1.4 1 1.7l.2.1 9.3-9.7L4.3 2.3l-.2.1Zm.8-.3 9.8 10 2.7-2.8c1.5-1.6.3-2.8-1.3-3.7L4.9 2.1ZM16.3 13.5l-2.7-2.8-9.8 10 11.2-6.3c.6-.3 1-.6 1.3-.9Zm2.5-5.4c-.4.2-.8.5-1.2.8l-3.1 3.2 3.1 3.2c.4.3.8.5 1.2.8 1.8 1 3.1.2 3.1-2.1V10.2c0-2.3-1.3-3.1-3.1-2.1Z"/>
+              <path fill="#4285F4" d="M3.2 2.3C2.7 2.6 2.4 3.2 2.4 3.9v16.2c0 .7.3 1.3.8 1.6L13.6 12 3.2 2.3Z"/>
+              <path fill="#34A853" d="M13.6 12 3.2 21.7c.4.2.9.2 1.3 0L18 15.2 13.6 12Z"/>
+              <path fill="#FBBC04" d="M13.6 12 3.2 2.3c.4-.2.9-.2 1.3 0L18 8.8 13.6 12Z"/>
+              <path fill="#EA4335" d="M21.2 10.7 18 8.8 13.6 12 18 15.2l3.2-1.9c1.1-.6 1.1-2 0-2.6Z"/>
             </svg>
             <span><small>GET IT ON</small><strong>Google Play</strong></span>
           </button>
@@ -38,7 +40,14 @@ import { RouterLink } from '@angular/router';
           <a class="btn text-btn" routerLink="/login">تسجيل الدخول</a>
           <a class="btn primary" routerLink="/signup">إنشاء حساب</a>
         </div>
-        <button class="menu-button" type="button" (click)="menuOpen = !menuOpen" aria-label="فتح القائمة">☰</button>
+        <button
+          class="menu-button"
+          type="button"
+          (click)="menuOpen = !menuOpen"
+          [attr.aria-expanded]="menuOpen"
+          aria-controls="landing-nav"
+          [attr.aria-label]="menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'"
+        >☰</button>
       </header>
 
       <main id="top">
@@ -313,14 +322,17 @@ import { RouterLink } from '@angular/router';
           <a routerLink="/signup">إنشاء حساب</a>
           <b class="download-title">حمّلي التطبيق</b>
           <div class="app-downloads">
-            <button type="button" (click)="soon('Google Play')" aria-label="Get it on Google Play">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#fff" d="M4.1 2.4c-.6.3-1 1-1 1.7v15.8c0 .7.4 1.4 1 1.7l.2.1 9.3-9.7L4.3 2.3l-.2.1Zm.8-.3 9.8 10 2.7-2.8c1.5-1.6.3-2.8-1.3-3.7L4.9 2.1ZM16.3 13.5l-2.7-2.8-9.8 10 11.2-6.3c.6-.3 1-.6 1.3-.9Zm2.5-5.4c-.4.2-.8.5-1.2.8l-3.1 3.2 3.1 3.2c.4.3.8.5 1.2.8 1.8 1 3.1.2 3.1-2.1V10.2c0-2.3-1.3-3.1-3.1-2.1Z"/>
+            <button class="google-play-badge" type="button" (click)="soon('Google Play')" aria-label="Get it on Google Play">
+              <svg class="play-mark" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M3.2 2.3C2.7 2.6 2.4 3.2 2.4 3.9v16.2c0 .7.3 1.3.8 1.6L13.6 12 3.2 2.3Z"/>
+                <path fill="#34A853" d="M13.6 12 3.2 21.7c.4.2.9.2 1.3 0L18 15.2 13.6 12Z"/>
+                <path fill="#FBBC04" d="M13.6 12 3.2 2.3c.4-.2.9-.2 1.3 0L18 8.8 13.6 12Z"/>
+                <path fill="#EA4335" d="M21.2 10.7 18 8.8 13.6 12 18 15.2l3.2-1.9c1.1-.6 1.1-2 0-2.6Z"/>
               </svg>
               <span><small>GET IT ON</small><strong>Google Play</strong></span>
             </button>
             <button type="button" (click)="soon('App Store')" aria-label="Download on the App Store">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="apple-mark" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#fff" d="M16.8 12.7c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9s-1.9-.9-3.1-.9c-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.8 2.4 3 2.3 1.2 0 1.7-.8 3.1-.8s1.8.8 3.1.8 2.1-.1 3-2.4c1.1-1.1 1.5-2.2 1.6-2.3 0 0-2.2-.8-2.2-3.3Zm-2.1-6.3c.7-.8 1.1-1.9 1-3-1 .1-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/>
               </svg>
               <span><small>Download on the</small><strong>App Store</strong></span>
@@ -380,6 +392,13 @@ export class LandingComponent {
   onScroll(): void {
     this.scrolled = window.scrollY > 24;
     if (this.menuOpen && window.scrollY > 8) {
+      this.menuOpen = false;
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    if (this.menuOpen && window.innerWidth > 1180) {
       this.menuOpen = false;
     }
   }

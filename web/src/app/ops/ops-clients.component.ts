@@ -43,12 +43,12 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
           <div class="field">
             <label>الحالة</label>
             <select class="input" [(ngModel)]="status" (ngModelChange)="search()">
-              <option value="">غير المحذوف</option>
+              <option value="">الكل</option>
               <option value="ACTIVE">نشط</option>
-              <option value="PENDING_APPROVAL">بانتظار الاعتماد</option>
+              <option value="INACTIVE">غير نشط</option>
               <option value="RESTRICTED">مقيّد</option>
-              <option value="SUSPENDED">موقوف</option>
-              <option value="CANCELLED">ملغى</option>
+              <option value="SUSPENDED">معطل</option>
+              <option value="CANCELLED">محذوف</option>
             </select>
           </div>
         </div>
@@ -309,7 +309,7 @@ export class OpsClientsComponent implements OnInit {
   detailLoading = false;
   q = '';
   accountType = '';
-  status = '';
+  status = 'ACTIVE';
   packages: CatalogPackage[] = [];
   nextStatus: Record<string, string> = {};
   nextPackage: Record<string, string> = {};

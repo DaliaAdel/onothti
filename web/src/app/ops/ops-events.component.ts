@@ -5,11 +5,12 @@ import { apiMessage } from '../core/phone';
 import type { OpsAuditEvent } from '../core/models';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { LocaleDateDirective } from '../shared/locale-date.directive';
 import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-events',
-  imports: [FormsModule],
+  imports: [FormsModule, LocaleDateDirective],
   template: `
     <div class="section-head" style="margin-top:0">
       <div>

@@ -14,6 +14,7 @@ import { PERMISSION_MATRIX } from './permission-matrix.data';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { IconComponent } from '../shared/icon.component';
 import { OpsDrawerComponent } from './ops-drawer.component';
 import { OpsModalComponent } from './ops-modal.component';
 import { keepSelected, newestFirst, opsDate } from './ops-ui';

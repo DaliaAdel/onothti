@@ -10,6 +10,8 @@ import type { OpsManagedAccount, OpsMediaItem, OpsPendingProvider, OpsProfileCha
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { IconComponent } from '../shared/icon.component';
+import { LocaleDateDirective } from '../shared/locale-date.directive';
 import { clip, newestFirst, opsDate } from './ops-ui';
 
 type ApprovalKind = 'account' | 'name' | 'photo' | 'bio' | 'rating' | 'portfolio' | 'receipt';
@@ -49,7 +51,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
 
 @Component({
   selector: 'app-ops-approvals',
-  imports: [FormsModule, InitialsPipe],
+  imports: [FormsModule, InitialsPipe, IconComponent, LocaleDateDirective],
   template: `
     <div class="appr">
       <div class="appr-head">
@@ -197,7 +199,16 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   </td>
                   <td><span class="appr-role">{{ accountLabel(item.accountType) }}</span></td>
                   <td>
-                    <span class="appr-type"><i>{{ kindIcon(item.kind) }}</i>{{ kindLabel(item.kind) }}</span>
+                    <span class="appr-type">
+                      <i>
+                        @if (item.kind === 'name') {
+                          <app-icon name="profile" />
+                        } @else {
+                          {{ kindIcon(item.kind) }}
+                        }
+                      </i>
+                      {{ kindLabel(item.kind) }}
+                    </span>
                   </td>
                   <td class="appr-preview">
                     @if (item.kind === 'photo') {

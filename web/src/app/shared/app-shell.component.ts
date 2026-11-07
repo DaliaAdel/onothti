@@ -8,7 +8,7 @@ import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
-import { nameInitials } from '../core/name-initials';
+import { AuthLayoutComponent } from './auth-layout.component';
 import { BrandComponent } from './brand.component';
 import { IconComponent } from './icon.component';
 
@@ -22,7 +22,7 @@ export interface NavItem {
 
 @Component({
   selector: 'app-shell',
-  imports: [BrandComponent, IconComponent, RouterLink, RouterLinkActive],
+  imports: [AuthLayoutComponent, BrandComponent, IconComponent, RouterLink, RouterLinkActive],
   template: `
     <div class="app" [class.ops-app]="home === '/ops'" [class.menu-open]="menuOpen">
       <button class="nav-backdrop" type="button" aria-label="إغلاق القائمة" (click)="closeMenu()"></button>
@@ -118,9 +118,10 @@ export interface NavItem {
               [class.has-photo]="!!avatarUrl"
               [routerLink]="profileRoute"
               [style.background-image]="avatarUrl ? 'url(' + avatarUrl + ')' : 'none'"
+              aria-label="الملف الشخصي"
             >
               @if (!avatarUrl) {
-                {{ initial }}
+                <app-icon name="profile" />
               }
             </a>
           </div>
@@ -131,27 +132,18 @@ export interface NavItem {
       </main>
     </div>
     @if (logoutOpen) {
-      <div class="logout-layer" (click)="cancelLogout()">
-        <div
-          class="logout-card"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="logout-title"
-          (click)="$event.stopPropagation()"
-        >
-          <button class="logout-close" type="button" aria-label="إغلاق" (click)="cancelLogout()">×</button>
-          <div class="logout-heart" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
-            </svg>
+      <div class="logout-auth" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+        <app-auth-layout>
+          <div class="auth-box">
+            <button class="auth-back" type="button" (click)="cancelLogout()">← البقاء في الحساب</button>
+            <span class="auth-kicker">تسجيل الخروج</span>
+            <h2 id="logout-title">إلى لقاء قريب</h2>
+            <p class="muted">نتمنى لكِ يومًا جميلًا، وننتظرك قريبًا لتواصلي رحلة جمالك معنا.</p>
+            <button class="btn primary auth-submit full" type="button" [disabled]="loggingOut" (click)="confirmLogout()">
+              تسجيل الخروج
+            </button>
           </div>
-          <h2 id="logout-title">إلى لقاء قريب</h2>
-          <p>نتمنى لكِ يومًا جميلًا، وننتظرك قريبًا لتواصلي رحلة جمالك معنا.</p>
-          <div class="logout-actions">
-            <button class="btn primary" type="button" (click)="cancelLogout()">البقاء في الحساب</button>
-            <button class="btn ghost" type="button" [disabled]="loggingOut" (click)="confirmLogout()">تسجيل الخروج</button>
-          </div>
-        </div>
+        </app-auth-layout>
       </div>
     }
   `,
@@ -176,10 +168,6 @@ export class AppShellComponent implements OnInit {
 
   get name(): string {
     return this.session.user()?.displayName || this.locale.t('account.mine');
-  }
-
-  get initial(): string {
-    return this.name.slice(0, 1);
   }
 
   get avatarUrl(): string {

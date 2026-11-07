@@ -10,6 +10,7 @@ const APPROVED: Record<string, string> = {
   expert: 'expert',
   user: 'profile',
   profile: 'profile',
+  name: 'profile',
   bell: 'notifications',
   about: 'about',
   help: 'support',

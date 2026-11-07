@@ -1,20 +1,20 @@
 import { Component, Input } from '@angular/core';
 import { mediaUrl } from '../core/media';
-import { InitialsPipe } from '../core/name-initials';
 import type { OpsManagedAccount } from '../core/models';
+import { IconComponent } from '../shared/icon.component';
 import { opsDate } from './ops-ui';
 
 @Component({
   selector: 'app-ops-account-file',
-  imports: [InitialsPipe],
+  imports: [IconComponent],
   template: `
     <article class="card" style="margin-bottom:18px">
       <div class="avatar-pick" [class.has-photo]="true" style="margin-bottom:16px">
         @if (account.avatarUrl) {
           <img [src]="mediaUrl(account.avatarUrl)" [alt]="account.displayName" />
         } @else {
-          <div class="profile-photo" style="width:72px;height:72px;font-size:28px;border-width:0">
-            {{ account.displayName | initials }}
+          <div class="profile-photo" style="width:72px;height:72px;border-width:0">
+            <app-icon name="profile" />
           </div>
         }
         <div>
@@ -25,7 +25,10 @@ import { opsDate } from './ops-ui';
       <div class="form-grid">
         <div class="field">
           <label>الاسم</label>
-          <input class="input" [value]="account.displayName" readonly />
+          <div class="name-field">
+            <input class="input" [value]="account.displayName" readonly />
+            <span class="name-field-icon" aria-hidden="true"><app-icon name="profile" /></span>
+          </div>
         </div>
         <div class="field">
           <label>الجوال</label>

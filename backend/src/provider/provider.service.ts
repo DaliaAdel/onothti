@@ -20,7 +20,7 @@ import {
 } from "./dto/provider.dto";
 import { serializePackage } from "../common/package-price";
 import {
-  assertUniqueDisplayName,
+  assertDisplayName,
   assertUniqueEmail,
   campaignSubscriptionEndAt,
   liveCampaign,

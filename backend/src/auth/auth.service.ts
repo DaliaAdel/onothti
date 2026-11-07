@@ -36,7 +36,7 @@ import {
 } from "../common/enums";
 import { effectivePermissionCodes } from "../common/staff-permissions";
 import {
-  assertUniqueDisplayName,
+  assertDisplayName,
   assertUniqueEmail,
   pendingChangesFor,
   pendingValue,

@@ -2,16 +2,16 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
-import { InitialsPipe } from '../core/name-initials';
 import { apiMessage, displayPhone } from '../core/phone';
 import type { CatalogRegion, ProviderMe } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-provider-account',
-  imports: [FormsModule, InitialsPipe],
+  imports: [FormsModule, IconComponent],
   template: `
     <div class="page-head">
       <div>
@@ -71,7 +71,7 @@ import { ToastService } from '../core/toast.service';
       <div class="card empty">
         <div class="avatar" style="width:88px;height:88px;margin:auto;font-size:28px;background-size:cover;background-position:center" [style.background-image]="previewUrl ? 'url(' + previewUrl + ')' : 'none'">
           @if (!previewUrl) {
-            {{ displayName | initials:'ن' }}
+            <app-icon name="profile" />
           }
         </div>
         <h3>{{ displayName || 'الخبيرة' }}</h3>

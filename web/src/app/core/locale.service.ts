@@ -462,8 +462,26 @@ export class LocaleService {
     return localStorage.getItem(STORAGE_KEY) === 'en' ? 'en' : 'ar';
   }
 
+  dateTag(): string {
+    return this.lang() === 'ar' ? 'ar-SA' : 'en-GB';
+  }
+
+  formatDateTime(value: string | Date, withTime = true): string {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+    return new Intl.DateTimeFormat(this.dateTag(), {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      ...(withTime ? { hour: '2-digit', minute: '2-digit', hour12: this.lang() === 'en' } : {}),
+      numberingSystem: 'latn',
+    }).format(date);
+  }
+
   private apply(lang: AppLang): void {
-    document.documentElement.lang = lang;
+    document.documentElement.lang = lang === 'ar' ? 'ar-SA' : 'en-GB';
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }
 }

@@ -8,11 +8,12 @@ import { servicePhoto, type CatalogPackage, type CatalogService, type OpsCampaig
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
+import { LocaleDateDirective } from '../shared/locale-date.directive';
 import { PositiveIntDirective } from './positive-int.directive';
 
 @Component({
   selector: 'app-ops-package-services',
-  imports: [FormsModule, RouterLink, PositiveIntDirective],
+  imports: [FormsModule, RouterLink, PositiveIntDirective, LocaleDateDirective],
   template: `
     @if (loading) {
       <p class="loading">جاري التحميل...</p>
