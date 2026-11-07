@@ -4,10 +4,8 @@ const bcrypt = require("bcryptjs");
 const mariadb = require("mariadb");
 
 const SUPER_ROLE = "SUPER";
-const SUPER_MOBILE = process.env.SUPER_ADMIN_MOBILE || "0500000099";
-const SUPER_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || "Onothiti1";
-const SUPER_NAME = "حساب النظام";
-const SUPER_CODE = "ST-000000";
+const SUPER_MOBILE = process.argv[2] || process.env.SUPER_ADMIN_MOBILE || "";
+const SUPER_PASSWORD = process.argv[3] || process.env.SUPER_ADMIN_PASSWORD || "";
 
 function mysqlHost() {
   const host = process.env.MYSQL_HOST || "localhost";
@@ -62,37 +60,38 @@ async function main() {
       ]);
     }
 
+    if (!SUPER_MOBILE) {
+      throw new Error("usage: node scripts/apply-0028.cjs <staff-mobile> [password]");
+    }
+
     const adminTeam = await conn.query("SELECT id FROM `staffteam` WHERE `code` = ?", ["ADMIN-1"]);
     const teamId = adminTeam[0]?.id ?? null;
-    const passwordHash = await bcrypt.hash(SUPER_PASSWORD, 12);
-    const existing = await conn.query("SELECT id, accountType, isProtected FROM `user` WHERE `mobile` = ?", [
-      SUPER_MOBILE,
-    ]);
-    let userId;
-    if (existing.length) {
-      if (existing[0].accountType !== "STAFF") {
-        throw new Error(`${SUPER_MOBILE} already used by ${existing[0].accountType}`);
-      }
-      userId = existing[0].id;
-      await conn.query(
-        `UPDATE \`user\`
-         SET displayName = ?, status = 'ACTIVE', passwordHash = ?, mustChangePassword = 0,
-             mobileVerifiedAt = NOW(), isProtected = 1, updatedAt = NOW()
-         WHERE id = ?`,
-        [SUPER_NAME, passwordHash, userId],
-      );
-    } else {
-      const codeTaken = await conn.query("SELECT id FROM `user` WHERE `accountCode` = ?", [SUPER_CODE]);
-      const accountCode = codeTaken.length ? `ST-${crypto.randomUUID().slice(0, 8)}` : SUPER_CODE;
-      userId = crypto.randomUUID();
-      await conn.query(
-        `INSERT INTO \`user\`
-         (id, accountType, mobile, passwordHash, mustChangePassword, status, displayName, accountCode,
-          mobileVerifiedAt, termsAcceptedAt, isProtected, createdAt, updatedAt)
-         VALUES (?, 'STAFF', ?, ?, 0, 'ACTIVE', ?, ?, NOW(), NOW(), 1, NOW(), NOW())`,
-        [userId, SUPER_MOBILE, passwordHash, SUPER_NAME, accountCode],
-      );
+    const existing = await conn.query(
+      "SELECT id, accountType, displayName FROM `user` WHERE `mobile` = ?",
+      [SUPER_MOBILE],
+    );
+    if (!existing.length) {
+      throw new Error(`${SUPER_MOBILE} is not a staff user. Create the staff account first, then rerun.`);
     }
+    if (existing[0].accountType !== "STAFF") {
+      throw new Error(`${SUPER_MOBILE} is ${existing[0].accountType}, not STAFF`);
+    }
+
+    const userId = existing[0].id;
+    const updates = [
+      "status = 'ACTIVE'",
+      "mustChangePassword = 0",
+      "mobileVerifiedAt = NOW()",
+      "isProtected = 1",
+      "updatedAt = NOW()",
+    ];
+    const params = [];
+    if (SUPER_PASSWORD) {
+      updates.push("passwordHash = ?");
+      params.push(await bcrypt.hash(SUPER_PASSWORD, 12));
+    }
+    params.push(userId);
+    await conn.query(`UPDATE \`user\` SET ${updates.join(", ")} WHERE id = ?`, params);
 
     const staff = await conn.query("SELECT userId FROM `staffuser` WHERE `userId` = ?", [userId]);
     if (staff.length) {
@@ -107,7 +106,9 @@ async function main() {
       );
     }
 
-    console.log(`0028 protected super admin ready on ${database}: ${SUPER_MOBILE}`);
+    console.log(
+      `SUPER_READY staff=${SUPER_MOBILE} name=${existing[0].displayName} role=${SUPER_ROLE} hidden=1`,
+    );
   } finally {
     await conn.end();
   }
