@@ -1,18 +1,8 @@
 {
   "info": {
-    "name": "أنوثتي API",
-    "description": "كل APIs الحالية لمنصة أنوثتي (عربي + إنجليزي).\n\nالسيرفر: http://localhost:3000\nSwagger: http://localhost:3000/docs\nOTP التطوير: 123456\n\nحسابات تجريبية (كلمة المرور Secret123):\n- باحثة: سارة / 0504444444\n- صانعة: نورة 0501111111 | هند 0502222222 | منى 0503333333\n\nالترتيب المقترح:\n1) Catalog → List cities / services (يحفظ المعرّفات)\n2) Auth → Login customer (demo سارة)\n3) Discovery / Customer / Content\n\nالردود الثابتة فيها nameAr و nameEn (أو titleAr/titleEn و bodyAr/bodyEn).",
+    "name": "أنوثتي API — Customer · Provider · Staff",
+    "description": "Collection كاملة لحسابات العميلة والخبيرة وStaff.\n\nالسيرفر: {{baseUrl}}  (افتراضي http://localhost:3000)\nSwagger: http://localhost:3000/docs\nOTP التطوير: 123456\n\nحسابات تجريبية بعد الـ seed (كلمة المرور Secret123):\n- عميلة: سارة / 0504444444\n- خبيرة: نورة 0501111111 | هند 0502222222 | منى 0503333333\n- Staff: 0500000001 — عيّني staffPassword من STAFF_PASSWORD وقت الـ seed\n\nالترتيب:\n1) Catalog → المدن والخدمات (يحفظ cityId / serviceId)\n2) Auth → دخول العميلة / الخبيرة / Staff (يحفظ التوكن)\n3) شغّلي طلبات المجلد المناسب",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{customerToken}}",
-        "type": "string"
-      }
-    ]
   },
   "variable": [
     {
@@ -20,24 +10,28 @@
       "value": "http://localhost:3000"
     },
     {
-      "key": "cityId",
-      "value": "91ad45bb-74f2-4991-b749-a46052772287"
+      "key": "customerMobile",
+      "value": "0504444444"
     },
     {
-      "key": "serviceId",
-      "value": "b926f4ad-c9cd-483b-8a13-f9b916a3e212"
+      "key": "providerMobile",
+      "value": "0501111111"
     },
     {
-      "key": "subServiceId",
-      "value": "aa95fb91-f903-4c2f-b657-b29ebb83b363"
+      "key": "staffMobile",
+      "value": "0500000001"
     },
     {
-      "key": "providerId",
-      "value": "0d17425d-326a-4f36-9c98-c5f9836be2a8"
+      "key": "password",
+      "value": "Secret123"
     },
     {
-      "key": "accessToken",
-      "value": ""
+      "key": "staffPassword",
+      "value": "Secret123"
+    },
+    {
+      "key": "otp",
+      "value": "123456"
     },
     {
       "key": "customerToken",
@@ -45,6 +39,34 @@
     },
     {
       "key": "providerToken",
+      "value": ""
+    },
+    {
+      "key": "staffToken",
+      "value": ""
+    },
+    {
+      "key": "cityId",
+      "value": ""
+    },
+    {
+      "key": "regionId",
+      "value": ""
+    },
+    {
+      "key": "serviceId",
+      "value": ""
+    },
+    {
+      "key": "subServiceId",
+      "value": ""
+    },
+    {
+      "key": "coverageAreaId",
+      "value": ""
+    },
+    {
+      "key": "providerId",
       "value": ""
     },
     {
@@ -56,430 +78,196 @@
       "value": ""
     },
     {
+      "key": "albumId",
+      "value": ""
+    },
+    {
       "key": "portfolioId",
+      "value": ""
+    },
+    {
+      "key": "ticketId",
+      "value": ""
+    },
+    {
+      "key": "accountId",
+      "value": ""
+    },
+    {
+      "key": "staffId",
+      "value": ""
+    },
+    {
+      "key": "roleId",
+      "value": ""
+    },
+    {
+      "key": "departmentId",
+      "value": ""
+    },
+    {
+      "key": "mediaId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
       "value": ""
     }
   ],
   "item": [
     {
-      "name": "Health",
-      "auth": {
-        "type": "noauth"
-      },
+      "name": "0. عام — Catalog & Content",
       "item": [
         {
-          "name": "GET /api/health",
+          "name": "GET /health",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/health",
-            "description": "فحص السيرفر وMySQL. المتوقع: { ok: true, service: \"onothiti-api\", db: \"up\" }"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "POST /api/auth/register — باحثة",
-          "request": {
+            "description": "فحص السيرفر وقاعدة البيانات",
             "auth": {
               "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"mobile\": \"0505555555\",\n  \"password\": \"Secret123\",\n  \"email\": \"lina@example.com\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/register",
-            "description": "accountType: CUSTOMER | PROVIDER. الجوال سعودي 10 أرقام يبدأ بـ 05. بعد التسجيل لازم OTP."
-          }
-        },
-        {
-          "name": "POST /api/auth/register — صانعة جمال",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"mobile\": \"0509876543\",\n  \"password\": \"Secret123\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/register",
-            "description": "حساب صانعة الجمال يبدأ INACTIVE لحد الاعتماد."
-          }
-        },
-        {
-          "name": "POST /api/auth/otp/send",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/otp/send",
-            "description": "purpose: REGISTER | LOGIN_NEW_DEVICE | RESET_PASSWORD | FIRST_BROWSER"
-          }
-        },
-        {
-          "name": "POST /api/auth/otp/verify",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0505555555\",\n  \"purpose\": \"REGISTER\",\n  \"code\": \"123456\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/otp/verify",
-            "description": "في التطوير الرمز 123456. بعد 3 محاولات غلط يتقفل 30 دقيقة."
-          }
-        },
-        {
-          "name": "POST /api/auth/login — سارة (باحثة)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "if (!json.accessToken) return;",
-                  "pm.collectionVariables.set('accessToken', json.accessToken);",
-                  "pm.collectionVariables.set('customerToken', json.accessToken);",
-                  "if (pm.environment) {",
-                  "  pm.environment.set('accessToken', json.accessToken);",
-                  "  pm.environment.set('customerToken', json.accessToken);",
-                  "}"
-                ]
-              }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"password\": \"Secret123\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "يحفظ customerToken. شغّليه قبل طلبات الباحثة والتقييم."
           }
         },
         {
-          "name": "POST /api/auth/login — نورة (صانعة)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "if (!json.accessToken) return;",
-                  "pm.collectionVariables.set('accessToken', json.accessToken);",
-                  "pm.collectionVariables.set('providerToken', json.accessToken);",
-                  "if (json.user && json.user.id) pm.collectionVariables.set('providerId', json.user.id);",
-                  "if (pm.environment) {",
-                  "  pm.environment.set('accessToken', json.accessToken);",
-                  "  pm.environment.set('providerToken', json.accessToken);",
-                  "  if (json.user && json.user.id) pm.environment.set('providerId', json.user.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "name": "GET /catalog/regions",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0501111111\",\n  \"password\": \"Secret123\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "0501111111 نورة | 0502222222 هند | 0503333333 منى"
-          }
-        },
-        {
-          "name": "GET /api/auth/me",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/auth/me",
-            "description": "يستخدم آخر توكن اتعمل login. محتاج Bearer."
-          }
-        },
-        {
-          "name": "POST /api/auth/forgot-password",
-          "request": {
+            "url": "{{baseUrl}}/api/catalog/regions",
+            "description": "",
             "auth": {
               "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/forgot-password",
-            "description": "يرسل OTP لغرض RESET_PASSWORD."
-          }
-        },
-        {
-          "name": "POST /api/auth/reset-password",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"0504444444\",\n  \"code\": \"123456\",\n  \"newPassword\": \"Secret123\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/reset-password"
-          }
-        },
-        {
-          "name": "POST /api/auth/logout",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/auth/logout"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Catalog",
-      "auth": {
-        "type": "noauth"
-      },
-      "item": [
-        {
-          "name": "GET /api/catalog/cities",
+            }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const rows = pm.response.json();",
-                  "const riyadh = (rows || []).find(c => c.code === 'RIYADH');",
-                  "if (!riyadh) return;",
-                  "pm.collectionVariables.set('cityId', riyadh.id);",
-                  "if (pm.environment) pm.environment.set('cityId', riyadh.id);"
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const first = Array.isArray(json) ? json[0] : null;",
+                  "if (first?.id) pm.collectionVariables.set('regionId', first.id);",
+                  "const city = first?.cities?.[0];",
+                  "if (city?.id) pm.collectionVariables.set('cityId', city.id);",
+                  "const area = city?.coverageAreas?.[0];",
+                  "if (area?.id) pm.collectionVariables.set('coverageAreaId', area.id);"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "GET /catalog/cities",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/catalog/cities",
-            "description": "المدن الظاهرة. كل مدينة فيها nameAr و nameEn. يحفظ cityId للرياض."
-          }
-        },
-        {
-          "name": "GET /api/catalog/services",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const rows = pm.response.json();",
-                  "const hair = (rows || []).find(s => s.code === 'MS-01');",
-                  "if (!hair) return;",
-                  "pm.collectionVariables.set('serviceId', hair.id);",
-                  "if (pm.environment) pm.environment.set('serviceId', hair.id);",
-                  "if (hair.subServices && hair.subServices[0]) {",
-                  "  pm.collectionVariables.set('subServiceId', hair.subServices[0].id);",
-                  "  if (pm.environment) pm.environment.set('subServiceId', hair.subServices[0].id);",
-                  "}"
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const riyadh = (json || []).find((c) => c.code === 'RIYADH') || json?.[0];",
+                  "if (riyadh?.id) pm.collectionVariables.set('cityId', riyadh.id);",
+                  "if (riyadh?.region?.id) pm.collectionVariables.set('regionId', riyadh.region.id);",
+                  "const area = riyadh?.coverageAreas?.[0];",
+                  "if (area?.id) pm.collectionVariables.set('coverageAreaId', area.id);"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "GET /catalog/services",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/catalog/services",
-            "description": "الخدمات الرئيسية والفرعية (nameAr / nameEn). يحفظ serviceId و subServiceId للشعر."
-          }
-        },
-        {
-          "name": "GET /api/catalog/packages",
-          "request": {
+            "description": "",
             "auth": {
               "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/catalog/packages",
-            "description": "FREE / GREEN / BRONZE / SILVER / GOLD مع nameAr و nameEn."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Discovery",
-      "item": [
-        {
-          "name": "GET /api/search — مدينة",
+            }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.response.code >= 400) return;",
                   "const json = pm.response.json();",
-                  "const rows = json.items || [];",
-                  "if (!rows[0]) return;",
-                  "pm.collectionVariables.set('providerId', rows[0].id);",
-                  "if (pm.environment) pm.environment.set('providerId', rows[0].id);"
+                  "const first = json?.[0];",
+                  "if (first?.id) pm.collectionVariables.set('serviceId', first.id);",
+                  "if (first?.subServices?.[0]?.id) pm.collectionVariables.set('subServiceId', first.subServices[0].id);"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "GET /catalog/packages",
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&page=1&pageSize=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "search"
-              ],
-              "query": [
-                {
-                  "key": "cityId",
-                  "value": "{{cityId}}",
-                  "description": "مطلوب"
-                },
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20",
-                  "description": "الحد 50"
-                },
-                {
-                  "key": "serviceId",
-                  "value": "{{serviceId}}",
-                  "disabled": true
-                },
-                {
-                  "key": "subServiceId",
-                  "value": "{{subServiceId}}",
-                  "disabled": true
-                },
-                {
-                  "key": "q",
-                  "value": "نورة",
-                  "disabled": true
-                },
-                {
-                  "key": "minRating",
-                  "value": "4",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "cityId إجباري. الرد: { items, total, page, pageSize }. الترتيب ذهبية ثم فضية ثم برونزية. الخدمات فيها nameAr و nameEn."
+            "url": "{{baseUrl}}/api/catalog/packages",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const first = json?.[0];",
+                  "if (first?.id) pm.collectionVariables.set('packageId', first.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /catalog/campaign",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/catalog/campaign",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
           }
         },
         {
-          "name": "GET /api/search — خدمة",
+          "name": "GET /catalog/settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/catalog/settings",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /search",
           "request": {
             "method": "GET",
             "header": [],
@@ -510,706 +298,67 @@
                   "value": "20"
                 }
               ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/search — خدمة فرعية",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&subServiceId={{subServiceId}}&page=1&pageSize=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "search"
-              ],
-              "query": [
-                {
-                  "key": "cityId",
-                  "value": "{{cityId}}"
-                },
-                {
-                  "key": "subServiceId",
-                  "value": "{{subServiceId}}"
-                },
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/search — اسم",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=نورة&page=1&pageSize=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "search"
-              ],
-              "query": [
-                {
-                  "key": "cityId",
-                  "value": "{{cityId}}"
-                },
-                {
-                  "key": "q",
-                  "value": "نورة"
-                },
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
-              ]
             },
-            "description": "البحث باسم العرض فقط."
-          }
-        },
-        {
-          "name": "GET /api/search — جوال (يفشل)",
-          "request": {
+            "description": "",
             "auth": {
               "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/search?cityId={{cityId}}&q=0501111111",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "search"
-              ],
-              "query": [
-                {
-                  "key": "cityId",
-                  "value": "{{cityId}}"
-                },
-                {
-                  "key": "q",
-                  "value": "0501111111"
-                }
-              ]
-            },
-            "description": "المتوقع 400: البحث برقم الجوال غير مسموح."
-          }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const first = json?.items?.[0] || json?.[0];",
+                  "const id = first?.id || first?.userId || first?.providerId;",
+                  "if (id) pm.collectionVariables.set('providerId', id);"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "GET /api/providers/:id",
+          "name": "GET /providers/:id",
           "request": {
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/providers/{{providerId}}",
-            "description": "ملف ظاهر. لو فيه customerToken يتسجل في شاهدتهن سابقًا. رقم الواتساب لا يظهر هنا."
-          }
-        },
-        {
-          "name": "POST /api/providers/:id/whatsapp",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": "{{baseUrl}}/api/providers/{{providerId}}/whatsapp",
-            "description": "يرجع phone و url و disclaimerAr و disclaimerEn."
-          }
-        },
-        {
-          "name": "POST /api/providers/:id/ratings",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{customerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"stars\": 5,\n  \"note\": \"تعامل راقي\"\n}"
-            },
-            "url": "{{baseUrl}}/api/providers/{{providerId}}/ratings",
-            "description": "محتاج customerToken. stars من 1 إلى 5. الحالة PENDING لحد اعتماد التشغيل."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Customer",
-      "auth": {
-        "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{customerToken}}",
-            "type": "string"
-          }
-        ]
-      },
-      "item": [
-        {
-          "name": "GET /api/customer/profile",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/customer/profile"
-          }
-        },
-        {
-          "name": "PATCH /api/customer/profile",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"displayName\": \"سارة\",\n  \"cityId\": \"{{cityId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/customer/profile"
-          }
-        },
-        {
-          "name": "POST /api/customer/favorites — صانعة",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/customer/favorites"
-          }
-        },
-        {
-          "name": "POST /api/customer/favorites — خدمة",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"targetType\": \"SERVICE\",\n  \"targetId\": \"{{serviceId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/customer/favorites"
-          }
-        },
-        {
-          "name": "GET /api/customer/favorites",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/customer/favorites"
-          }
-        },
-        {
-          "name": "DELETE /api/customer/favorites",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/customer/favorites"
-          }
-        },
-        {
-          "name": "GET /api/customer/recent-views",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/customer/recent-views",
-            "description": "آخر 30 مشاهدة. افتحي ملف صانعة بتوكن الباحثة أولًا."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Provider",
-      "auth": {
-        "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{providerToken}}",
-            "type": "string"
-          }
-        ]
-      },
-      "item": [
-        {
-          "name": "GET /api/provider/profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/profile",
-            "description": "ملف صانعة الجمال. نفس الـ API للويب والموبايل."
-          }
-        },
-        {
-          "name": "PATCH /api/provider/profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/provider/profile",
-            "description": "تحديث الاسم والمدينة وواتساب والنبذة.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"displayName\": \"نورة بيوتي\",\n  \"whatsapp\": \"0501111111\",\n  \"bio\": \"خبيرة مكياج للمناسبات\",\n  \"cityId\": \"{{cityId}}\"\n}"
-            }
-          }
-        },
-        {
-          "name": "POST /api/provider/avatar",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/avatar",
-            "description": "رفع صورة الحساب. form-data field name: file. JPG أو PNG حتى 5MB. نفس الـ API للويب والموبايل.",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/provider/dashboard",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/dashboard",
-            "description": "إحصاءات 30 يوم + الباقة + اكتمال الملف."
-          }
-        },
-        {
-          "name": "GET /api/provider/services",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/services",
-            "description": "خدمات الصانعة."
-          }
-        },
-        {
-          "name": "POST /api/provider/services",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/provider/services",
-            "description": "إضافة خدمة. يلتزم بحد الباقة.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"subServiceId\": \"{{subServiceId}}\"\n}"
-            }
-          }
-        },
-        {
-          "name": "DELETE /api/provider/services/:id",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/services/{{providerServiceId}}",
-            "description": "احفظي المعرّف من GET services."
-          }
-        },
-        {
-          "name": "GET /api/provider/portfolio",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/portfolio",
-            "description": "ألبوم الأعمال."
-          }
-        },
-        {
-          "name": "POST /api/provider/portfolio",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/portfolio",
-            "description": "رفع صورة أو فيديو للعمل. form-data: file + kind (IMAGE أو VIDEO). يُرسل للمراجعة PENDING. نفس الـ API للويب والموبايل.",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                },
-                {
-                  "key": "kind",
-                  "value": "IMAGE",
-                  "type": "text"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "DELETE /api/provider/portfolio/:id",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/portfolio/{{portfolioId}}",
-            "description": ""
-          }
-        },
-        {
-          "name": "GET /api/provider/reviews",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/reviews",
-            "description": "التقييمات على الملف."
-          }
-        },
-        {
-          "name": "GET /api/provider/views",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/views",
-            "description": "مشاهدات آخر 30 يوم."
-          }
-        },
-        {
-          "name": "GET /api/provider/subscription",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/subscription",
-            "description": "الباقة الحالية + الباقات + الحساب البنكي + الإثباتات."
-          }
-        },
-        {
-          "name": "POST /api/provider/payment-proofs",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/provider/payment-proofs",
-            "description": "إثبات سداد بنص التحويل أو storageKey للصورة.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"packageId\": \"{{packageId}}\",\n  \"transferText\": \"تم التحويل 299 ريال من 0501111111\"\n}"
-            }
-          }
-        },
-        {
-          "name": "GET /api/provider/payment-proofs",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/payment-proofs",
-            "description": ""
-          }
-        },
-        {
-          "name": "GET /api/provider/ticket-types",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/ticket-types",
-            "description": "أنواع تذاكر BM."
-          }
-        },
-        {
-          "name": "GET /api/provider/tickets",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/provider/tickets",
-            "description": ""
-          }
-        },
-        {
-          "name": "POST /api/provider/tickets",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{providerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/provider/tickets",
             "description": "",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"typeCode\": \"BM-01\",\n  \"body\": \"أحتاج مساعدة في تحديث الملف\"\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Content",
-      "auth": {
-        "type": "noauth"
-      },
-      "item": [
-        {
-          "name": "GET /api/legal/terms — باحثة",
-          "request": {
             "auth": {
               "type": "noauth"
-            },
+            }
+          }
+        },
+        {
+          "name": "POST /providers/:id/whatsapp",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/providers/{{providerId}}/whatsapp",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /settings/about",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/settings/about",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /legal/terms",
+          "request": {
             "method": "GET",
             "header": [],
             "url": {
@@ -1229,81 +378,15 @@
                 }
               ]
             },
-            "description": "audience إجباري: CUSTOMER | PROVIDER. الرد فيه titleAr/titleEn و bodyAr/bodyEn."
-          }
-        },
-        {
-          "name": "GET /api/legal/terms — صانعة الجمال",
-          "request": {
+            "description": "",
             "auth": {
               "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/legal/terms?audience=PROVIDER",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "legal",
-                "terms"
-              ],
-              "query": [
-                {
-                  "key": "audience",
-                  "value": "PROVIDER"
-                }
-              ]
             }
           }
         },
         {
-          "name": "GET /api/legal/terms بدون audience (يفشل)",
+          "name": "GET /legal/policies",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/legal/terms",
-            "description": "المتوقع 400."
-          }
-        },
-        {
-          "name": "GET /api/legal/policies — باحثة",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/legal/policies?audience=CUSTOMER",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "legal",
-                "policies"
-              ],
-              "query": [
-                {
-                  "key": "audience",
-                  "value": "CUSTOMER"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/legal/policies — صانعة الجمال",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "GET",
             "header": [],
             "url": {
@@ -1322,22 +405,2449 @@
                   "value": "PROVIDER"
                 }
               ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
             }
           }
         },
         {
-          "name": "GET /api/settings/about",
+          "name": "GET /legal/privacy",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/privacy?audience=STAFF",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "privacy"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "STAFF"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /content/welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/content/welcome?audience=CUSTOMER",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "content",
+                "welcome"
+              ],
+              "query": [
+                {
+                  "key": "audience",
+                  "value": "CUSTOMER"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "1. Auth — دخول لكل نوع",
+      "item": [
+        {
+          "name": "Login — عميلة (سارة)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "يحفظ customerToken",
             "auth": {
               "type": "noauth"
             },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"password\": \"{{password}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (!json.accessToken) return;",
+                  "pm.collectionVariables.set('customerToken', json.accessToken);",
+                  "if (pm.environment) {",
+                  "  pm.environment.set('customerToken', json.accessToken);",
+                  "}",
+                  "if (json.user?.id) pm.collectionVariables.set('accountId', json.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login — خبيرة (نورة)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "يحفظ providerToken و providerId",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{providerMobile}}\",\n  \"password\": \"{{password}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (!json.accessToken) return;",
+                  "pm.collectionVariables.set('providerToken', json.accessToken);",
+                  "if (pm.environment) {",
+                  "  pm.environment.set('providerToken', json.accessToken);",
+                  "}",
+                  "if (json.user?.id) {",
+                  "  pm.collectionVariables.set('providerId', json.user.id);",
+                  "  if (pm.environment) pm.environment.set('providerId', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login — Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "يحفظ staffToken. غيّري staffPassword حسب الـ seed.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{staffMobile}}\",\n  \"password\": \"{{staffPassword}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (!json.accessToken) return;",
+                  "pm.collectionVariables.set('staffToken', json.accessToken);",
+                  "if (pm.environment) {",
+                  "  pm.environment.set('staffToken', json.accessToken);",
+                  "}",
+                  "if (json.user?.id) pm.collectionVariables.set('staffId', json.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/me — عميلة",
+          "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/settings/about",
-            "description": "nameAr / nameEn و descriptionAr / descriptionEn."
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me — خبيرة",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{providerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me — Staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/ping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/ping",
+            "description": "تحديث lastActiveAt (أي توكن صالح)",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/phone/start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/phone/start",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/phone/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/phone/verify",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/otp/send",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/otp/send",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"purpose\": \"LOGIN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/otp/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/otp/verify",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"purpose\": \"LOGIN\",\n  \"code\": \"{{otp}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/forgot-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{staffMobile}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{staffMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"newPassword\": \"{{staffPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/staff/set-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/staff/set-password",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{staffMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"newPassword\": \"{{staffPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/staff/change-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/staff/change-password",
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{staffPassword}}\",\n  \"newPassword\": \"{{staffPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/register — عميلة جديدة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"mobile\": \"0505555555\",\n  \"password\": \"Secret123\",\n  \"acceptTerms\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/register — خبيرة جديدة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"mobile\": \"0509876543\",\n  \"password\": \"Secret123\",\n  \"acceptTerms\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/logout — عميلة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
           }
         }
-      ]
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "2. Customer — عميلة",
+      "item": [
+        {
+          "name": "GET /customer/profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/profile",
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /customer/profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customer/profile",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"سارة\",\n  \"cityId\": \"{{cityId}}\",\n  \"bio\": \"أحب تجارب التجميل الطبيعية\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /customer/avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/avatar",
+            "description": "",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "اختاري صورة"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /customer/favorites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/favorites",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /customer/favorites",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customer/favorites",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /customer/favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customer/favorites",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetType\": \"PROVIDER\",\n  \"targetId\": \"{{providerId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /customer/recent-views",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/recent-views",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /customer/ticket-types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/ticket-types",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /customer/tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/tickets",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (json?.[0]?.id) pm.collectionVariables.set('ticketId', json[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /customer/tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customer/tickets",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeCode\": \"CU-SUPPORT\",\n  \"title\": \"استفسار عن خبيرة\",\n  \"body\": \"أحتاج مساعدة في اختيار خبيرة مكياج في الرياض\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /customer/complaints",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/complaints",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /customer/complaints",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customer/complaints",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{providerId}}\",\n  \"reason\": \"التواصل عبر واتساب لم يتم بالشكل المتوقع\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /providers/:id/ratings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/providers/{{providerId}}/ratings",
+            "description": "تقييم خبيرة — يحتاج توكن عميلة",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stars\": 5,\n  \"note\": \"تجربة ممتازة\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (json?.[0]?.id) pm.collectionVariables.set('notificationId', json[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /notifications/:id/read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /notifications/read-all",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/read-all",
+            "description": ""
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{customerToken}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "3. Provider — خبيرة",
+      "item": [
+        {
+          "name": "GET /provider/profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/profile",
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /provider/profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/profile",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"نورة\",\n  \"bio\": \"خبيرة شعر في الرياض\",\n  \"whatsapp\": \"{{providerMobile}}\",\n  \"cityId\": \"{{cityId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /provider/avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/avatar",
+            "description": "",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /provider/dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/dashboard",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/services",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const first = json?.items?.[0] || json?.[0];",
+                  "if (first?.id) pm.collectionVariables.set('providerServiceId', first.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /provider/services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/services",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"subServiceId\": \"{{subServiceId}}\",\n  \"isPrimary\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /provider/services/order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/services/order",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"{{providerServiceId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /provider/services/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/services/{{providerServiceId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true,\n  \"isPrimary\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /provider/services/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/services/{{providerServiceId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "DELETE /provider/services/main/:serviceId",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/services/main/{{serviceId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/coverage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/coverage",
+            "description": ""
+          }
+        },
+        {
+          "name": "PUT /provider/coverage",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/coverage",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"areaIds\": [\n    \"{{coverageAreaId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /provider/albums",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/albums",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (json?.[0]?.id) pm.collectionVariables.set('albumId', json[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /provider/albums",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/albums",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"أعمال العرائس\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /provider/albums/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/albums/{{albumId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /provider/albums/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/albums/{{albumId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"أعمال العرائس\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /provider/albums/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/albums/{{albumId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/portfolio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/provider/portfolio?albumId={{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "provider",
+                "portfolio"
+              ],
+              "query": [
+                {
+                  "key": "albumId",
+                  "value": "{{albumId}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "if (json?.[0]?.id) pm.collectionVariables.set('portfolioId', json[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /provider/portfolio",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/portfolio",
+            "description": "",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "kind",
+                  "value": "IMAGE",
+                  "type": "text"
+                },
+                {
+                  "key": "albumId",
+                  "value": "{{albumId}}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /provider/portfolio/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/portfolio/{{portfolioId}}",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/reviews",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/views",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/views",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/subscription",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 400) return;",
+                  "const json = pm.response.json();",
+                  "const id = json?.current?.package?.id || json?.packages?.[0]?.id;",
+                  "if (id) pm.collectionVariables.set('packageId', id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /provider/subscription/campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/subscription/campaign",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"{{packageId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /provider/payment-proofs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/payment-proofs",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /provider/payment-proofs/file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/payment-proofs/file",
+            "description": "",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /provider/payment-proofs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/payment-proofs",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"{{packageId}}\",\n  \"amount\": 299,\n  \"transferText\": \"تم التحويل على حساب المنصة\",\n  \"reference\": \"TRX-1001\",\n  \"kind\": \"TEXT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /provider/ticket-types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/ticket-types",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /provider/tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/provider/tickets",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /provider/tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/provider/tickets",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeCode\": \"BM-SUPPORT\",\n  \"title\": \"مشكلة في ظهور الملف\",\n  \"body\": \"الملف لا يظهر في نتائج البحث بعد تفعيل الباقة\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications",
+            "description": ""
+          }
+        },
+        {
+          "name": "POST /notifications/read-all",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/read-all",
+            "description": ""
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{providerToken}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "4. Staff — تشغيل",
+      "item": [
+        {
+          "name": "GET /ops/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ops/me",
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /ops/me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/me",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"مشغل إداري\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /ops/dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ops/dashboard",
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /ops/events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/events?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /ops/team-activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ops/team-activity",
+            "description": ""
+          }
+        },
+        {
+          "name": "حسابات العملاء",
+          "item": [
+            {
+              "name": "GET /ops/accounts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/ops/accounts?accountType=PROVIDER",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "ops",
+                    "accounts"
+                  ],
+                  "query": [
+                    {
+                      "key": "accountType",
+                      "value": "PROVIDER"
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('accountId', json[0].id);",
+                      "const provider = (json || []).find((row) => row.accountType === 'PROVIDER');",
+                      "if (provider?.id) pm.collectionVariables.set('providerId', provider.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET /ops/accounts/:id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/accounts/{{accountId}}",
+                "description": ""
+              }
+            },
+            {
+              "name": "PATCH /ops/accounts/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/accounts/{{accountId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"تحديث حالة الحساب من بوستمان\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/accounts/:id/notify",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/accounts/{{accountId}}/notify",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"titleAr\": \"تنبيه\",\n  \"bodyAr\": \"رسالة تجريبية من التشغيل\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/broadcast",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/broadcast",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"audience\": \"PROVIDER\",\n  \"titleAr\": \"إشعار جماعي\",\n  \"bodyAr\": \"رسالة تجريبية لكل الخبيرات\"\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/banned-phones",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/banned-phones",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/banned-phones",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/banned-phones",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mobile\": \"0599999999\",\n  \"reason\": \"اختبار حظر من بوستمان\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/banned-phones/:mobile/lift",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/banned-phones/0599999999/lift",
+                "description": ""
+              }
+            }
+          ]
+        },
+        {
+          "name": "اعتمادات",
+          "item": [
+            {
+              "name": "GET /ops/media",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/ops/media?status=PENDING",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "ops",
+                    "media"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "PENDING"
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('mediaId', json[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST /ops/media/:id/review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/media/{{mediaId}}/review",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"approve\": true,\n  \"note\": \"تم الاعتماد\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/media/:id/escalate-finance",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/media/{{mediaId}}/escalate-finance",
+                "description": ""
+              }
+            },
+            {
+              "name": "GET /ops/providers/pending",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/providers/pending",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/providers/:id/review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/providers/{{providerId}}/review",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"approve\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/profile-changes",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/ops/profile-changes?status=PENDING",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "ops",
+                    "profile-changes"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "PENDING"
+                    }
+                  ]
+                },
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/profile-changes/:id/review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/profile-changes/{{mediaId}}/review",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"approve\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/ratings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/ops/ratings?status=PENDING",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "ops",
+                    "ratings"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "PENDING"
+                    }
+                  ]
+                },
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/ratings/:id/review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/ratings/{{mediaId}}/review",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"approve\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/complaints",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/complaints",
+                "description": ""
+              }
+            },
+            {
+              "name": "PATCH /ops/complaints/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/complaints/{{ticketId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"CLOSED\",\n  \"note\": \"تم الإغلاق\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "الباقات والحملات",
+          "item": [
+            {
+              "name": "GET /ops/packages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/packages",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('packageId', json[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST /ops/packages",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/packages",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"باقة تجريبية\",\n  \"nameEn\": \"Test package\",\n  \"durationMonths\": 1,\n  \"price\": 99\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/packages/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/packages/{{packageId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/campaigns",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/campaigns",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/campaigns",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/campaigns",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"packageId\": \"{{packageId}}\",\n  \"nameAr\": \"حملة تجريبية\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-12-31\",\n  \"benefitDays\": 14,\n  \"clipToEndDate\": true,\n  \"isActive\": true\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "الخدمات والمناطق",
+          "item": [
+            {
+              "name": "GET /ops/catalog",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/catalog",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/catalog",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/catalog",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"خدمة تجريبية\",\n  \"nameEn\": \"Test service\",\n  \"sortOrder\": 99,\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/catalog/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/catalog/{{serviceId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /ops/catalog/:id",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/catalog/{{serviceId}}",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/catalog/:id/image",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/catalog/{{serviceId}}/image",
+                "description": "",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "DELETE /ops/catalog/:id/image",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/catalog/{{serviceId}}/image",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/catalog/:id/sub-services",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/catalog/{{serviceId}}/sub-services",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"فرعية تجريبية\",\n  \"nameEn\": \"Test sub\",\n  \"sortOrder\": 1,\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/sub-services/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/sub-services/{{subServiceId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "DELETE /ops/sub-services/:id",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/sub-services/{{subServiceId}}",
+                "description": ""
+              }
+            },
+            {
+              "name": "GET /ops/regions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/regions",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/regions",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/regions",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"منطقة تجريبية\",\n  \"nameEn\": \"Test region\",\n  \"sortOrder\": 99,\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/regions/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/regions/{{regionId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/cities",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/cities",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/cities",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/cities",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"مدينة تجريبية\",\n  \"nameEn\": \"Test city\",\n  \"regionId\": \"{{regionId}}\",\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/cities/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/cities/{{cityId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/coverage",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/coverage",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"نطاق تجريبي\",\n  \"nameEn\": \"Test coverage\",\n  \"cityId\": \"{{cityId}}\",\n  \"isVisible\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/coverage/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/coverage/{{coverageAreaId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isVisible\": true\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "الموظفين والصلاحيات",
+          "item": [
+            {
+              "name": "GET /ops/staff",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/staff",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('staffId', json[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET /ops/staff/:id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/staff/{{staffId}}",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/staff",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/staff",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mobile\": \"0500000009\",\n  \"displayName\": \"موظفة تجريبية\",\n  \"roleId\": \"{{roleId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/staff/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/staff/{{staffId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"displayName\": \"موظفة تجريبية\"\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/roles",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/roles",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('roleId', json[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GET /ops/permissions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/permissions",
+                "description": ""
+              }
+            },
+            {
+              "name": "PATCH /ops/roles/:id/permissions",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/roles/{{roleId}}/permissions",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"permissionCodes\": [\n    \"USR-01\"\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/staff/:id/permissions",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/staff/{{staffId}}/permissions",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"permissionCodes\": [\n    \"USR-01\"\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/org",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/org",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "const first = json?.[0] || json?.departments?.[0];",
+                      "if (first?.id) pm.collectionVariables.set('departmentId', first.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST /ops/org/departments",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/org/departments",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"قسم تجريبي\",\n  \"nameEn\": \"Test department\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/org/teams",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/org/teams",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"فريق تجريبي\",\n  \"nameEn\": \"Test team\",\n  \"departmentId\": \"{{departmentId}}\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "التذاكر والإعدادات",
+          "item": [
+            {
+              "name": "GET /ops/ticket-types",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/ticket-types",
+                "description": ""
+              }
+            },
+            {
+              "name": "GET /ops/tickets",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/tickets",
+                "description": ""
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 400) return;",
+                      "const json = pm.response.json();",
+                      "if (json?.[0]?.id) pm.collectionVariables.set('ticketId', json[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "POST /ops/tickets",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/tickets",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"typeCode\": \"OP-SUPPORT\",\n  \"title\": \"تذكرة داخلية\",\n  \"body\": \"طلب تجريبي من بوستمان\"\n}"
+                }
+              }
+            },
+            {
+              "name": "PATCH /ops/tickets/:id",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/tickets/{{ticketId}}",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"claim\": true,\n  \"note\": \"استلام التذكرة\"\n}"
+                }
+              }
+            },
+            {
+              "name": "POST /ops/tickets/:id/comments",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/tickets/{{ticketId}}/comments",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"body\": \"تعليق تجريبي\"\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/settings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/settings",
+                "description": ""
+              }
+            },
+            {
+              "name": "PATCH /ops/settings",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/settings",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"terms_version\",\n  \"value\": \"1\"\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /ops/welcome-messages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/welcome-messages",
+                "description": ""
+              }
+            },
+            {
+              "name": "GET /ops/legal",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/legal",
+                "description": ""
+              }
+            },
+            {
+              "name": "GET /ops/bank-accounts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/ops/bank-accounts",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /ops/bank-accounts",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/ops/bank-accounts",
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bankName\": \"الراجحي\",\n  \"accountName\": \"انوثتي\",\n  \"iban\": \"SA0380000000608010167519\",\n  \"isActive\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "GET /notifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/notifications",
+                "description": ""
+              }
+            },
+            {
+              "name": "POST /notifications/read-all",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/notifications/read-all",
+                "description": ""
+              }
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{staffToken}}",
+            "type": "string"
+          }
+        ]
+      }
     }
   ]
 }
