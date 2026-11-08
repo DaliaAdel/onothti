@@ -22,8 +22,8 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2>الخدمات والخدمات الفرعية</h2>
-          <p>اضغطي على صف الخدمة لعرض خدماتها الفرعية</p>
+          <h2> الخدمات الرئيسية والفرعية</h2>
+          <p>اختر خدمة رئيسية لعرض خدماتها الفرعية وإدارتها.</p>
         </div>
         @if (canManage) {
           <button class="btn primary" type="button" (click)="openAdd()">+ إضافة خدمة</button>

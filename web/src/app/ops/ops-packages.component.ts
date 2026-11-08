@@ -47,7 +47,7 @@ import { PositiveIntDirective } from './positive-int.directive';
     <div class="section-head">
       <div>
         <h2>الباقات</h2>
-        <p>{{ canEditFeatures ? 'الباقات العادية للاشتراك. اضغطي على صف لتعديلها وتحديد خدماتها' : 'الباقات العادية للاشتراك. اضغطي على صف لعرض التفاصيل' }}</p>
+        <p>{{ canEditFeatures ? 'اختر الباقة لعرض تفاصيلها وتعديلها.' : 'اختر الباقة لعرض تفاصيلها.' }}</p>
       </div>
       @if (canEditFeatures) {
         <button class="btn primary" type="button" (click)="openAdd()">+ إضافة باقة</button>
@@ -113,7 +113,7 @@ import { PositiveIntDirective } from './positive-int.directive';
     <div class="section-head">
       <div>
         <h2>الباقات الترويجية</h2>
-        <p>نفس بيانات الباقة العادية، بالإضافة إلى مدة الحملة وتاريخ البداية والنهاية</p>
+        <p>تتضمن الباقة الترويجية بيانات الباقة الأساسية، بالإضافة إلى مدة الحملة وتاريخي البداية والنهاية.</p>
       </div>
       @if (canAddPromo) {
         <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة باقة ترويجية</button>
@@ -189,8 +189,8 @@ import { PositiveIntDirective } from './positive-int.directive';
 
     <div class="section-head">
       <div>
-        <h2>مصفوفة انتقال حالات الحساب</h2>
-        <p>مرجع سريع للحالات والمسؤول عن كل انتقال.</p>
+        <h2>مصفوفة حالات الحسابات وانتقالاتها</h2>
+        <p>مرجع يوضح حالات الحسابات، وأسباب الانتقال بينها، والمسؤول عن كل انتقال.</p>
       </div>
     </div>
     <div class="ops-table-wrap">

@@ -6,6 +6,7 @@ const mariadb = require("mariadb");
 const SUPER_ROLE = "SUPER";
 const SUPER_MOBILE = process.argv[2] || process.env.SUPER_ADMIN_MOBILE || "";
 const SUPER_PASSWORD = process.argv[3] || process.env.SUPER_ADMIN_PASSWORD || "";
+const SUPER_NAME = process.argv[4] || process.env.SUPER_ADMIN_NAME || "سوبر أدمن";
 
 function mysqlHost() {
   const host = process.env.MYSQL_HOST || "localhost";
@@ -21,7 +22,25 @@ async function hasColumn(conn, table, column) {
   return Number(rows[0].n) > 0;
 }
 
+async function nextStaffCode(conn) {
+  const rows = await conn.query(
+    "SELECT `accountCode` FROM `user` WHERE `accountType` = 'STAFF' AND `accountCode` LIKE 'ST-%'",
+  );
+  let max = 0;
+  for (const row of rows) {
+    const n = Number(String(row.accountCode).split("-")[1]);
+    if (Number.isFinite(n) && n > max) {
+      max = n;
+    }
+  }
+  return `ST-${String(max + 1).padStart(6, "0")}`;
+}
+
 async function main() {
+  if (!SUPER_MOBILE || !SUPER_PASSWORD) {
+    throw new Error("usage: node scripts/apply-0028.cjs <mobile> <password>");
+  }
+
   const database = process.env.MYSQL_DATABASE;
   const conn = await mariadb.createConnection({
     host: mysqlHost(),
@@ -37,7 +56,6 @@ async function main() {
   try {
     if (!(await hasColumn(conn, "user", "isProtected"))) {
       await conn.query("ALTER TABLE `user` ADD COLUMN `isProtected` BOOLEAN NOT NULL DEFAULT false");
-      console.log("added user.isProtected");
     }
 
     let role = await conn.query("SELECT id FROM `role` WHERE `code` = ?", [SUPER_ROLE]);
@@ -60,38 +78,40 @@ async function main() {
       ]);
     }
 
-    if (!SUPER_MOBILE) {
-      throw new Error("usage: node scripts/apply-0028.cjs <staff-mobile> [password]");
-    }
-
     const adminTeam = await conn.query("SELECT id FROM `staffteam` WHERE `code` = ?", ["ADMIN-1"]);
     const teamId = adminTeam[0]?.id ?? null;
+    const passwordHash = await bcrypt.hash(SUPER_PASSWORD, 12);
     const existing = await conn.query(
       "SELECT id, accountType, displayName FROM `user` WHERE `mobile` = ?",
       [SUPER_MOBILE],
     );
-    if (!existing.length) {
-      throw new Error(`${SUPER_MOBILE} is not a staff user. Create the staff account first, then rerun.`);
-    }
-    if (existing[0].accountType !== "STAFF") {
-      throw new Error(`${SUPER_MOBILE} is ${existing[0].accountType}, not STAFF`);
-    }
 
-    const userId = existing[0].id;
-    const updates = [
-      "status = 'ACTIVE'",
-      "mustChangePassword = 0",
-      "mobileVerifiedAt = NOW()",
-      "isProtected = 1",
-      "updatedAt = NOW()",
-    ];
-    const params = [];
-    if (SUPER_PASSWORD) {
-      updates.push("passwordHash = ?");
-      params.push(await bcrypt.hash(SUPER_PASSWORD, 12));
+    let userId;
+    let displayName = SUPER_NAME;
+    if (existing.length) {
+      if (existing[0].accountType !== "STAFF") {
+        throw new Error(`${SUPER_MOBILE} is ${existing[0].accountType}, not STAFF`);
+      }
+      userId = existing[0].id;
+      displayName = existing[0].displayName || SUPER_NAME;
+      await conn.query(
+        `UPDATE \`user\`
+         SET status = 'ACTIVE', passwordHash = ?, mustChangePassword = 0,
+             mobileVerifiedAt = NOW(), lastActiveAt = NOW(), isProtected = 1, updatedAt = NOW()
+         WHERE id = ?`,
+        [passwordHash, userId],
+      );
+    } else {
+      userId = crypto.randomUUID();
+      const accountCode = await nextStaffCode(conn);
+      await conn.query(
+        `INSERT INTO \`user\`
+         (id, accountType, mobile, passwordHash, mustChangePassword, status, displayName, accountCode,
+          mobileVerifiedAt, lastActiveAt, termsAcceptedAt, isProtected, createdAt, updatedAt)
+         VALUES (?, 'STAFF', ?, ?, 0, 'ACTIVE', ?, ?, NOW(), NOW(), NOW(), 1, NOW(), NOW())`,
+        [userId, SUPER_MOBILE, passwordHash, SUPER_NAME, accountCode],
+      );
     }
-    params.push(userId);
-    await conn.query(`UPDATE \`user\` SET ${updates.join(", ")} WHERE id = ?`, params);
 
     const staff = await conn.query("SELECT userId FROM `staffuser` WHERE `userId` = ?", [userId]);
     if (staff.length) {
@@ -106,9 +126,7 @@ async function main() {
       );
     }
 
-    console.log(
-      `SUPER_READY staff=${SUPER_MOBILE} name=${existing[0].displayName} role=${SUPER_ROLE} hidden=1`,
-    );
+    console.log(`SUPER_READY staff=${SUPER_MOBILE} name=${displayName} role=${SUPER_ROLE} hidden=1`);
   } finally {
     await conn.end();
   }

@@ -21,7 +21,7 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
       <div class="section-head">
         <div>
           <h2>المناطق والمدن</h2>
-          <p>اضغطي على صف المنطقة لعرض مدنها</p>
+          <p>اختر منطقة لعرض المدن التابعة لها وإدارتها.</p>
         </div>
         @if (canManage) {
           <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>

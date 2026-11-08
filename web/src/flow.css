@@ -418,7 +418,7 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
 .online-pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--border);background:#fff;border-radius:999px;color:var(--muted);font-size:11px;white-space:nowrap}
 .online-pill b{color:var(--primary-dark);font-size:13px;line-height:1}
 .online-dot{width:8px;height:8px;border-radius:50%;background:#2f9e6b;box-shadow:0 0 0 3px #2f9e6b29;flex:none}
-.crumb b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crumb b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.85;padding:.12em .28em .28em;margin-inline:-.28em}
 .main{overflow-x:clip}
 .app:has(.photo-service:hover) .sidebar,
 .app:has(.package-card:hover) .sidebar{z-index:1}
@@ -560,6 +560,11 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
 .app .crumb{
   min-width:0;
   overflow:hidden;
+  padding-block:2px;
+}
+.app .crumb b{
+  line-height:1.85;
+  padding:.12em .28em .28em;
 }
 .app .top-actions{
   display:flex;
@@ -821,8 +826,9 @@ html,body,app-root{margin:0;padding:0;background:var(--bg)}
 .field input[type="date"],
 .input[type="date"],
 input[type="date"]{
-  position:relative;
-  padding-inline-end:42px;
+  display:inline-flex;
+  align-items:center;
+  padding-inline:14px;
   overflow:visible;
 }
 html[dir="rtl"] input[type="date"],
@@ -837,10 +843,19 @@ input[type="date"][dir="ltr"]{
   text-align:left;
   unicode-bidi:isolate;
 }
+input[type="date"]::-webkit-datetime-edit{
+  flex:1 1 auto;
+  min-width:0;
+  padding-inline-end:12px;
+}
 input[type="date"]::-webkit-calendar-picker-indicator{
-  position:absolute;
-  inset-inline-end:12px;
-  inset-inline-start:auto;
+  position:static;
+  inset:auto;
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  margin:0;
+  margin-inline-start:10px;
   cursor:pointer;
   opacity:.75;
 }

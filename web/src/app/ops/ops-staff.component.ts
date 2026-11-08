@@ -26,7 +26,7 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     <div class="section-head">
       <div>
         <h2>حسابات موظفي التشغيل والمالية</h2>
-        <p>انشاء حساب جدبد وربطه بالفريق المختص ضمن الهيكل التنظيمي. يستكمل تفعيل الحساب باستخدامرمز التحقق (OTP) تم تعين كلمة مرور جديده عند اول تسجيل دخول</p>
+        <p>أنشئ حسابًا جديدًا، واربطه بالفريق المناسب ضمن الهيكل التنظيمي، وحدد صلاحياته. يستكمل المستخدم تفعيل الحساب باستخدام رمز التحقق (OTP)، ثم يعيّن كلمة مرور جديدة عند أول تسجيل دخول.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         @if (canOrg) {
@@ -366,7 +366,7 @@ export class OpsStaffComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('مستخدمى التشغيل', 'أدوار وصلاحيات المشغّلات');
+    this.shell.set('مستخدمي التشغيل', 'أدوار وصلاحيات المشغّلات');
     const teamId = this.route.snapshot.queryParamMap.get('teamId');
     if (teamId) {
       this.teamFilter = teamId;

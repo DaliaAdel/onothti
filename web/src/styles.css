@@ -2636,8 +2636,9 @@ select.input,
 
 input[type="date"],
 .field input[type="date"] {
-  position: relative;
-  padding-inline-end: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 14px;
   overflow: visible;
 }
 
@@ -2655,10 +2656,20 @@ input[type="date"][dir="ltr"] {
   unicode-bidi: isolate;
 }
 
+input[type="date"]::-webkit-datetime-edit {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline-end: 12px;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  inset-inline-end: 12px;
-  inset-inline-start: auto;
+  position: static;
+  inset: auto;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  margin-inline-start: 10px;
   cursor: pointer;
   opacity: .75;
 }

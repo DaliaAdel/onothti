@@ -30,7 +30,7 @@ import { PERMISSION_MATRIX, type PermissionMatrixItem } from './permission-matri
           </p>
         } @else {
           <h2>الصلاحيات</h2>
-          <p>اختاري المنصب ثم فعّلي الصلاحيات لكل مجموعة. الموظفة الجديدة تأخذ قالب منصبها.</p>
+          <p>اختر المنصب، ثم حدّد الصلاحيات المطلوبة لكل مجموعة. تُطبّق صلاحيات المنصب المحدد تلقائيًا على الحساب الجديد.</p>
         }
       </div>
       <div class="ops-drawer-actions" style="margin:0">

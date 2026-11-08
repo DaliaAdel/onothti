@@ -25,7 +25,7 @@ const emptyDraft = () => ({
     <div class="section-head">
       <div>
         <h2>الشروط والسياسات</h2>
-        <p>أضيفي صفحة وحددي الجمهور والنوع وهل هي نشطة.</p>
+        <p>أضف صفحة جديدة، ثم حدّد نوعها والجمهور المستهدف وحالة النشر.</p>
       </div>
       @if (canManage) {
         <button class="btn primary" type="button" (click)="openAdd()">+ إضافة صفحة</button>

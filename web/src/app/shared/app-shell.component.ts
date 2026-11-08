@@ -154,7 +154,7 @@ export interface NavItem {
             <button class="auth-back" type="button" (click)="cancelLogout()">← البقاء في الحساب</button>
             <span class="auth-kicker">تسجيل الخروج</span>
             <h2 id="logout-title">إلى لقاء قريب</h2>
-            <p class="muted">نتمنى لكِ يومًا جميلًا، وننتظرك قريبًا لتواصلي رحلة جمالك معنا.</p>
+            <p class="muted">نتمنى لك يومًا جميلًا، وننتظر عودتك قريبًا لمواصلة رحلتك معنا.</p>
             <button class="btn primary auth-submit full" type="button" [disabled]="loggingOut" (click)="confirmLogout()">
               تسجيل الخروج
             </button>
