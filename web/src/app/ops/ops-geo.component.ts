@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsCity, OpsRegion } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -20,58 +21,58 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2>المناطق والمدن</h2>
-          <p>اختر منطقة لعرض المدن التابعة لها وإدارتها.</p>
+          <h2>{{ locale.t('ops.geo.heading') }}</h2>
+          <p>{{ locale.t('ops.geo.intro') }}</p>
         </div>
         @if (canManage) {
-          <button class="btn primary" type="button" (click)="adding = true">+ إضافة منطقة</button>
+          <button class="btn primary" type="button" (click)="adding = true">{{ locale.t('ops.geo.add') }}</button>
         }
       </div>
 
-      <app-ops-modal [open]="adding" title="إضافة منطقة" kicker="التغطية الجغرافية" (closed)="adding = false">
+      <app-ops-modal [open]="adding" [title]="locale.t('ops.geo.addTitle')" [kicker]="locale.t('ops.geo.addKicker')" (closed)="adding = false">
         <div class="form-grid">
           <div class="field">
-            <label>الاسم *</label>
-            <input class="input" [(ngModel)]="regionDraft.nameAr" placeholder="الشرقية" />
+            <label>{{ locale.t('ops.ui.nameReq') }}</label>
+            <input class="input" [(ngModel)]="regionDraft.nameAr" [placeholder]="locale.t('ops.geo.regionPh')" />
           </div>
           <div class="field">
-            <label>الاسم الإنجليزي *</label>
-            <input class="input" [(ngModel)]="regionDraft.nameEn" placeholder="Eastern" />
+            <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+            <input class="input" [(ngModel)]="regionDraft.nameEn" [placeholder]="locale.t('ops.geo.regionEnPh')" />
           </div>
           <div class="field">
-            <label>الترتيب</label>
+            <label>{{ locale.t('ops.ui.sort') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="regionDraft.sortOrder" />
           </div>
         </div>
-        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">إضافة المنطقة</button>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createRegion()">{{ locale.t('ops.geo.addSubmit') }}</button>
       </app-ops-modal>
 
       @if (loading) {
-        <p class="loading">جاري التحميل...</p>
+        <p class="loading">{{ locale.t('ui.loading') }}</p>
       } @else if (!regions.length) {
-        <p class="page-empty">لا توجد مناطق بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.geo.empty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الاسم</th>
-                <th>الاسم الإنجليزي</th>
-                <th>المدن</th>
-                <th>الترتيب</th>
-                <th>الظهور</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.nameEn') }}</th>
+                <th>{{ locale.t('ops.geo.col.cities') }}</th>
+                <th>{{ locale.t('ops.ui.sort') }}</th>
+                <th>{{ locale.t('ops.ui.appearance') }}</th>
               </tr>
             </thead>
             <tbody>
               @for (region of regions; track region.id) {
                 <tr (click)="openRegion(region)">
-                  <td><b>{{ region.nameAr }}</b></td>
+                  <td><b>{{ locale.localizedName(region) }}</b></td>
                   <td>{{ region.nameEn }}</td>
                   <td>{{ region.cities.length }}</td>
                   <td>{{ region.sortOrder }}</td>
                   <td>
                     <span class="status {{ region.isVisible ? 'success' : 'error' }}">
-                      {{ region.isVisible ? 'ظاهرة' : 'مخفية' }}
+                      {{ region.isVisible ? locale.t('ops.ui.visible') : locale.t('ops.ui.hidden') }}
                     </span>
                   </td>
                 </tr>
@@ -83,64 +84,64 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
     } @else if (!selectedCity) {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeRegion()">→ رجوع للمناطق</button>
-          <h2>{{ selected.nameAr }}</h2>
-          <p>{{ selected.nameEn }} · {{ selected.cities.length }} مدينة</p>
+          <button class="text-link back" type="button" (click)="closeRegion()">{{ locale.t('ops.geo.back') }}</button>
+          <h2>{{ locale.localizedName(selected) }}</h2>
+          <p>{{ selected.nameEn }} · {{ locale.tf('ops.ui.nCities', { n: selected.cities.length }) }}</p>
         </div>
         @if (canManage) {
-          <button class="btn primary" type="button" (click)="openAddCity()">+ إضافة مدينة</button>
+          <button class="btn primary" type="button" (click)="openAddCity()">{{ locale.t('ops.geo.addCity') }}</button>
         }
       </div>
 
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
-          <label>الاسم *</label>
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
           <input class="input" [(ngModel)]="selected.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
           <input class="input" [(ngModel)]="selected.nameEn" [readOnly]="!canManage" />
         </div>
         <div class="field">
-          <label>الترتيب</label>
+          <label>{{ locale.t('ops.ui.sort') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" [readOnly]="!canManage" />
         </div>
       </div>
       @if (canManage) {
         <div class="ops-drawer-actions" style="margin:0 0 22px">
-          <button class="btn primary" type="button" (click)="saveRegion(selected)">حفظ المنطقة</button>
+          <button class="btn primary" type="button" (click)="saveRegion(selected)">{{ locale.t('ops.geo.saveRegion') }}</button>
           <button class="btn ghost" type="button" (click)="toggleRegion(selected)">
-            {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
+            {{ selected.isVisible ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
           </button>
         </div>
       }
 
       <div class="section-head">
         <div>
-          <h2>المدن</h2>
-          <p>اضغطي على صف لتعديل المدينة</p>
+          <h2>{{ locale.t('ops.geo.citiesTitle') }}</h2>
+          <p>{{ locale.t('ops.geo.citiesHint') }}</p>
         </div>
       </div>
       @if (!selected.cities.length) {
-        <p class="page-empty">لا توجد مدن بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.geo.citiesEmpty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الاسم</th>
-                <th>الاسم الإنجليزي</th>
-                <th>الظهور</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.nameEn') }}</th>
+                <th>{{ locale.t('ops.ui.appearance') }}</th>
               </tr>
             </thead>
             <tbody>
               @for (city of selected.cities; track city.id) {
                 <tr (click)="openCity(city)">
-                  <td><b>{{ city.nameAr }}</b></td>
+                  <td><b>{{ locale.localizedName(city) }}</b></td>
                   <td>{{ city.nameEn }}</td>
                   <td>
                     <span class="status {{ city.isVisible ? 'success' : 'error' }}">
-                      {{ city.isVisible ? 'ظاهرة' : 'مخفية' }}
+                      {{ city.isVisible ? locale.t('ops.ui.visible') : locale.t('ops.ui.hidden') }}
                     </span>
                   </td>
                 </tr>
@@ -152,44 +153,44 @@ const emptyCityDraft = () => ({ nameAr: '', nameEn: '' });
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeCity()">→ رجوع لـ {{ selected.nameAr }}</button>
-          <h2>{{ selectedCity.nameAr }}</h2>
+          <button class="text-link back" type="button" (click)="closeCity()">{{ locale.tf('ops.geo.backTo', { name: locale.localizedName(selected) }) }}</button>
+          <h2>{{ locale.localizedName(selectedCity) }}</h2>
           <p>{{ selectedCity.nameEn }}</p>
         </div>
       </div>
 
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
-          <label>الاسم *</label>
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
           <input class="input" [(ngModel)]="selectedCity.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
           <input class="input" [(ngModel)]="selectedCity.nameEn" [readOnly]="!canManage" />
         </div>
       </div>
       @if (canManage) {
         <div class="ops-drawer-actions" style="margin:0 0 22px">
-          <button class="btn primary" type="button" (click)="saveCity(selectedCity)">حفظ المدينة</button>
+          <button class="btn primary" type="button" (click)="saveCity(selectedCity)">{{ locale.t('ops.geo.saveCity') }}</button>
           <button class="btn ghost" type="button" (click)="toggleCity(selectedCity)">
-            {{ selectedCity.isVisible ? 'إخفاء' : 'إظهار' }}
+            {{ selectedCity.isVisible ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
           </button>
         </div>
       }
     }
 
-    <app-ops-modal [open]="addingCity" title="إضافة مدينة" [kicker]="selected?.nameAr || ''" (closed)="addingCity = false">
+    <app-ops-modal [open]="addingCity" [title]="locale.t('ops.geo.addCityTitle')" [kicker]="selected ? locale.localizedName(selected) : ''" (closed)="addingCity = false">
       <div class="form-grid">
         <div class="field">
-          <label>الاسم *</label>
-          <input class="input" [(ngModel)]="cityDraft.nameAr" placeholder="الظهران" />
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
+          <input class="input" [(ngModel)]="cityDraft.nameAr" [placeholder]="locale.t('ops.geo.cityPh')" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="cityDraft.nameEn" placeholder="Dhahran" />
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+          <input class="input" [(ngModel)]="cityDraft.nameEn" [placeholder]="locale.t('ops.geo.cityEnPh')" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createCity()">إضافة المدينة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createCity()">{{ locale.t('ops.geo.addCitySubmit') }}</button>
     </app-ops-modal>
   `,
 })
@@ -197,6 +198,7 @@ export class OpsGeoComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
 
   get canManage(): boolean {
@@ -213,31 +215,31 @@ export class OpsGeoComponent implements OnInit {
   cityDraft = emptyCityDraft();
 
   ngOnInit(): void {
-    this.shell.set('المناطق والمدن', 'منطقة واحدة تتسع لعدة مدن');
+    this.shell.set('ops.geo.title', 'ops.geo.sub');
     this.load();
   }
 
   openRegion(region: OpsRegion): void {
     this.selected = region;
     this.selectedCity = null;
-    this.shell.set(region.nameAr, region.nameEn || 'مدن المنطقة');
+    this.shell.set(this.locale.localizedName(region), this.locale.t('ops.geo.cities'));
   }
 
   closeRegion(): void {
     this.selected = null;
     this.selectedCity = null;
-    this.shell.set('المناطق والمدن', 'منطقة واحدة تتسع لعدة مدن');
+    this.shell.set('ops.geo.title', 'ops.geo.sub');
   }
 
   openCity(city: OpsCity): void {
     this.selectedCity = city;
-    this.shell.set(city.nameAr, city.nameEn || 'تعديل المدينة');
+    this.shell.set(this.locale.localizedName(city), this.locale.t('ops.city.edit'));
   }
 
   closeCity(): void {
     this.selectedCity = null;
     if (this.selected) {
-      this.shell.set(this.selected.nameAr, this.selected.nameEn || 'مدن المنطقة');
+      this.shell.set(this.locale.localizedName(this.selected), this.locale.t('ops.geo.cities'));
     }
   }
 
@@ -246,7 +248,7 @@ export class OpsGeoComponent implements OnInit {
       return;
     }
     if (!this.hasNames(this.regionDraft.nameAr, this.regionDraft.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -258,12 +260,12 @@ export class OpsGeoComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تمت إضافة المنطقة');
+          this.toast.show(this.locale.t('ops.geo.toast.regionAdded'));
           this.regionDraft = emptyRegionDraft();
           this.adding = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة المنطقة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.regionAddFail'))),
       });
   }
 
@@ -272,7 +274,7 @@ export class OpsGeoComponent implements OnInit {
       return;
     }
     if (!this.hasNames(region.nameAr, region.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -286,10 +288,10 @@ export class OpsGeoComponent implements OnInit {
           region.nameAr = row.nameAr;
           region.nameEn = row.nameEn;
           region.sortOrder = row.sortOrder;
-          this.shell.set(region.nameAr, region.nameEn || 'مدن المنطقة');
-          this.toast.show('تم حفظ المنطقة');
+          this.shell.set(this.locale.localizedName(region), this.locale.t('ops.geo.cities'));
+          this.toast.show(this.locale.t('ops.geo.toast.regionSaved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ المنطقة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.regionSaveFail'))),
       });
   }
 
@@ -300,9 +302,9 @@ export class OpsGeoComponent implements OnInit {
     this.api.opsPatchRegion(region.id, { isVisible: !region.isVisible }).subscribe({
       next: (row) => {
         region.isVisible = row.isVisible;
-        this.toast.show(row.isVisible ? 'المنطقة ظاهرة في التسجيل والبحث' : 'تم إخفاء المنطقة');
+        this.toast.show(row.isVisible ? this.locale.t('ops.geo.toast.regionVisible') : this.locale.t('ops.geo.toast.regionHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير ظهور المنطقة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.regionVisFail'))),
     });
   }
 
@@ -319,7 +321,7 @@ export class OpsGeoComponent implements OnInit {
       return;
     }
     if (!this.hasNames(this.cityDraft.nameAr, this.cityDraft.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -331,12 +333,12 @@ export class OpsGeoComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تمت إضافة المدينة');
+          this.toast.show(this.locale.t('ops.geo.toast.cityAdded'));
           this.cityDraft = emptyCityDraft();
           this.addingCity = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة المدينة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.cityAddFail'))),
       });
   }
 
@@ -345,7 +347,7 @@ export class OpsGeoComponent implements OnInit {
       return;
     }
     if (!this.hasNames(city.nameAr, city.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -357,10 +359,10 @@ export class OpsGeoComponent implements OnInit {
         next: (row) => {
           city.nameAr = row.nameAr;
           city.nameEn = row.nameEn;
-          this.shell.set(city.nameAr, city.nameEn || 'تعديل المدينة');
-          this.toast.show('تم حفظ المدينة');
+          this.shell.set(this.locale.localizedName(city), this.locale.t('ops.city.edit'));
+          this.toast.show(this.locale.t('ops.geo.toast.citySaved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ المدينة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.citySaveFail'))),
       });
   }
 
@@ -371,9 +373,9 @@ export class OpsGeoComponent implements OnInit {
     this.api.opsPatchCity(city.id, { isVisible: !city.isVisible }).subscribe({
       next: (row) => {
         city.isVisible = row.isVisible;
-        this.toast.show(row.isVisible ? 'المدينة ظاهرة' : 'تم إخفاء المدينة');
+        this.toast.show(row.isVisible ? this.locale.t('ops.geo.toast.cityVisible') : this.locale.t('ops.geo.toast.cityHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير ظهور المدينة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.cityVisFail'))),
     });
   }
 
@@ -381,7 +383,7 @@ export class OpsGeoComponent implements OnInit {
     if (this.canManage) {
       return false;
     }
-    this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+    this.toast.show(this.locale.t('ops.ui.noPerm'));
     return true;
   }
 
@@ -397,15 +399,15 @@ export class OpsGeoComponent implements OnInit {
         this.selected = keepSelected(this.regions, this.selected);
         this.selectedCity = this.selected ? keepSelected(this.selected.cities, this.selectedCity) : null;
         if (this.selectedCity) {
-          this.shell.set(this.selectedCity.nameAr, this.selectedCity.nameEn || 'تعديل المدينة');
+          this.shell.set(this.locale.localizedName(this.selectedCity), this.locale.t('ops.city.edit'));
         } else if (this.selected) {
-          this.shell.set(this.selected.nameAr, this.selected.nameEn || 'مدن المنطقة');
+          this.shell.set(this.locale.localizedName(this.selected), this.locale.t('ops.geo.cities'));
         }
         this.loading = false;
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل المناطق'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.geo.toast.loadFail')));
       },
     });
   }

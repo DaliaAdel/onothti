@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsTicket, TicketType } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { SessionService } from '../core/session.service';
@@ -17,56 +18,56 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
   template: `
     <div class="section-head">
       <div>
-        <h2>الطلبات</h2>
-        <p>اختار النوع ثم اكتب عنوان المشكلة</p>
+        <h2>{{ locale.t('ops.ticket.heading') }}</h2>
+        <p>{{ locale.t('ops.ticket.intro') }}</p>
       </div>
       @if (canReply) {
-        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة طلب</button>
+        <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('ops.ticket.add') }}</button>
       }
     </div>
 
     <div class="filters">
-      <button class="chip" type="button" [class.active]="status === '' && !escalatedOnly" (click)="setStatus('')">الكل</button>
-      <button class="chip" type="button" [class.active]="status === 'SENT'" (click)="setStatus('SENT')">جديدة</button>
-      <button class="chip" type="button" [class.active]="status === 'IN_PROGRESS'" (click)="setStatus('IN_PROGRESS')">قيد المعالجة</button>
-      <button class="chip" type="button" [class.active]="status === 'RESOLVED'" (click)="setStatus('RESOLVED')">محلولة</button>
-      <button class="chip" type="button" [class.active]="status === 'CLOSED'" (click)="setStatus('CLOSED')">مغلقة</button>
-      <button class="chip" type="button" [class.active]="escalatedOnly" (click)="setEscalated()">مصعّدة</button>
-      <button class="chip" type="button" [class.active]="mineOnly" (click)="setMine()">طلباتي</button>
-      <button class="chip" type="button" [class.active]="queue === 'OPS'" (click)="setQueue('OPS')">التشغيل</button>
-      <button class="chip" type="button" [class.active]="queue === 'FINANCE'" (click)="setQueue('FINANCE')">المالية</button>
-      <button class="chip" type="button" [class.active]="queue === 'ADMIN'" (click)="setQueue('ADMIN')">الإدارة</button>
-      <button class="chip" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="setAccountType('CUSTOMER')">عميلة</button>
-      <button class="chip" type="button" [class.active]="accountType === 'PROVIDER'" (click)="setAccountType('PROVIDER')">خبيرة</button>
-      <button class="chip" type="button" [class.active]="accountType === 'STAFF'" (click)="setAccountType('STAFF')">موظفة</button>
+      <button class="chip" type="button" [class.active]="status === '' && !escalatedOnly" (click)="setStatus('')">{{ locale.t('ops.ui.all') }}</button>
+      <button class="chip" type="button" [class.active]="status === 'SENT'" (click)="setStatus('SENT')">{{ locale.t('ops.ticket.status.SENT') }}</button>
+      <button class="chip" type="button" [class.active]="status === 'IN_PROGRESS'" (click)="setStatus('IN_PROGRESS')">{{ locale.t('ops.ticket.status.IN_PROGRESS') }}</button>
+      <button class="chip" type="button" [class.active]="status === 'RESOLVED'" (click)="setStatus('RESOLVED')">{{ locale.t('ops.ticket.status.RESOLVED') }}</button>
+      <button class="chip" type="button" [class.active]="status === 'CLOSED'" (click)="setStatus('CLOSED')">{{ locale.t('ops.ticket.status.CLOSED') }}</button>
+      <button class="chip" type="button" [class.active]="escalatedOnly" (click)="setEscalated()">{{ locale.t('ops.ticket.filter.escalated') }}</button>
+      <button class="chip" type="button" [class.active]="mineOnly" (click)="setMine()">{{ locale.t('ops.ticket.filter.mine') }}</button>
+      <button class="chip" type="button" [class.active]="queue === 'OPS'" (click)="setQueue('OPS')">{{ locale.t('ops.queue.ops') }}</button>
+      <button class="chip" type="button" [class.active]="queue === 'FINANCE'" (click)="setQueue('FINANCE')">{{ locale.t('ops.queue.finance') }}</button>
+      <button class="chip" type="button" [class.active]="queue === 'ADMIN'" (click)="setQueue('ADMIN')">{{ locale.t('ops.queue.admin') }}</button>
+      <button class="chip" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="setAccountType('CUSTOMER')">{{ locale.t('ops.type.customer') }}</button>
+      <button class="chip" type="button" [class.active]="accountType === 'PROVIDER'" (click)="setAccountType('PROVIDER')">{{ locale.t('ops.type.provider') }}</button>
+      <button class="chip" type="button" [class.active]="accountType === 'STAFF'" (click)="setAccountType('STAFF')">{{ locale.t('ops.type.staff') }}</button>
     </div>
 
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!items.length) {
-      <p class="page-empty">لا توجد طلبات في هذا التبويب.</p>
+      <p class="page-empty">{{ locale.t('ops.ticket.empty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الرقم</th>
-              <th>نوع الطلب</th>
-              <th>عنوان المشكلة</th>
-              <th>المرسلة</th>
-              <th>نوع الحساب</th>
-              <th>الملخص</th>
-              <th>الحالة</th>
-              <th>الفريق</th>
-              <th>المسندة</th>
-              <th>التاريخ</th>
+              <th>{{ locale.t('ops.ticket.col.ref') }}</th>
+              <th>{{ locale.t('ops.ticket.col.type') }}</th>
+              <th>{{ locale.t('ops.ticket.col.title') }}</th>
+              <th>{{ locale.t('ops.ticket.col.sender') }}</th>
+              <th>{{ locale.t('ops.ticket.col.accountType') }}</th>
+              <th>{{ locale.t('ops.ticket.col.summary') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
+              <th>{{ locale.t('ops.ticket.col.queue') }}</th>
+              <th>{{ locale.t('ops.ticket.col.assignee') }}</th>
+              <th>{{ locale.t('ops.ui.date') }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of items; track item.id) {
               <tr [class.active]="selected?.id === item.id" (click)="selected = item">
                 <td><b>{{ item.refNo }}</b></td>
-                <td><span class="request-type">{{ item.type.nameAr }}</span></td>
+                <td><span class="request-type">{{ locale.localizedName(item.type) }}</span></td>
                 <td>{{ ticketTitle(item) }}</td>
                 <td>{{ item.owner.displayName }}</td>
                 <td><span class="appr-role">{{ accountTypeLabel(item.owner.accountType) }}</span></td>
@@ -85,11 +86,11 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
     <app-ops-drawer
       [open]="!!selected"
       [title]="selected ? ticketTitle(selected) : ''"
-      [kicker]="selected ? (selected.type.nameAr + ' · ' + accountTypeLabel(selected.owner.accountType)) : 'طلب دعم'"
+      [kicker]="drawerKicker()"
       (closed)="selected = null"
     >
       @if (selected; as item) {
-        <p class="muted small">{{ item.refNo }} · {{ item.type.nameAr }}</p>
+        <p class="muted small">{{ item.refNo }} · {{ locale.localizedName(item.type) }}</p>
         <p class="muted small">
           {{ item.owner.displayName }} · {{ accountTypeLabel(item.owner.accountType) }} · {{ item.owner.accountCode }} ·
           <span dir="ltr">{{ item.owner.mobile }}</span>
@@ -97,12 +98,12 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
         <p class="muted small">
           {{ opsDate(item.createdAt) }} · {{ statusAr(item.status) }} · {{ queueLabel(item.queue) }}
           @if (item.assignee) {
-            · مسندة إلى {{ item.assignee.displayName }}
+            · {{ locale.tf('ops.ticket.assignedTo', { name: item.assignee.displayName }) }}
           }
         </p>
         <p style="margin:14px 0;white-space:pre-wrap;line-height:1.8">{{ item.body }}</p>
         @if (item.comments.length) {
-          <h4 style="margin:18px 0 8px;color:var(--plum)">الردود</h4>
+          <h4 style="margin:18px 0 8px;color:var(--plum)">{{ locale.t('ops.ticket.replies') }}</h4>
           @for (comment of item.comments; track comment.id) {
             <p class="muted small" style="margin:0 0 8px">
               <b>{{ comment.author.displayName }}:</b> {{ comment.body }}
@@ -111,69 +112,69 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone, ticketTitle } fro
           }
         }
         @if (canReply) {
-          <textarea class="input" rows="3" placeholder="رد للخبيرة" [(ngModel)]="replies[item.id]"></textarea>
+          <textarea class="input" rows="3" [placeholder]="locale.t('ops.ticket.replyPh')" [(ngModel)]="replies[item.id]"></textarea>
         }
         <div class="ops-drawer-actions">
           @if (canReply) {
-            <button class="btn primary" type="button" (click)="reply(item)">إرسال الرد</button>
+            <button class="btn primary" type="button" (click)="reply(item)">{{ locale.t('ops.ticket.sendReply') }}</button>
           }
           @if (canReply && item.status !== 'IN_PROGRESS') {
-            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'IN_PROGRESS')">معالجة</button>
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'IN_PROGRESS')">{{ locale.t('ops.ticket.process') }}</button>
           }
           @if (canClose && item.status !== 'RESOLVED') {
-            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'RESOLVED')">تم الحل</button>
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'RESOLVED')">{{ locale.t('ops.ticket.resolved') }}</button>
           }
           @if (canClose && item.status !== 'CLOSED') {
-            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">إغلاق</button>
+            <button class="btn ghost" type="button" (click)="setTicketStatus(item, 'CLOSED')">{{ locale.t('ops.ticket.close') }}</button>
           }
           @if (canReply && item.assignee?.id !== meId) {
-            <button class="btn ghost" type="button" (click)="claim(item)">هذه لي</button>
+            <button class="btn ghost" type="button" (click)="claim(item)">{{ locale.t('ops.ticket.claim') }}</button>
           }
           @if (canReply) {
-            <button class="btn ghost" type="button" (click)="openRoute(item)">توجيه الطلب</button>
+            <button class="btn ghost" type="button" (click)="openRoute(item)">{{ locale.t('ops.ticket.route') }}</button>
           }
         </div>
       }
     </app-ops-drawer>
     <app-ops-modal
       [open]="!!routeTarget"
-      title="توجيه الطلب"
+      [title]="locale.t('ops.ticket.route')"
       [kicker]="routeTarget?.refNo || ''"
       (closed)="routeTarget = null"
     >
       <div class="field">
-        <label>التوجيه</label>
+        <label>{{ locale.t('ops.ticket.routeLabel') }}</label>
         <select class="input" [(ngModel)]="routeDraft.queue">
-          <option value="OPS">إعادة إلى فريق التشغيل</option>
-          <option value="FINANCE">تصعيد إلى الفريق المالي</option>
-          <option value="ADMIN">تصعيد إلى الإدارة</option>
+          <option value="OPS">{{ locale.t('ops.ticket.routeOps') }}</option>
+          <option value="FINANCE">{{ locale.t('ops.ticket.routeFinance') }}</option>
+          <option value="ADMIN">{{ locale.t('ops.ticket.routeAdmin') }}</option>
         </select>
       </div>
       <div class="field">
-        <label>ملاحظة الإدارة</label>
-        <textarea class="input" rows="4" [(ngModel)]="routeDraft.note" placeholder="اكتبي الملاحظة أو القرار"></textarea>
+        <label>{{ locale.t('ops.ticket.adminNote') }}</label>
+        <textarea class="input" rows="4" [(ngModel)]="routeDraft.note" [placeholder]="locale.t('ops.ticket.notePh')"></textarea>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">حفظ وتوجيه الطلب</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="submitRoute()">{{ locale.t('ops.ticket.saveRoute') }}</button>
     </app-ops-modal>
-    <app-ops-modal [open]="adding" title="إضافة طلب" kicker="اختار نوع الطلب ثم عنوان المشكلة" (closed)="adding = false">
+    <app-ops-modal [open]="adding" [title]="locale.t('ops.ticket.addTitle')" [kicker]="locale.t('ops.ticket.addKicker')" (closed)="adding = false">
       <div class="field">
-        <label>نوع الطلب *</label>
+        <label>{{ locale.t('ops.ticket.typeReq') }}</label>
         <select class="input" [(ngModel)]="draft.typeCode">
-          <option value="">اختار النوع</option>
+          <option value="">{{ locale.t('ops.ticket.pickType') }}</option>
           @for (type of types; track type.id) {
-            <option [value]="type.code">{{ type.nameAr }}</option>
+            <option [value]="type.code">{{ locale.localizedName(type) }}</option>
           }
         </select>
       </div>
       <div class="field">
-        <label>عنوان المشكلة *</label>
-        <input class="input" [(ngModel)]="draft.title" placeholder="اكتب عنوان المشكلة" />
+        <label>{{ locale.t('ops.ticket.titleReq') }}</label>
+        <input class="input" [(ngModel)]="draft.title" [placeholder]="locale.t('ops.ticket.titlePh')" />
       </div>
       <div class="field">
-        <label>التفاصيل</label>
-        <textarea class="input" rows="4" [(ngModel)]="draft.body" placeholder="تفاصيل إضافية (اختياري)"></textarea>
+        <label>{{ locale.t('ops.ui.details') }}</label>
+        <textarea class="input" rows="4" [(ngModel)]="draft.body" [placeholder]="locale.t('ops.ticket.detailsPh')"></textarea>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createTicket()">إضافة الطلب</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createTicket()">{{ locale.t('ops.ticket.addSubmit') }}</button>
     </app-ops-modal>
   `,
 })
@@ -183,6 +184,7 @@ export class OpsTicketsComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(SessionService);
+  readonly locale = inject(LocaleService);
 
   readonly opsDate = opsDate;
   readonly statusTone = statusTone;
@@ -214,7 +216,7 @@ export class OpsTicketsComponent implements OnInit {
   draft = { typeCode: '', title: '', body: '' };
 
   ngOnInit(): void {
-    this.shell.set('الطلبات المصعّدة والدعم', 'الرد أو التصعيد وإغلاق الطلب');
+    this.shell.set('ops.tickets.title', 'ops.tickets.sub');
     this.api.opsTicketTypes().subscribe({ next: (types) => (this.types = types) });
     if (this.route.snapshot.queryParamMap.get('priority') === '1') {
       this.escalatedOnly = true;
@@ -265,17 +267,24 @@ export class OpsTicketsComponent implements OnInit {
     this.load();
   }
 
+  drawerKicker(): string {
+    if (!this.selected) {
+      return this.locale.t('ops.ticket.kicker');
+    }
+    return `${this.locale.localizedName(this.selected.type)} · ${this.accountTypeLabel(this.selected.owner.accountType)}`;
+  }
+
   accountTypeLabel(value?: string): string {
     if (value === 'PROVIDER') {
-      return 'خبيرة';
+      return this.locale.t('ops.type.provider');
     }
     if (value === 'STAFF') {
-      return 'موظفة';
+      return this.locale.t('ops.type.staff');
     }
     if (value === 'CUSTOMER') {
-      return 'عميلة';
+      return this.locale.t('ops.type.customer');
     }
-    return 'حساب';
+    return this.locale.t('ops.appr.type.account');
   }
 
   openAdd(): void {
@@ -285,11 +294,11 @@ export class OpsTicketsComponent implements OnInit {
 
   createTicket(): void {
     if (!this.draft.typeCode) {
-      this.toast.show('اختاري نوع الطلب');
+      this.toast.show(this.locale.t('ops.ticket.needType'));
       return;
     }
     if (this.draft.title.trim().length < 2) {
-      this.toast.show('اكتب عنوان المشكلة');
+      this.toast.show(this.locale.t('ops.ticket.needTitle'));
       return;
     }
     this.api
@@ -307,46 +316,52 @@ export class OpsTicketsComponent implements OnInit {
           this.queue = '';
           this.selected = row;
           this.replies[row.id] ??= '';
-          this.toast.show('تم إضافة الطلب');
+          this.toast.show(this.locale.t('ops.ticket.toast.added'));
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الطلب')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.addFail'))),
       });
   }
 
   queueLabel(queue?: string): string {
     if (queue === 'FINANCE') {
-      return 'المالية';
+      return this.locale.t('ops.queue.finance');
     }
     if (queue === 'ADMIN') {
-      return 'الإدارة';
+      return this.locale.t('ops.queue.admin');
     }
-    return 'التشغيل';
+    return this.locale.t('ops.queue.ops');
   }
 
   statusAr(status: string): string {
-    const labels: Record<string, string> = {
-      SENT: 'جديدة',
-      IN_PROGRESS: 'قيد المعالجة',
-      RESOLVED: 'محلولة',
-      CLOSED: 'مغلقة',
-    };
-    return labels[status] ?? status;
+    if (status === 'SENT') {
+      return this.locale.t('ops.ticket.status.SENT');
+    }
+    if (status === 'IN_PROGRESS') {
+      return this.locale.t('ops.ticket.status.IN_PROGRESS');
+    }
+    if (status === 'RESOLVED') {
+      return this.locale.t('ops.ticket.status.RESOLVED');
+    }
+    if (status === 'CLOSED') {
+      return this.locale.t('ops.ticket.status.CLOSED');
+    }
+    return status;
   }
 
   reply(item: OpsTicket): void {
     const body = this.replies[item.id]?.trim();
     if (!body || body.length < 2) {
-      this.toast.show('أدخلي نص الرد');
+      this.toast.show(this.locale.t('ops.ticket.needReply'));
       return;
     }
     this.api.opsCommentTicket(item.id, body).subscribe({
       next: (row) => {
         this.replace(row);
         this.replies[item.id] = '';
-        this.toast.show('تم إرسال الرد');
+        this.toast.show(this.locale.t('ops.ticket.toast.replied'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الرد')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.replyFail'))),
     });
   }
 
@@ -354,9 +369,9 @@ export class OpsTicketsComponent implements OnInit {
     this.api.opsPatchTicket(item.id, { status }).subscribe({
       next: (row) => {
         this.replace(row);
-        this.toast.show('تم تحديث حالة الطلب');
+        this.toast.show(this.locale.t('ops.ticket.toast.status'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الطلب')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.updateFail'))),
     });
   }
 
@@ -364,9 +379,9 @@ export class OpsTicketsComponent implements OnInit {
     this.api.opsPatchTicket(item.id, { claim: true }).subscribe({
       next: (row) => {
         this.replace(row);
-        this.toast.show('تم إسناد الطلب إليكِ');
+        this.toast.show(this.locale.t('ops.ticket.toast.claimed'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إسناد الطلب')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.claimFail'))),
     });
   }
 
@@ -381,7 +396,7 @@ export class OpsTicketsComponent implements OnInit {
       return;
     }
     if (this.routeDraft.note.trim().length < 2) {
-      this.toast.show('أدخلي ملاحظة التوجيه');
+      this.toast.show(this.locale.t('ops.ticket.needNote'));
       return;
     }
     this.api
@@ -394,9 +409,9 @@ export class OpsTicketsComponent implements OnInit {
         next: (row) => {
           this.replace(row);
           this.routeTarget = null;
-          this.toast.show('تم توجيه الطلب');
+          this.toast.show(this.locale.t('ops.ticket.toast.routed'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر توجيه الطلب')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.routeFail'))),
       });
   }
 
@@ -435,7 +450,7 @@ export class OpsTicketsComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الطلبات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.ticket.toast.loadFail')));
       },
     });
   }

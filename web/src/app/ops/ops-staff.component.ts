@@ -11,6 +11,7 @@ import {
   permForStaffPermissions,
 } from '../core/staff-permissions';
 import { PERMISSION_MATRIX } from './permission-matrix.data';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -25,18 +26,18 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
   template: `
     <div class="section-head">
       <div>
-        <h2>حسابات موظفي التشغيل والمالية</h2>
-        <p>أنشئ حسابًا جديدًا، واربطه بالفريق المناسب ضمن الهيكل التنظيمي، وحدد صلاحياته. يستكمل المستخدم تفعيل الحساب باستخدام رمز التحقق (OTP)، ثم يعيّن كلمة مرور جديدة عند أول تسجيل دخول.</p>
+        <h2>{{ locale.t('ops.staff.heading') }}</h2>
+        <p>{{ locale.t('ops.staff.intro') }}</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         @if (canOrg) {
-          <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
+          <a class="btn ghost" routerLink="/ops/org">{{ locale.t('ops.staff.orgLink') }}</a>
         }
         @if (canPerms) {
-          <a class="btn ghost" routerLink="/ops/permissions">صلاحيات المناصب</a>
+          <a class="btn ghost" routerLink="/ops/permissions">{{ locale.t('ops.staff.permsLink') }}</a>
         }
         @if (canCreateStaff) {
-          <button class="btn primary" type="button" (click)="openAdd()">+ إضافة مستخدم</button>
+          <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('ops.staff.add') }}</button>
         }
       </div>
     </div>
@@ -44,11 +45,11 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     @if (canSeeAllStaff || departments.length > 1) {
       <div class="filters">
         @if (canSeeAllStaff) {
-          <button class="chip" type="button" [class.active]="departmentFilter === ''" (click)="setDepartmentFilter('')">الكل</button>
+          <button class="chip" type="button" [class.active]="departmentFilter === ''" (click)="setDepartmentFilter('')">{{ locale.t('ops.ui.all') }}</button>
         }
         @for (department of departments; track department.id) {
           <button class="chip" type="button" [class.active]="departmentFilter === department.id" (click)="setDepartmentFilter(department.id)">
-            {{ department.nameAr }}
+            {{ locale.localizedName(department) }}
           </button>
         }
       </div>
@@ -56,24 +57,24 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     @if (departmentFilter && departmentTeams.length && (canSeeDepartmentStaff || departmentTeams.length > 1)) {
       <div class="filters">
         @if (canSeeDepartmentStaff) {
-          <button class="chip" type="button" [class.active]="teamFilter === ''" (click)="teamFilter = ''">كل الفرق</button>
+          <button class="chip" type="button" [class.active]="teamFilter === ''" (click)="teamFilter = ''">{{ locale.t('ops.staff.allTeams') }}</button>
         }
         @for (team of departmentTeams; track team.id) {
           <button class="chip" type="button" [class.active]="teamFilter === team.id" (click)="teamFilter = team.id">
-            {{ team.nameAr }}
+            {{ locale.localizedName(team) }}
           </button>
         }
       </div>
     }
 
-    <app-ops-modal [open]="adding" title="إضافة مستخدمة" kicker="حساب تشغيل جديد" (closed)="closeAdd()">
+    <app-ops-modal [open]="adding" [title]="locale.t('ops.staff.addTitle')" [kicker]="locale.t('ops.staff.addKicker')" (closed)="closeAdd()">
       <div class="form-grid">
         <div class="field">
-          <label>الاسم</label>
+          <label>{{ locale.t('ops.ui.name') }}</label>
           <input class="input" name="staffDisplayName" [(ngModel)]="draft.displayName" [ngModelOptions]="{standalone: true}" />
         </div>
         <div class="field">
-          <label>الجوال</label>
+          <label>{{ locale.t('ops.ui.mobile') }}</label>
           <input
             class="input"
             name="staffMobile"
@@ -94,68 +95,68 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
           }
         </div>
         <div class="field">
-          <label>نوع الحساب</label>
+          <label>{{ locale.t('ops.staff.accountType') }}</label>
           <select class="input" name="staffRoleId" [(ngModel)]="draft.roleId" (ngModelChange)="onRoleChange()" [ngModelOptions]="{standalone: true}">
-            <option value="">اختاري نوع الحساب</option>
+            <option value="">{{ locale.t('ops.staff.pickType') }}</option>
             @for (role of creatableRoles; track role.id) {
-              <option [value]="role.id">{{ role.nameAr }}</option>
+              <option [value]="role.id">{{ locale.localizedName(role) }}</option>
             }
           </select>
         </div>
         @if (canSeeAllStaff || departments.length > 1) {
           <div class="field">
-            <label>القسم</label>
+            <label>{{ locale.t('ops.ui.dept') }}</label>
             <select class="input" name="staffDepartmentId" [(ngModel)]="draft.departmentId" (ngModelChange)="onDraftDepartmentChange()" [ngModelOptions]="{standalone: true}" [disabled]="!canSeeAllStaff">
-              <option value="">اختاري القسم</option>
+              <option value="">{{ locale.t('ops.staff.pickDept') }}</option>
               @for (department of departments; track department.id) {
-                <option [value]="department.id">{{ department.nameAr }}</option>
+                <option [value]="department.id">{{ locale.localizedName(department) }}</option>
               }
             </select>
           </div>
         }
         @if (canSeeDepartmentStaff || draftTeams.length > 1) {
           <div class="field">
-            <label>الفريق</label>
+            <label>{{ locale.t('ops.ui.team') }}</label>
             <select class="input" name="staffTeamId" [(ngModel)]="draft.teamId" [ngModelOptions]="{standalone: true}" [disabled]="!canSeeDepartmentStaff">
-              <option value="">اختاري الفريق</option>
+              <option value="">{{ locale.t('ops.staff.pickTeam') }}</option>
               @for (team of draftTeams; track team.id) {
-                <option [value]="team.id">{{ team.nameAr }}</option>
+                <option [value]="team.id">{{ locale.localizedName(team) }}</option>
               }
             </select>
           </div>
         }
         <div class="field">
-          <label>المنصب</label>
-          <input class="input" name="staffTitleAr" [(ngModel)]="draft.titleAr" placeholder="مدير التشغيل" [ngModelOptions]="{standalone: true}" />
+          <label>{{ locale.t('ops.staff.jobTitle') }}</label>
+          <input class="input" name="staffTitleAr" [(ngModel)]="draft.titleAr" [placeholder]="locale.t('ops.staff.titlePh')" [ngModelOptions]="{standalone: true}" />
         </div>
       </div>
       @if (selectedRole) {
         <p class="muted small" style="margin-top:10px">
-          هتأخذ صلاحيات منصب {{ selectedRole.nameAr }}. تقدري تعدّليها بعد الإنشاء من صفحة الصلاحيات.
+          {{ locale.tf('ops.staff.roleHint', { name: locale.localizedName(selectedRole) }) }}
         </p>
       }
       <button class="btn primary" style="margin-top:16px;width:100%" type="button" [disabled]="creating" (click)="create()">
-        {{ creating ? 'جاري الإنشاء...' : 'إنشاء الحساب' }}
+        {{ creating ? locale.t('ops.ui.creating') : locale.t('ops.staff.create') }}
       </button>
     </app-ops-modal>
 
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الاسم</th>
-              <th>الجوال</th>
-              <th>الرمز</th>
-              <th>نوع الحساب</th>
-              <th>المنصب</th>
-              <th>الصلاحيات</th>
-              <th>الفريق</th>
-              <th>الحالة</th>
-              <th>كلمة المرور</th>
-              <th>التاريخ</th>
+              <th>{{ locale.t('ops.ui.name') }}</th>
+              <th>{{ locale.t('ops.ui.mobile') }}</th>
+              <th>{{ locale.t('ops.ui.code') }}</th>
+              <th>{{ locale.t('ops.staff.accountType') }}</th>
+              <th>{{ locale.t('ops.staff.jobTitle') }}</th>
+              <th>{{ locale.t('ops.staff.col.perms') }}</th>
+              <th>{{ locale.t('ops.ui.team') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
+              <th>{{ locale.t('ops.staff.col.password') }}</th>
+              <th>{{ locale.t('ops.ui.date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -164,20 +165,20 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
                 <td><b>{{ item.displayName }}</b></td>
                 <td dir="ltr">{{ item.mobile }}</td>
                 <td>{{ item.accountCode }}</td>
-                <td>{{ item.role?.nameAr || '—' }}</td>
-                <td>{{ item.titleAr || item.role?.nameAr || '—' }}</td>
+                <td>{{ locale.localizedName(item.role) || '—' }}</td>
+                <td>{{ item.titleAr || locale.localizedName(item.role) || '—' }}</td>
                 <td (click)="openPermissions($event, item)">
                   @if (canEditPerms(item)) {
-                    <span class="text-link">{{ item.customPermissions ? 'مخصّصة' : 'من المنصب' }}</span>
+                    <span class="text-link">{{ item.customPermissions ? locale.t('ops.staff.custom') : locale.t('ops.staff.fromRole') }}</span>
                   } @else {
-                    <span>{{ item.customPermissions ? 'مخصّصة' : 'من المنصب' }}</span>
+                    <span>{{ item.customPermissions ? locale.t('ops.staff.custom') : locale.t('ops.staff.fromRole') }}</span>
                   }
                 </td>
                 <td>{{ teamLabel(item) }}</td>
-                <td><span class="status {{ item.status === 'ACTIVE' ? 'success' : 'error' }}">{{ item.status === 'ACTIVE' ? 'نشطة' : 'موقوفة' }}</span></td>
+                <td><span class="status {{ item.status === 'ACTIVE' ? 'success' : 'error' }}">{{ item.status === 'ACTIVE' ? locale.t('ops.status.activeF') : locale.t('ops.status.stoppedF') }}</span></td>
                 <td>
                   <span class="status {{ item.mustChangePassword ? 'warning' : 'success' }}">
-                    {{ item.mustChangePassword ? 'بانتظار التعيين' : 'معيّنة' }}
+                    {{ item.mustChangePassword ? locale.t('ops.staff.pwdWait') : locale.t('ops.staff.pwdSet') }}
                   </span>
                 </td>
                 <td>{{ opsDate(item.createdAt) }}</td>
@@ -190,62 +191,62 @@ import { keepSelected, newestFirst, opsDate } from './ops-ui';
     <app-ops-drawer
       [open]="!!selectedStaff"
       [title]="selectedStaff?.displayName || ''"
-      [kicker]="selectedStaff?.role?.nameAr || 'مستخدمة تشغيل'"
+      [kicker]="locale.localizedName(selectedStaff?.role, locale.t('ops.staff.kicker'))"
       (closed)="selectedStaff = null"
     >
       @if (selectedStaff; as item) {
         <p class="muted small">{{ item.accountCode }} · <span dir="ltr">{{ item.mobile }}</span></p>
         <p class="muted small">
-          {{ item.permissions.length }} صلاحية{{ item.customPermissions ? ' مخصّصة' : ' من المنصب' }}
+          {{ item.customPermissions ? locale.tf('ops.staff.permCountCustom', { n: item.permissions.length }) : locale.tf('ops.staff.permCountRole', { n: item.permissions.length }) }}
         </p>
         @if (item.mustChangePassword) {
-          <p class="notice">عند أول دخول تؤكد رقمها بـ OTP ثم تضع كلمة مرور جديدة.</p>
+          <p class="notice">{{ locale.t('ops.staff.firstLogin') }}</p>
         }
         <div class="field">
-          <label>الاسم</label>
+          <label>{{ locale.t('ops.ui.name') }}</label>
           <input class="input" [name]="'staffName-' + item.id" [(ngModel)]="nameById[item.id]" [disabled]="!canManageRole(item)" />
         </div>
         <div class="field">
-          <label>نوع الحساب</label>
+          <label>{{ locale.t('ops.staff.accountType') }}</label>
           <select class="input" [(ngModel)]="roleById[item.id]" [disabled]="!canManageRole(item)">
             @for (role of rolesFor(item); track role.id) {
-              <option [value]="role.id">{{ role.nameAr }}</option>
+              <option [value]="role.id">{{ locale.localizedName(role) }}</option>
             }
           </select>
         </div>
         <div class="field">
-          <label>القسم</label>
+          <label>{{ locale.t('ops.ui.dept') }}</label>
           <select class="input" [(ngModel)]="departmentById[item.id]" (ngModelChange)="onItemDepartmentChange(item)" [disabled]="!canMoveStaff">
             @for (department of departments; track department.id) {
-              <option [value]="department.id">{{ department.nameAr }}</option>
+              <option [value]="department.id">{{ locale.localizedName(department) }}</option>
             }
           </select>
         </div>
         <div class="field">
-          <label>الفريق</label>
+          <label>{{ locale.t('ops.ui.team') }}</label>
           <select class="input" [(ngModel)]="teamById[item.id]" [disabled]="!canMoveStaff">
             @for (team of teamsFor(departmentById[item.id]); track team.id) {
-              <option [value]="team.id">{{ team.nameAr }}</option>
+              <option [value]="team.id">{{ locale.localizedName(team) }}</option>
             }
           </select>
         </div>
         <div class="field">
-          <label>المنصب</label>
-          <input class="input" [(ngModel)]="titleById[item.id]" placeholder="مدير التشغيل" [disabled]="!canManageRole(item)" />
+          <label>{{ locale.t('ops.staff.jobTitle') }}</label>
+          <input class="input" [(ngModel)]="titleById[item.id]" [placeholder]="locale.t('ops.staff.titlePh')" [disabled]="!canManageRole(item)" />
         </div>
         <div class="ops-drawer-actions">
           @if (canManageRole(item) || canMoveStaff) {
-            <button class="btn primary" type="button" (click)="saveRole(item)">حفظ البيانات</button>
+            <button class="btn primary" type="button" (click)="saveRole(item)">{{ locale.t('ops.staff.saveData') }}</button>
           }
           @if (canEditPerms(item)) {
-            <button class="btn ghost" type="button" (click)="openPermissions($event, item)">صلاحيات الحساب</button>
+            <button class="btn ghost" type="button" (click)="openPermissions($event, item)">{{ locale.t('ops.staff.accountPerms') }}</button>
           }
           @if (canManageRole(item)) {
-            <button class="btn ghost" type="button" (click)="resetPassword(item)">إعادة تغيير كلمة المرور</button>
+            <button class="btn ghost" type="button" (click)="resetPassword(item)">{{ locale.t('ops.staff.resetPwd') }}</button>
           }
           @if (canSuspend) {
             <button class="btn ghost" type="button" (click)="toggle(item)" [disabled]="item.id === meId">
-              {{ item.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
+              {{ item.status === 'ACTIVE' ? locale.t('ops.ui.stop') : locale.t('ops.ui.enable') }}
             </button>
           }
         </div>
@@ -260,6 +261,7 @@ export class OpsStaffComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
+  readonly locale = inject(LocaleService);
 
   readonly opsDate = opsDate;
 
@@ -366,7 +368,7 @@ export class OpsStaffComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('مستخدمي التشغيل', 'أدوار وصلاحيات المشغّلات');
+    this.shell.set('ops.staff.title', 'ops.staff.sub');
     const teamId = this.route.snapshot.queryParamMap.get('teamId');
     if (teamId) {
       this.teamFilter = teamId;
@@ -443,25 +445,25 @@ export class OpsStaffComponent implements OnInit {
   }
 
   teamLabel(item: OpsStaff): string {
-    if (item.orgTeam?.nameAr) {
-      return item.orgTeam.nameAr;
+    if (item.orgTeam) {
+      return this.locale.localizedName(item.orgTeam);
     }
     if (item.team === 'FINANCE') {
-      return 'المالية';
+      return this.locale.t('ops.queue.finance');
     }
     if (item.team === 'ADMIN') {
-      return 'الإدارة';
+      return this.locale.t('ops.queue.admin');
     }
-    return 'التشغيل';
+    return this.locale.t('ops.queue.ops');
   }
 
   resetPassword(item: OpsStaff): void {
     this.api.opsPatchStaff(item.id, { resetPassword: true }).subscribe({
       next: (row) => {
         item.mustChangePassword = row.mustChangePassword;
-        this.toast.show('سيُطلب منها OTP وتعيين كلمة مرور عند الدخول التالي');
+        this.toast.show(this.locale.t('ops.staff.toast.reset'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إعادة تعيين كلمة المرور')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.staff.toast.resetFail'))),
     });
   }
 
@@ -483,14 +485,14 @@ export class OpsStaffComponent implements OnInit {
     const name = this.draft.displayName.trim();
     const mobile = toMobile(this.draft.mobile);
     if (name.length < 2) {
-      this.toast.show('أدخلي الاسم (حرفين على الأقل)');
+      this.toast.show(this.locale.t('ops.staff.needName'));
       return;
     }
     if (!isSaudiMobile(mobile)) {
       return;
     }
     if (!this.draft.roleId) {
-      this.toast.show(this.roles.length ? 'اختاري نوع الحساب' : 'جاري تحميل أنواع الحساب، حاولِي بعد لحظات');
+      this.toast.show(this.roles.length ? this.locale.t('ops.staff.needRole') : this.locale.t('ops.staff.rolesLoading'));
       return;
     }
     if (!this.draft.teamId && this.canSeeAllStaff) {
@@ -508,7 +510,7 @@ export class OpsStaffComponent implements OnInit {
       .subscribe({
         next: (row) => {
           this.creating = false;
-          this.toast.show('تمت إضافة المستخدمة. راجعي صلاحيات منصبها');
+          this.toast.show(this.locale.t('ops.staff.toast.created'));
           this.draft.displayName = '';
           this.draft.mobile = '';
           this.draft.roleId = '';
@@ -520,7 +522,7 @@ export class OpsStaffComponent implements OnInit {
         },
         error: (err) => {
           this.creating = false;
-          this.toast.show(apiMessage(err, 'تعذر إضافة المستخدمة'));
+          this.toast.show(apiMessage(err, this.locale.t('ops.staff.toast.createFail')));
         },
       });
   }
@@ -532,7 +534,7 @@ export class OpsStaffComponent implements OnInit {
     }
     const displayName = (this.nameById[item.id] ?? item.displayName ?? '').trim();
     if (displayName.length < 2) {
-      this.toast.show('أدخلي الاسم (حرفين على الأقل)');
+      this.toast.show(this.locale.t('ops.staff.needName'));
       return;
     }
     this.api
@@ -546,7 +548,7 @@ export class OpsStaffComponent implements OnInit {
       next: (row) => {
         this.applyStaffRow(item, row);
         this.nameById[row.id] = row.displayName;
-        this.toast.show('تم حفظ بيانات الحساب');
+        this.toast.show(this.locale.t('ops.staff.toast.saved'));
         if (item.id === this.meId) {
           this.session.patchUser({
             displayName: row.displayName,
@@ -556,7 +558,7 @@ export class OpsStaffComponent implements OnInit {
           });
         }
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ بيانات الحساب')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.staff.toast.saveFail'))),
     });
   }
 
@@ -565,22 +567,22 @@ export class OpsStaffComponent implements OnInit {
     this.api.opsPatchStaff(item.id, { status }).subscribe({
       next: (row) => {
         item.status = row.status;
-        this.toast.show(row.status === 'ACTIVE' ? 'تم تفعيل الحساب' : 'تم إيقاف الحساب');
+        this.toast.show(row.status === 'ACTIVE' ? this.locale.t('ops.staff.toast.enabled') : this.locale.t('ops.staff.toast.stopped'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.statusFail'))),
     });
   }
 
   private mobileErrorText(raw: string, touched: boolean): string {
     const mobile = toMobile(raw);
     if (!mobile) {
-      return touched ? 'أدخلي رقم الجوال' : '';
+      return touched ? this.locale.t('ops.ui.needMobile') : '';
     }
     if (isSaudiMobile(mobile)) {
       return '';
     }
     if (touched || mobile.length >= 10 || !mobile.startsWith('05')) {
-      return 'أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05';
+      return this.locale.t('ops.ui.needSaudiMobile');
     }
     return '';
   }
@@ -591,7 +593,7 @@ export class OpsStaffComponent implements OnInit {
       next: (roles) => {
         this.roles = this.sortRoles(roles);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الأدوار')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.staff.toast.rolesFail'))),
     });
     this.api.opsStaff().subscribe({
       next: (rows) => {
@@ -609,7 +611,7 @@ export class OpsStaffComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل المستخدمين'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.staff.toast.loadFail')));
       },
     });
     this.api.opsOrg().subscribe({

@@ -14,48 +14,48 @@ import { ToastService } from '../core/toast.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>{{ step === 'bank' ? 'تعليمات التحويل البنكي' : 'إرسال إثبات التحويل' }}</h1>
-        <p>{{ step === 'bank' ? 'حوّلي قيمة الباقة ثم أرسلي إثبات التحويل' : 'اختاري إحدى الطريقتين لإرسال الإثبات' }}</p>
+        <h1>{{ step === 'bank' ? locale.t('p.pay.titleBank') : locale.t('p.pay.titleProof') }}</h1>
+        <p>{{ step === 'bank' ? locale.t('p.pay.subBank') : locale.t('p.pay.subProof') }}</p>
       </div>
     </div>
     <div class="steps">
-      <span class="step done"><i>✓</i>اختيار الباقة</span>
+      <span class="step done"><i>✓</i>{{ locale.t('p.pay.stepPkg') }}</span>
       <span class="line"></span>
-      <span class="step" [class.done]="step === 'proof'" [class.active]="step === 'bank'"><i>{{ step === 'proof' ? '✓' : '2' }}</i>التحويل البنكي</span>
+      <span class="step" [class.done]="step === 'proof'" [class.active]="step === 'bank'"><i>{{ step === 'proof' ? '✓' : '2' }}</i>{{ locale.t('p.pay.stepBank') }}</span>
       <span class="line"></span>
-      <span class="step" [class.active]="step === 'proof'"><i>3</i>إثبات الدفع</span>
+      <span class="step" [class.active]="step === 'proof'"><i>3</i>{{ locale.t('p.pay.stepProof') }}</span>
     </div>
     @if (step === 'bank') {
       <div class="grid wide-side">
         <div class="card">
-          <h3>بيانات الحساب البنكي</h3>
+          <h3>{{ locale.t('p.pay.bankTitle') }}</h3>
           <table class="table">
-            <tr><th>الباقة المختارة</th><td>{{ pkg ? locale.localizedName(pkg) : '—' }}</td></tr>
+            <tr><th>{{ locale.t('p.pay.chosenPkg') }}</th><td>{{ pkg ? locale.localizedName(pkg) : '—' }}</td></tr>
             @if (bank) {
-              <tr><th>اسم البنك</th><td>{{ bank.bankName }}</td></tr>
-              <tr><th>اسم المستفيد</th><td>{{ bank.accountName }}</td></tr>
-              <tr><th>رقم الآيبان</th><td dir="ltr">{{ bank.iban }}</td></tr>
+              <tr><th>{{ locale.t('p.pay.bankName') }}</th><td>{{ bank.bankName }}</td></tr>
+              <tr><th>{{ locale.t('p.pay.accountName') }}</th><td>{{ bank.accountName }}</td></tr>
+              <tr><th>{{ locale.t('p.pay.iban') }}</th><td dir="ltr">{{ bank.iban }}</td></tr>
             }
-            <tr><th>المبلغ</th>
+            <tr><th>{{ locale.t('p.pay.amount') }}</th>
               <td>
                 @if (hasDiscount(pkg)) {
-                  <del>{{ money(pkg?.priceBefore) }} ر.س</del>
-                  <b> {{ money(pkg?.price) }} ر.س</b>
+                  <del>{{ money(pkg?.priceBefore) }} {{ locale.t('ui.sar') }}</del>
+                  <b> {{ money(pkg?.price) }} {{ locale.t('ui.sar') }}</b>
                 } @else {
-                  {{ money(pkg?.price) }} ر.س
+                  {{ money(pkg?.price) }} {{ locale.t('ui.sar') }}
                 }
               </td>
             </tr>
           </table>
           <br />
-          <button class="btn primary" type="button" (click)="step = 'proof'">  إرسال الإثبات</button>
+          <button class="btn primary" type="button" (click)="step = 'proof'">{{ locale.t('p.pay.sendProof') }}</button>
         </div>
-        <div class="notice">تأكدي من تحويل المبلغ الصحيح والاحتفاظ بإيصال التحويل. تتم مراجعة الإثبات يدويًا قبل تفعيل الاشتراك.</div>
+        <div class="notice">{{ locale.t('p.pay.notice') }}</div>
       </div>
     } @else {
       <div class="tabs">
-        <button type="button" [class.active]="tab === 'file'" (click)="tab = 'file'">رفع إيصال التحويل</button>
-        <button type="button" [class.active]="tab === 'text'" (click)="tab = 'text'">لصق رسالة التحويل</button>
+        <button type="button" [class.active]="tab === 'file'" (click)="tab = 'file'">{{ locale.t('p.pay.tabFile') }}</button>
+        <button type="button" [class.active]="tab === 'text'" (click)="tab = 'text'">{{ locale.t('p.pay.tabText') }}</button>
       </div>
       <div class="grid payment-proof-layout">
         <div class="card">
@@ -63,40 +63,40 @@ import { ToastService } from '../core/toast.service';
             <label class="upload" [class.drag]="dragging" (dragenter)="onDrag($event, true)" (dragover)="onDrag($event, true)" (dragleave)="onDrag($event, false)" (drop)="onDrop($event)">
               <input type="file" accept="image/*,.pdf" (change)="onFile($event)" />
               @if (previewUrl) {
-                <img class="proof-preview" [src]="previewUrl" alt="معاينة الإيصال" />
+                <img class="proof-preview" [src]="previewUrl" [attr.alt]="locale.t('p.pay.previewAlt')" />
               } @else {
                 <div class="upload-icon">⇧</div>
               }
-              <h3>{{ fileName || 'اسحبي صورة الإيصال هنا' }}</h3>
-              <p class="muted small">أو اضغطي للاختيار · JPG أو PNG أو PDF — حتى 5MB</p>
-              <span class="btn secondary">{{ uploading ? 'جاري رفع الملف...' : 'اختيار الملف' }}</span>
+              <h3>{{ fileName || locale.t('p.pay.drop') }}</h3>
+              <p class="muted small">{{ locale.t('p.pay.dropHint') }}</p>
+              <span class="btn secondary">{{ uploading ? locale.t('p.pay.uploading') : locale.t('p.pay.pickFile') }}</span>
             </label>
           } @else {
             <div class="field">
-              <label>نص رسالة التحويل البنكي</label>
-              <textarea [(ngModel)]="transferText" name="transferText" placeholder="الصقي هنا رسالة البنك التي تحتوي على تفاصيل التحويل..."></textarea>
+              <label>{{ locale.t('p.pay.transferText') }}</label>
+              <textarea [(ngModel)]="transferText" name="transferText" [placeholder]="locale.t('p.pay.transferPh')"></textarea>
             </div>
           }
           <div class="field" style="margin-top:18px">
-            <label>رقم مرجع التحويل (اختياري)</label>
-            <input name="reference" [(ngModel)]="reference" placeholder="مثال: 845291" />
+            <label>{{ locale.t('p.pay.ref') }}</label>
+            <input name="reference" [(ngModel)]="reference" placeholder="845291" />
           </div>
-          <div class="payment-safe-note">لا تشاركي رمز OTP أو بيانات بطاقتك البنكية داخل الإثبات.</div>
+          <div class="payment-safe-note">{{ locale.t('p.pay.safe') }}</div>
         </div>
         <div class="card payment-summary">
-          <h3>ملخص الطلب</h3>
-          <div class="summary-line"><span>الباقة</span><b>{{ pkg ? locale.localizedName(pkg) : '—' }}</b></div>
-          <div class="summary-line"><span>طريقة الدفع</span><b>تحويل بنكي</b></div>
+          <h3>{{ locale.t('p.pay.summary') }}</h3>
+          <div class="summary-line"><span>{{ locale.t('p.st.package') }}</span><b>{{ pkg ? locale.localizedName(pkg) : '—' }}</b></div>
+          <div class="summary-line"><span>{{ locale.t('p.pay.method') }}</span><b>{{ locale.t('p.pay.bankTransfer') }}</b></div>
           @if (hasDiscount(pkg)) {
-            <div class="summary-line"><span>قبل الخصم</span><b>{{ money(pkg?.priceBefore) }} ر.س</b></div>
-            <div class="summary-line"><span>الخصم</span><b>{{ money(pkg?.discountPercent) }}%</b></div>
+            <div class="summary-line"><span>{{ locale.t('p.pkg.before') }}</span><b>{{ money(pkg?.priceBefore) }} {{ locale.t('ui.sar') }}</b></div>
+            <div class="summary-line"><span>{{ locale.t('p.pkg.discount') }}</span><b>{{ money(pkg?.discountPercent) }}%</b></div>
           }
-          <div class="summary-line total"><span>المبلغ المطلوب</span><b>{{ money(pkg?.price) }} ر.س</b></div>
-          <button class="btn primary" type="button" [disabled]="loading || uploading || !ready" (click)="submit()">إرسال الإثبات للمراجعة</button>
+          <div class="summary-line total"><span>{{ locale.t('p.pay.due') }}</span><b>{{ money(pkg?.price) }} {{ locale.t('ui.sar') }}</b></div>
+          <button class="btn primary" type="button" [disabled]="loading || uploading || !ready" (click)="submit()">{{ locale.t('p.pay.submit') }}</button>
           @if (!ready) {
-            <p class="proof-hint">{{ uploading ? 'جاري رفع الإيصال...' : 'ارفعي الإيصال أو اكتبي رسالة التحويل (8 أحرف على الأقل) لتفعيل زر الإرسال.' }}</p>
+            <p class="proof-hint">{{ uploading ? locale.t('p.pay.hintUp') : locale.t('p.pay.hintNeed') }}</p>
           }
-          <a class="btn ghost back" routerLink="/p/package">العودة للباقات</a>
+          <a class="btn ghost back" routerLink="/p/package">{{ locale.t('p.pay.backPkgs') }}</a>
         </div>
       </div>
     }
@@ -148,7 +148,7 @@ export class ProviderPaymentComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('إثبات التحويل');
+    this.shell.set('nav.payment');
     this.packageId = this.route.snapshot.queryParamMap.get('packageId') ?? '';
     this.api.providerSubscription().subscribe({
       next: (data) => {
@@ -181,7 +181,7 @@ export class ProviderPaymentComponent implements OnInit {
 
   submit(): void {
     if (!this.packageId) {
-      this.toast.show('اختاري الباقة أولًا');
+      this.toast.show(this.locale.t('p.pay.needPkg'));
       return;
     }
     if (!this.ready) {
@@ -203,12 +203,12 @@ export class ProviderPaymentComponent implements OnInit {
       .subscribe({
         next: () => {
           this.loading = false;
-          this.toast.show('تم إرسال الإثبات للمراجعة');
+          this.toast.show(this.locale.t('p.pay.sent'));
           void this.router.navigateByUrl('/p/payment-status');
         },
         error: (err) => {
           this.loading = false;
-          this.toast.show(apiMessage(err, 'تعذر إرسال الإثبات'));
+          this.toast.show(apiMessage(err, this.locale.t('p.pay.sendFail')));
         },
       });
   }
@@ -239,7 +239,7 @@ export class ProviderPaymentComponent implements OnInit {
       error: (err) => {
         this.uploading = false;
         this.storageKey = '';
-        this.toast.show(apiMessage(err, 'تعذر رفع الإيصال'));
+        this.toast.show(apiMessage(err, this.locale.t('p.pay.uploadFail')));
       },
     });
   }

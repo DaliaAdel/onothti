@@ -4,6 +4,7 @@ import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
 import { apiMessage } from '../core/phone';
 import type { CatalogRegion } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -13,60 +14,60 @@ import { IconComponent } from '../shared/icon.component';
   selector: 'app-customer-account',
   imports: [FormsModule, IconComponent],
   template: `
-    <div class="notice" style="margin-bottom:18px">يتم عرض المدينة فقط وفق القرار المعتمد، ولا يظهر الحي في بيانات الحساب.</div>
+    <div class="notice" style="margin-bottom:18px">{{ locale.t('c.account.notice') }}</div>
     <form class="card form-card" (ngSubmit)="save()">
       <div class="avatar-pick has-photo" style="margin-bottom:22px">
         <button class="account-photo" type="button" (click)="picker.click()" [disabled]="uploading">
           @if (previewUrl) {
             <img [src]="previewUrl" alt="" />
           } @else {
-            {{ displayName.slice(0, 1) || 'ن' }}
+            {{ displayName.slice(0, 1) || locale.t('land.hero.initial') }}
           }
         </button>
         <div>
-          <label>صورة الحساب</label>
+          <label>{{ locale.t('c.account.photo') }}</label>
           <button class="btn secondary" type="button" (click)="picker.click()" [disabled]="uploading">
-            {{ uploading ? 'جاري رفع الصورة...' : previewUrl ? 'تغيير الصورة' : 'رفع صورة' }}
+            {{ uploading ? locale.t('c.account.uploading') : previewUrl ? locale.t('c.account.changePhoto') : locale.t('c.account.uploadPhoto') }}
           </button>
-          <small class="muted">JPG أو PNG حتى 5 ميجا</small>
+          <small class="muted">{{ locale.t('c.account.photoHint') }}</small>
         </div>
         <input #picker type="file" hidden accept="image/jpeg,image/png,image/webp" (change)="onPhoto($event)" />
       </div>
       <div class="form-grid">
         <div class="field">
-          <label>اسم العرض</label>
+          <label>{{ locale.t('c.account.displayName') }}</label>
           <input class="input" name="displayName" [(ngModel)]="displayName" />
         </div>
         <div class="field">
-          <label>المنطقة</label>
+          <label>{{ locale.t('c.account.region') }}</label>
           <select class="input" name="regionId" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-            <option value="">اختاري المنطقة</option>
+            <option value="">{{ locale.t('c.account.pickRegion') }}</option>
             @for (region of regions; track region.id) {
-              <option [value]="region.id">{{ region.nameAr }}</option>
+              <option [value]="region.id">{{ locale.localizedName(region) }}</option>
             }
           </select>
         </div>
         <div class="field">
-          <label>المدينة</label>
+          <label>{{ locale.t('c.account.city') }}</label>
           <select class="input" name="cityId" [(ngModel)]="cityId" [disabled]="!regionId">
-            <option value="">اختاري المدينة</option>
+            <option value="">{{ locale.t('c.account.pickCity') }}</option>
             @for (city of cities; track city.id) {
-              <option [value]="city.id">{{ city.nameAr }}</option>
+              <option [value]="city.id">{{ locale.localizedName(city) }}</option>
             }
           </select>
         </div>
         <div class="field">
-          <label>رقم الجوال</label>
+          <label>{{ locale.t('c.account.mobile') }}</label>
           <input class="input" [value]="mobile" disabled dir="ltr" />
         </div>
         <div class="field full">
-          <label>نبذة عنكِ</label>
-          <textarea class="input" name="bio" rows="4" [(ngModel)]="bio" [maxlength]="bioMax" placeholder="اكتبي نبذة قصيرة عنكِ"></textarea>
+          <label>{{ locale.t('c.account.bio') }}</label>
+          <textarea class="input" name="bio" rows="4" [(ngModel)]="bio" [maxlength]="bioMax" [placeholder]="locale.t('c.account.bioPh')"></textarea>
           <small class="muted">{{ bio.length }} / {{ bioMax }}</small>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:22px">
-        <button class="btn primary" type="submit" [disabled]="loading">حفظ التغييرات</button>
+        <button class="btn primary" type="submit" [disabled]="loading">{{ locale.t('c.account.save') }}</button>
       </div>
     </form>
   `,
@@ -76,6 +77,7 @@ export class CustomerAccountComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly toast = inject(ToastService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
 
   displayName = '';
   regionId = '';
@@ -94,7 +96,7 @@ export class CustomerAccountComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('حسابي', 'حدّثي المعلومات الأساسية لحساب العميلة');
+    this.shell.set('c.account.title', 'c.account.sub');
     this.api.platformSettings().subscribe({
       next: (settings) => {
         this.bioMax = settings.customerBioMax || 300;
@@ -139,7 +141,7 @@ export class CustomerAccountComponent implements OnInit {
       return;
     }
     if (!/^image\/(jpeg|png|webp|jpg)$/i.test(file.type)) {
-      this.toast.show('الصورة لازم تكون JPG أو PNG');
+      this.toast.show(this.locale.t('c.account.badImage'));
       return;
     }
     this.previewUrl = URL.createObjectURL(file);
@@ -149,18 +151,18 @@ export class CustomerAccountComponent implements OnInit {
         this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
         this.uploading = false;
         this.session.patchUser({ avatarUrl: profile.avatarUrl });
-        this.toast.show('تم رفع صورة الحساب');
+        this.toast.show(this.locale.t('c.account.photoOk'));
       },
       error: (err) => {
         this.uploading = false;
-        this.toast.show(apiMessage(err, 'تعذر رفع الصورة'));
+        this.toast.show(apiMessage(err, this.locale.t('c.account.photoFail')));
       },
     });
   }
 
   save(): void {
     if (this.bio.length > this.bioMax) {
-      this.toast.show(`نبذة العميلة بحد أقصى ${this.bioMax} حرف`);
+      this.toast.show(this.locale.tf('c.account.bioMax', { n: this.bioMax }));
       return;
     }
     this.loading = true;
@@ -169,11 +171,11 @@ export class CustomerAccountComponent implements OnInit {
         this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
         this.session.patchUser(profile);
         this.loading = false;
-        this.toast.show('تم حفظ التغييرات');
+        this.toast.show(this.locale.t('c.account.saved'));
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر حفظ التغييرات'));
+        this.toast.show(apiMessage(err, this.locale.t('c.account.saveFail')));
       },
     });
   }

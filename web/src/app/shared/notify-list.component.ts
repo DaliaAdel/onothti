@@ -10,8 +10,8 @@ import { IconComponent } from './icon.component';
     @if (!items.length) {
       <div class="notify-empty">
         <span class="notify-empty-icon"><app-icon name="bell" /></span>
-        <b>لا توجد تنبيهات حاليًا</b>
-        <p>ستظهر هنا التنبيهات الجديدة المتعلقة بحسابكِ.</p>
+        <b>{{ locale.t('notify.emptyTitle') }}</b>
+        <p>{{ locale.t('notify.emptyText') }}</p>
       </div>
     } @else {
       <div class="notify-list">
@@ -22,9 +22,9 @@ import { IconComponent } from './icon.component';
             </span>
             <span class="notify-copy">
               <span class="notify-top">
-                <b>{{ locale.localizedName({ nameAr: item.titleAr, nameEn: item.titleEn }, 'إشعار') }}</b>
+                <b>{{ locale.localizedName({ nameAr: item.titleAr, nameEn: item.titleEn }, locale.t('notify.fallback')) }}</b>
                 @if (!item.readAt) {
-                  <em>جديد</em>
+                  <em>{{ locale.t('notify.new') }}</em>
                 }
               </span>
               <p>{{ locale.localizedName({ nameAr: item.bodyAr, nameEn: item.bodyEn }) }}</p>
@@ -49,19 +49,19 @@ export class NotifyListComponent {
     }
     const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
     if (minutes < 1) {
-      return 'الآن';
+      return this.locale.t('notify.now');
     }
     if (minutes < 60) {
-      return `منذ ${minutes} د`;
+      return this.locale.tf('notify.mins', { n: minutes });
     }
     const hours = Math.floor(minutes / 60);
     if (hours < 24) {
-      return `منذ ${hours} س`;
+      return this.locale.tf('notify.hours', { n: hours });
     }
     const days = Math.floor(hours / 24);
     if (days < 7) {
-      return `منذ ${days} يوم`;
+      return this.locale.tf('notify.days', { n: days });
     }
-    return date.toLocaleString('ar-SA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return this.locale.formatDateTime(date);
   }
 }

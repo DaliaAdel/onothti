@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsAuditEvent } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { LocaleDateDirective } from '../shared/locale-date.directive';
@@ -14,63 +15,63 @@ import { opsDate } from './ops-ui';
   template: `
     <div class="section-head" style="margin-top:0">
       <div>
-        <h2>سجل أحداث المنصة</h2>
-        <p>سجل غير قابل للتعديل لإجراءات التشغيل والإدارة.</p>
+        <h2>{{ locale.t('ops.evt.heading') }}</h2>
+        <p>{{ locale.t('ops.evt.intro') }}</p>
       </div>
-      <button class="btn ghost" type="button" (click)="exportCsv()" [disabled]="!items.length">تصدير CSV</button>
+      <button class="btn ghost" type="button" (click)="exportCsv()" [disabled]="!items.length">{{ locale.t('ops.evt.export') }}</button>
     </div>
     <article class="card form-card" style="margin-bottom:18px">
       <div class="form-grid">
         <div class="field">
-          <label>بحث</label>
-          <input class="input" [(ngModel)]="q" placeholder="الإجراء أو المستخدمة أو رقم العنصر" (keyup.enter)="load()" />
+          <label>{{ locale.t('ui.search') }}</label>
+          <input class="input" [(ngModel)]="q" [placeholder]="locale.t('ops.evt.searchPh')" (keyup.enter)="load()" />
         </div>
         <div class="field">
-          <label>النوع</label>
+          <label>{{ locale.t('ops.ui.kind') }}</label>
           <select class="input" [(ngModel)]="action" (ngModelChange)="load()">
-            <option value="">الكل</option>
-            <option value="STAFF_CREATE">إنشاء موظفة</option>
-            <option value="STAFF_UPDATE">تعديل موظفة</option>
-            <option value="STAFF_PASSWORD_RESET">إعادة تعيين كلمة المرور</option>
-            <option value="ACCOUNT_STATUS">حالة حساب</option>
-            <option value="ACCOUNT_PACKAGE">باقة حساب</option>
-            <option value="NOTIFY_ACCOUNT">إشعار فردي</option>
-            <option value="TICKET_UPDATE">تحديث طلب</option>
-            <option value="TICKET_ESCALATE">تصعيد طلب</option>
-            <option value="TICKET_ROUTE">توجيه طلب</option>
-            <option value="TICKET_CLAIM">إسناد طلب</option>
-            <option value="MEDIA_APPROVE">اعتماد ملف</option>
-            <option value="MEDIA_REJECT">رفض ملف</option>
-            <option value="PROVIDER_APPROVE">اعتماد خبيرة</option>
-            <option value="PROVIDER_REJECT">رفض خبيرة</option>
-            <option value="PROFILE_UPDATE">تعديل الملف الشخصي</option>
+            <option value="">{{ locale.t('ops.ui.all') }}</option>
+            <option value="STAFF_CREATE">{{ locale.t('ops.evt.STAFF_CREATE') }}</option>
+            <option value="STAFF_UPDATE">{{ locale.t('ops.evt.STAFF_UPDATE') }}</option>
+            <option value="STAFF_PASSWORD_RESET">{{ locale.t('ops.evt.STAFF_PASSWORD_RESET') }}</option>
+            <option value="ACCOUNT_STATUS">{{ locale.t('ops.evt.ACCOUNT_STATUS') }}</option>
+            <option value="ACCOUNT_PACKAGE">{{ locale.t('ops.evt.ACCOUNT_PACKAGE') }}</option>
+            <option value="NOTIFY_ACCOUNT">{{ locale.t('ops.evt.NOTIFY_ACCOUNT') }}</option>
+            <option value="TICKET_UPDATE">{{ locale.t('ops.evt.TICKET_UPDATE') }}</option>
+            <option value="TICKET_ESCALATE">{{ locale.t('ops.evt.TICKET_ESCALATE') }}</option>
+            <option value="TICKET_ROUTE">{{ locale.t('ops.evt.TICKET_ROUTE') }}</option>
+            <option value="TICKET_CLAIM">{{ locale.t('ops.evt.TICKET_CLAIM') }}</option>
+            <option value="MEDIA_APPROVE">{{ locale.t('ops.evt.MEDIA_APPROVE') }}</option>
+            <option value="MEDIA_REJECT">{{ locale.t('ops.evt.MEDIA_REJECT') }}</option>
+            <option value="PROVIDER_APPROVE">{{ locale.t('ops.evt.PROVIDER_APPROVE') }}</option>
+            <option value="PROVIDER_REJECT">{{ locale.t('ops.evt.PROVIDER_REJECT') }}</option>
+            <option value="PROFILE_UPDATE">{{ locale.t('ops.evt.PROFILE_UPDATE') }}</option>
           </select>
         </div>
         <div class="field">
-          <label>من تاريخ</label>
+          <label>{{ locale.t('ops.evt.from') }}</label>
           <input class="input" type="date" [(ngModel)]="from" />
         </div>
         <div class="field">
-          <label>إلى تاريخ</label>
+          <label>{{ locale.t('ops.evt.to') }}</label>
           <input class="input" type="date" [(ngModel)]="to" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:14px" type="button" (click)="load()">بحث</button>
+      <button class="btn primary" style="margin-top:14px" type="button" (click)="load()">{{ locale.t('ui.search') }}</button>
     </article>
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!items.length) {
-      <p class="page-empty">لا توجد أحداث مطابقة.</p>
+      <p class="page-empty">{{ locale.t('ops.evt.empty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>التاريخ</th>
-              <th>المستخدمة</th>
-              <th>الإجراء</th>
-              <th>العنصر</th>
-              <th>النتيجة</th>
+              <th>{{ locale.t('ops.ui.date') }}</th>
+              <th>{{ locale.t('ops.evt.col.actor') }}</th>
+              <th>{{ locale.t('ops.evt.col.action') }}</th>
+              <th>{{ locale.t('ops.evt.col.entity') }}</th>
+              <th>{{ locale.t('ops.evt.col.result') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -78,12 +79,12 @@ import { opsDate } from './ops-ui';
               <tr>
                 <td>{{ opsDate(item.createdAt) }}</td>
                 <td>
-                  <b>{{ item.actor?.displayName || 'النظام' }}</b>
+                  <b>{{ item.actor?.displayName || locale.t('ops.evt.system') }}</b>
                   <div class="muted small">{{ item.actor?.accountCode || '—' }}</div>
                 </td>
                 <td>{{ actionLabel(item.action) }}</td>
                 <td>{{ item.entity }}{{ item.entityId ? ' · ' + item.entityId.slice(0, 8) : '' }}</td>
-                <td><span class="status success">ناجح</span></td>
+                <td><span class="status success">{{ locale.t('ops.evt.ok') }}</span></td>
               </tr>
             }
           </tbody>
@@ -96,6 +97,7 @@ export class OpsEventsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
   readonly opsDate = opsDate;
 
   loading = true;
@@ -106,37 +108,43 @@ export class OpsEventsComponent implements OnInit {
   items: OpsAuditEvent[] = [];
 
   ngOnInit(): void {
-    this.shell.set('سجل الأحداث', 'متابعة عمليات المنصة');
+    this.shell.set('ops.events.title', 'ops.events.sub');
     this.load();
   }
 
   actionLabel(action: string): string {
-    const labels: Record<string, string> = {
-      STAFF_CREATE: 'إنشاء موظفة',
-      STAFF_UPDATE: 'تعديل موظفة',
-      STAFF_PASSWORD_RESET: 'إعادة تعيين كلمة المرور',
-      ACCOUNT_STATUS: 'تغيير حالة حساب',
-      ACCOUNT_PACKAGE: 'تغيير باقة خبيرة',
-      NOTIFY_ACCOUNT: 'إشعار فردي',
-      TICKET_UPDATE: 'تحديث طلب',
-      TICKET_ESCALATE: 'تصعيد طلب',
-      TICKET_ROUTE: 'توجيه طلب',
-      TICKET_CLAIM: 'إسناد طلب',
-      MEDIA_APPROVE: 'اعتماد ملف',
-      MEDIA_REJECT: 'رفض ملف',
-      PROVIDER_APPROVE: 'اعتماد خبيرة',
-      PROVIDER_REJECT: 'رفض خبيرة',
-      PROFILE_UPDATE: 'تعديل الملف الشخصي',
+    const map: Record<string, string> = {
+      STAFF_CREATE: 'ops.evt.STAFF_CREATE',
+      STAFF_UPDATE: 'ops.evt.STAFF_UPDATE',
+      STAFF_PASSWORD_RESET: 'ops.evt.STAFF_PASSWORD_RESET',
+      ACCOUNT_STATUS: 'ops.evt.ACCOUNT_STATUS_CHG',
+      ACCOUNT_PACKAGE: 'ops.evt.ACCOUNT_PACKAGE_CHG',
+      NOTIFY_ACCOUNT: 'ops.evt.NOTIFY_ACCOUNT',
+      TICKET_UPDATE: 'ops.evt.TICKET_UPDATE',
+      TICKET_ESCALATE: 'ops.evt.TICKET_ESCALATE',
+      TICKET_ROUTE: 'ops.evt.TICKET_ROUTE',
+      TICKET_CLAIM: 'ops.evt.TICKET_CLAIM',
+      MEDIA_APPROVE: 'ops.evt.MEDIA_APPROVE',
+      MEDIA_REJECT: 'ops.evt.MEDIA_REJECT',
+      PROVIDER_APPROVE: 'ops.evt.PROVIDER_APPROVE',
+      PROVIDER_REJECT: 'ops.evt.PROVIDER_REJECT',
+      PROFILE_UPDATE: 'ops.evt.PROFILE_UPDATE',
     };
-    return labels[action] ?? action;
+    return map[action] ? this.locale.t(map[action]) : action;
   }
 
   exportCsv(): void {
-    const header = ['التاريخ', 'المستخدمة', 'الرمز', 'الإجراء', 'العنصر'];
+    const header = [
+      this.locale.t('ops.ui.date'),
+      this.locale.t('ops.evt.col.actor'),
+      this.locale.t('ops.ui.code'),
+      this.locale.t('ops.evt.col.action'),
+      this.locale.t('ops.evt.col.entity'),
+    ];
     const lines = this.items.map((item) =>
       [
         item.createdAt,
-        item.actor?.displayName || 'النظام',
+        item.actor?.displayName || this.locale.t('ops.evt.system'),
         item.actor?.accountCode || '',
         this.actionLabel(item.action),
         `${item.entity} ${item.entityId || ''}`.trim(),
@@ -167,7 +175,7 @@ export class OpsEventsComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل السجل'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.evt.toast.loadFail')));
       },
     });
   }

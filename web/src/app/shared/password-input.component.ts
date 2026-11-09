@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LocaleService } from '../core/locale.service';
 
 @Component({
   selector: 'app-password-input',
@@ -22,7 +23,7 @@ import { FormsModule } from '@angular/forms';
         class="password-toggle"
         type="button"
         (click)="toggle()"
-        [attr.aria-label]="visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
+        [attr.aria-label]="visible ? locale.t('pwd.hide') : locale.t('pwd.show')"
         [attr.aria-pressed]="visible"
       >
         @if (visible) {
@@ -43,6 +44,7 @@ import { FormsModule } from '@angular/forms';
   `,
 })
 export class PasswordInputComponent {
+  readonly locale = inject(LocaleService);
   @Input() name = 'password';
   @Input() value = '';
   @Input() placeholder = '';

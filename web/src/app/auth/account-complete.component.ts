@@ -16,27 +16,23 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
     <app-auth-layout>
       <form class="auth-box signup-box" (ngSubmit)="submit()">
         <div class="signup-head">
-          <a class="auth-back" routerLink="/login">← رجوع</a>
-          <span class="auth-kicker">{{ isCustomer ? 'العميلة' : 'الخبيرة' }}</span>
-          <h2>إكمال الملف الشخصي</h2>
+          <a class="auth-back" routerLink="/login">{{ locale.t('auth.back') }}</a>
+          <span class="auth-kicker">{{ isCustomer ? locale.t('role.customer') : locale.t('role.provider') }}</span>
+          <h2>{{ locale.t('auth.complete.profile') }}</h2>
           <p class="muted">
-            {{
-              isCustomer
-                ? 'الاسم والمنطقة والمدينة مطلوبة، والبريد الإلكتروني اختياري.'
-                : 'الاسم والمنطقة والمدن مطلوبة، ويمكنكِ اختيار أكثر من مدينة في نفس المنطقة.'
-            }}
+            {{ isCustomer ? locale.t('auth.complete.customerHint') : locale.t('auth.complete.providerHint') }}
           </p>
         </div>
         <div class="signup-body">
           <div class="auth-grid">
             <div class="field">
-              <label>الاسم *</label>
-              <input name="name" [(ngModel)]="displayName" placeholder="اسم العرض" />
+              <label>{{ locale.t('auth.complete.name') }}</label>
+              <input name="name" [(ngModel)]="displayName" [placeholder]="locale.t('auth.displayName')" />
             </div>
             <div class="field">
-              <label>المنطقة *</label>
+              <label>{{ locale.t('auth.complete.region') }}</label>
               <select name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-                <option value="">اختاري المنطقة</option>
+                <option value="">{{ locale.t('c.account.pickRegion') }}</option>
                 @for (region of regions; track region.id) {
                   <option [value]="region.id">{{ locale.localizedName(region) }}</option>
                 }
@@ -44,9 +40,9 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
             </div>
             @if (isCustomer) {
               <div class="field">
-                <label>المدينة *</label>
+                <label>{{ locale.t('auth.complete.city') }}</label>
                 <select name="city" [(ngModel)]="cityId" [disabled]="!regionId">
-                  <option value="">اختاري المدينة</option>
+                  <option value="">{{ locale.t('c.account.pickCity') }}</option>
                   @for (city of cities; track city.id) {
                     <option [value]="city.id">{{ locale.localizedName(city) }}</option>
                   }
@@ -54,7 +50,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
               </div>
             } @else {
               <div class="field city-multi">
-                <label>المدن *</label>
+                <label>{{ locale.t('auth.complete.cities') }}</label>
                 <small class="city-hint">{{ locale.t('auth.complete.citiesHint') }}</small>
                 <div class="chips">
                   @if (!regionId) {
@@ -69,20 +65,20 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
               </div>
             }
             <div class="field auth-email">
-              <label>البريد الإلكتروني (اختياري)</label>
+              <label>{{ locale.t('auth.complete.email') }}</label>
               <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" />
             </div>
           </div>
           @if (!isCustomer) {
-            <h3>الخدمات التي تقدمينها</h3>
+            <h3>{{ locale.t('auth.complete.services') }}</h3>
             <div class="chips disabled-services">
               @for (service of previewServices; track service.id) {
                 <button class="chip" type="button" disabled>{{ locale.localizedName(service) }}</button>
               }
             </div>
             <div class="subscription-note">
-              <b>الخدمات متاحة بعد الاشتراك</b>
-              <span>بعد الدخول اختاري باقة، وبعد اعتماد الدفع يمكنكِ إضافة خدماتك وألبومات أعمالك.</span>
+              <b>{{ locale.t('auth.complete.servicesLater') }}</b>
+              <span>{{ locale.t('auth.complete.servicesLaterText') }}</span>
             </div>
           }
         </div>
@@ -90,16 +86,16 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
           <label class="terms-row">
             <input type="checkbox" name="acceptTerms" [(ngModel)]="acceptTerms" />
             <span>
-              أوافق على
-              <a routerLink="/legal/terms" [queryParams]="{ audience: accountType }">الشروط والأحكام</a>
-              و
-              <a routerLink="/legal/policies" [queryParams]="{ audience: accountType }">سياسة الخصوصية</a>
+              {{ locale.t('auth.terms') }}
+              <a routerLink="/legal/terms" [queryParams]="{ audience: accountType }">{{ locale.t('auth.termsLink') }}</a>
+              {{ locale.t('auth.and') }}
+              <a routerLink="/legal/policies" [queryParams]="{ audience: accountType }">{{ locale.t('auth.privacyLink') }}</a>
             </span>
           </label>
           @if (errorText) {
             <p class="auth-error">{{ errorText }}</p>
           }
-          <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ والدخول للرئيسية</button>
+          <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.complete.saveEnter') }}</button>
         </div>
       </form>
     </app-auth-layout>
@@ -204,8 +200,8 @@ export class AccountCompleteComponent implements OnInit {
       return;
     }
     if (!this.regionId) {
-      this.errorRaw = this.isCustomer ? 'اختاري المنطقة ثم المدينة' : 'اختاري المنطقة ثم المدن';
-      this.errorKey = '';
+      this.errorKey = this.isCustomer ? 'auth.complete.needCityCustomer' : 'auth.complete.needCityProvider';
+      this.errorRaw = '';
       return;
     }
     const cityIds = this.isCustomer ? (this.cityId ? [this.cityId] : []) : this.cityIds;
@@ -214,8 +210,8 @@ export class AccountCompleteComponent implements OnInit {
       return;
     }
     if (!this.acceptTerms) {
-      this.errorRaw = 'يجب الموافقة على الشروط والأحكام وسياسة الخصوصية';
-      this.errorKey = '';
+      this.errorKey = 'auth.complete.needLegal';
+      this.errorRaw = '';
       return;
     }
     this.loading = true;

@@ -12,8 +12,8 @@ import { LocaleService } from '../core/locale.service';
       </div>
       <div class="auth-stage">
         <div class="auth-logo-lockup">
-          <img src="/assets/logo-auth.png" alt="أنوثتي" width="512" height="512" />
-          <p>منصة الأنوثة والجمال</p>
+          <img src="/assets/logo-auth.png" [attr.alt]="locale.t('brand.alt')" width="512" height="512" />
+          <p>{{ locale.t('brand.platform') }}</p>
         </div>
         <section class="auth-panel">
           <ng-content />

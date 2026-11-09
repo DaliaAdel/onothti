@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import { type CatalogPackage, type CatalogService, type OpsCampaign } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -19,73 +20,73 @@ import { PositiveIntDirective } from './positive-int.directive';
     <ng-template #packageForm>
       <div class="form-grid">
         <div class="field">
-          <label>الاسم</label>
+          <label>{{ locale.t('ops.ui.name') }}</label>
           <input class="input" [(ngModel)]="draft.nameAr" />
         </div>
         <div class="field">
-          <label>المدة بالشهور</label>
+          <label>{{ locale.t('ops.pkg.durationMonths') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.durationMonths" />
         </div>
         <div class="field">
-          <label>السعر قبل الخصم</label>
+          <label>{{ locale.t('ops.pkg.priceBefore') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.priceBefore" />
         </div>
         <div class="field">
-          <label>الخصم %</label>
+          <label>{{ locale.t('ops.pkg.discountPct') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.discountPercent" />
         </div>
         <div class="field">
-          <label>السعر بعد الخصم</label>
+          <label>{{ locale.t('ops.pkg.priceAfter') }}</label>
           <input class="input" [value]="afterOf(draft.priceBefore, draft.discountPercent)" readonly />
         </div>
         <div class="field">
-          <label>الترتيب</label>
+          <label>{{ locale.t('ops.ui.sort') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="draft.rank" />
         </div>
       </div>
     </ng-template>
     <div class="section-head">
       <div>
-        <h2>الباقات</h2>
-        <p>{{ canEditFeatures ? 'اختر الباقة لعرض تفاصيلها وتعديلها.' : 'اختر الباقة لعرض تفاصيلها.' }}</p>
+        <h2>{{ locale.t('ops.pkg.heading') }}</h2>
+        <p>{{ canEditFeatures ? locale.t('ops.pkg.introEdit') : locale.t('ops.pkg.introView') }}</p>
       </div>
       @if (canEditFeatures) {
-        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة باقة</button>
+        <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('ops.pkg.add') }}</button>
       }
     </div>
-    <app-ops-modal [open]="adding" title="إضافة باقة" kicker="اشتراك الخبيرة" (closed)="adding = false">
+    <app-ops-modal [open]="adding" [title]="locale.t('ops.pkg.addTitle')" [kicker]="locale.t('ops.pkg.addKicker')" (closed)="adding = false">
       <ng-container [ngTemplateOutlet]="packageForm" />
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الباقة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">{{ locale.t('ops.pkg.addSubmit') }}</button>
     </app-ops-modal>
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!regularPackages.length) {
-      <p class="page-empty">لا توجد باقات عادية بعد.</p>
+      <p class="page-empty">{{ locale.t('ops.pkg.empty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الباقة</th>
-              <th>المدة</th>
-              <th>السعر</th>
-              <th>الترتيب</th>
-              <th>خدمات</th>
-              <th>الحالة</th>
+              <th>{{ locale.t('ops.pkg.col.pkg') }}</th>
+              <th>{{ locale.t('ops.pkg.col.duration') }}</th>
+              <th>{{ locale.t('ops.pkg.col.price') }}</th>
+              <th>{{ locale.t('ops.ui.sort') }}</th>
+              <th>{{ locale.t('ops.pkg.col.services') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of regularPackages; track item.id) {
               <tr (click)="openPackage(item)">
-                <td><b>{{ item.nameAr }}</b></td>
-                <td>{{ item.durationMonths }} شهر</td>
+                <td><b>{{ locale.localizedName(item) }}</b></td>
+                <td>{{ locale.tf('p.pkg.months', { n: item.durationMonths ?? 0 }) }}</td>
                 <td>
                   @if (hasDiscount(item)) {
-                    <del>{{ money(item.priceBefore) }} ر.س</del>
-                    <b> {{ money(item.price) }} ر.س</b>
+                    <del>{{ money(item.priceBefore) }} {{ locale.t('ui.sar') }}</del>
+                    <b> {{ money(item.price) }} {{ locale.t('ui.sar') }}</b>
                     <span class="badge">{{ money(item.discountPercent) }}%</span>
                   } @else {
-                    {{ money(item.price) }} ر.س
+                    {{ money(item.price) }} {{ locale.t('ui.sar') }}
                   }
                 </td>
                 <td>{{ item.rank }}</td>
@@ -98,11 +99,11 @@ import { PositiveIntDirective } from './positive-int.directive';
                       <span class="pkg-tag more">+{{ extra }}</span>
                     }
                     @if (!previewServiceNames(item).length) {
-                      <span class="pkg-tag more">بدون خدمات</span>
+                      <span class="pkg-tag more">{{ locale.t('ops.pkg.noServices') }}</span>
                     }
                   </div>
                 </td>
-                <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'مفعّلة' : 'متوقفة' }}</span></td>
+                <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? locale.t('ops.status.enabled') : locale.t('ops.status.paused') }}</span></td>
               </tr>
             }
           </tbody>
@@ -112,73 +113,73 @@ import { PositiveIntDirective } from './positive-int.directive';
 
     <div class="section-head">
       <div>
-        <h2>الباقات الترويجية</h2>
-        <p>تتضمن الباقة الترويجية بيانات الباقة الأساسية، بالإضافة إلى مدة الحملة وتاريخي البداية والنهاية.</p>
+        <h2>{{ locale.t('ops.pkg.promoTitle') }}</h2>
+        <p>{{ locale.t('ops.pkg.promoSub') }}</p>
       </div>
       @if (canAddPromo) {
-        <button class="btn primary" type="button" (click)="openCampaignAdd()">+ إضافة باقة ترويجية</button>
+        <button class="btn primary" type="button" (click)="openCampaignAdd()">{{ locale.t('ops.pkg.addPromo') }}</button>
       }
     </div>
-    <app-ops-modal [open]="addingCampaign" title="إضافة باقة ترويجية" kicker="باقة + حملة" (closed)="addingCampaign = false">
+    <app-ops-modal [open]="addingCampaign" [title]="locale.t('ops.pkg.addPromoTitle')" [kicker]="locale.t('ops.pkg.addPromoKicker')" (closed)="addingCampaign = false">
       <ng-container [ngTemplateOutlet]="packageForm" />
       <div class="form-grid" style="margin-top:16px">
         <div class="field">
-          <label>البداية</label>
+          <label>{{ locale.t('ops.pkg.start') }}</label>
           <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" />
         </div>
         <div class="field">
-          <label>النهاية</label>
+          <label>{{ locale.t('ops.pkg.end') }}</label>
           <input class="input" type="date" [(ngModel)]="campaignDraft.endDate" />
         </div>
         <div class="field">
-          <label>مدة التنشيط بالأيام</label>
+          <label>{{ locale.t('ops.pkg.benefitDays') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" />
         </div>
         <label class="ops-check" [class.on]="campaignDraft.clipToEndDate">
           <input type="checkbox" name="draftClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" />
           <span class="ops-check-copy">
-            <b>مرتبط بتاريخ نهاية الحملة</b>
-            <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
+            <b>{{ locale.t('ops.pkg.clipTitle') }}</b>
+            <small>{{ locale.t('ops.pkg.clipHint') }}</small>
           </span>
         </label>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createPromo()">إضافة الباقة الترويجية</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createPromo()">{{ locale.t('ops.pkg.addPromoSubmit') }}</button>
     </app-ops-modal>
     @if (!promoPackages.length) {
-      <p class="page-empty">لا توجد باقات ترويجية بعد.</p>
+      <p class="page-empty">{{ locale.t('ops.pkg.promoEmpty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الباقة</th>
-              <th>المدة</th>
-              <th>السعر</th>
-              <th>البداية</th>
-              <th>النهاية</th>
-              <th>مدة التنشيط</th>
-              <th>الحالة</th>
+              <th>{{ locale.t('ops.pkg.col.pkg') }}</th>
+              <th>{{ locale.t('ops.pkg.col.duration') }}</th>
+              <th>{{ locale.t('ops.pkg.col.price') }}</th>
+              <th>{{ locale.t('ops.pkg.start') }}</th>
+              <th>{{ locale.t('ops.pkg.end') }}</th>
+              <th>{{ locale.t('ops.pkg.col.benefit') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of promoPackages; track item.id) {
               <tr (click)="openPackage(item)">
-                <td><b>{{ item.nameAr }}</b></td>
-                <td>{{ item.durationMonths }} شهر</td>
+                <td><b>{{ locale.localizedName(item) }}</b></td>
+                <td>{{ locale.tf('p.pkg.months', { n: item.durationMonths ?? 0 }) }}</td>
                 <td>
                   @if (hasDiscount(item)) {
-                    <del>{{ money(item.priceBefore) }} ر.س</del>
-                    <b> {{ money(item.price) }} ر.س</b>
+                    <del>{{ money(item.priceBefore) }} {{ locale.t('ui.sar') }}</del>
+                    <b> {{ money(item.price) }} {{ locale.t('ui.sar') }}</b>
                     <span class="badge">{{ money(item.discountPercent) }}%</span>
                   } @else {
-                    {{ money(item.price) }} ر.س
+                    {{ money(item.price) }} {{ locale.t('ui.sar') }}
                   }
                 </td>
                 <td>{{ campaignDate(item, 'startDate') }}</td>
                 <td>{{ campaignDate(item, 'endDate') }}</td>
                 <td>{{ campaignDays(item) }}</td>
                 <td>
-                  <span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'مفعّلة' : 'متوقفة' }}</span>
+                  <span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? locale.t('ops.status.enabled') : locale.t('ops.status.paused') }}</span>
                 </td>
               </tr>
             }
@@ -189,27 +190,27 @@ import { PositiveIntDirective } from './positive-int.directive';
 
     <div class="section-head">
       <div>
-        <h2>مصفوفة حالات الحسابات وانتقالاتها</h2>
-        <p>مرجع يوضح حالات الحسابات، وأسباب الانتقال بينها، والمسؤول عن كل انتقال.</p>
+        <h2>{{ locale.t('ops.pkg.matrixTitle') }}</h2>
+        <p>{{ locale.t('ops.pkg.matrixSub') }}</p>
       </div>
     </div>
     <div class="ops-table-wrap">
       <table class="ops-table">
         <thead>
           <tr>
-            <th>من</th>
-            <th>إلى</th>
-            <th>سبب الانتقال</th>
-            <th>المسؤول</th>
+            <th>{{ locale.t('ops.pkg.matrix.from') }}</th>
+            <th>{{ locale.t('ops.pkg.matrix.to') }}</th>
+            <th>{{ locale.t('ops.pkg.matrix.reason') }}</th>
+            <th>{{ locale.t('ops.pkg.matrix.owner') }}</th>
           </tr>
         </thead>
         <tbody>
           @for (row of stateMatrix; track row.from + row.to) {
             <tr>
-              <td>{{ row.from }}</td>
-              <td>{{ row.to }}</td>
-              <td>{{ row.reason }}</td>
-              <td>{{ row.owner }}</td>
+              <td>{{ locale.t(row.from) }}</td>
+              <td>{{ locale.t(row.to) }}</td>
+              <td>{{ locale.t(row.reason) }}</td>
+              <td>{{ locale.t(row.owner) }}</td>
             </tr>
           }
         </tbody>
@@ -256,19 +257,20 @@ export class OpsPackagesComponent implements OnInit {
   adding = false;
   addingCampaign = false;
   campaignDraft = { startDate: '', endDate: '', benefitDays: 30, clipToEndDate: true };
+  readonly locale = inject(LocaleService);
   readonly stateMatrix = [
-    { from: 'قيد الإنشاء', to: 'غير نشط', reason: 'إنشاء الحساب وانتظار رمز التفعيل', owner: 'صاحبة الحساب والنظام' },
-    { from: 'غير نشط', to: 'نشط', reason: 'نجاح إدخال رمز التحقق', owner: 'النظام' },
-    { from: 'نشط وملفه قيد المراجعة', to: 'نشط وملفه معتمد', reason: 'اعتماد بيانات الملف والصور', owner: 'التشغيل' },
-    { from: 'خبيرة نشطة', to: 'مقيد (خامل)', reason: 'انتهاء الباقة دون تجديد', owner: 'النظام' },
-    { from: 'مقيد (خامل)', to: 'نشط وباقته سارية', reason: 'اعتماد التجديد أو الترقية', owner: 'التشغيل والمالية' },
-    { from: 'أي حساب', to: 'موقوف', reason: 'مخالفة مثبتة', owner: 'صاحب الصلاحية' },
-    { from: 'موقوف', to: 'نشط أو مقيد', reason: 'إزالة سبب الإيقاف', owner: 'صاحب الصلاحية' },
-    { from: 'نشط', to: 'مقيد الصلاحيات', reason: 'مخالفة دون انتهاء الاشتراك', owner: 'التشغيل أو الإدارة' },
+    { from: 'ops.pkg.mx.f1', to: 'ops.pkg.mx.t1', reason: 'ops.pkg.mx.r1', owner: 'ops.pkg.mx.o1' },
+    { from: 'ops.pkg.mx.f2', to: 'ops.pkg.mx.t2', reason: 'ops.pkg.mx.r2', owner: 'ops.pkg.mx.o2' },
+    { from: 'ops.pkg.mx.f3', to: 'ops.pkg.mx.t3', reason: 'ops.pkg.mx.r3', owner: 'ops.pkg.mx.o3' },
+    { from: 'ops.pkg.mx.f4', to: 'ops.pkg.mx.t4', reason: 'ops.pkg.mx.r4', owner: 'ops.pkg.mx.o4' },
+    { from: 'ops.pkg.mx.f5', to: 'ops.pkg.mx.t5', reason: 'ops.pkg.mx.r5', owner: 'ops.pkg.mx.o5' },
+    { from: 'ops.pkg.mx.f6', to: 'ops.pkg.mx.t6', reason: 'ops.pkg.mx.r6', owner: 'ops.pkg.mx.o6' },
+    { from: 'ops.pkg.mx.f7', to: 'ops.pkg.mx.t7', reason: 'ops.pkg.mx.r7', owner: 'ops.pkg.mx.o7' },
+    { from: 'ops.pkg.mx.f8', to: 'ops.pkg.mx.t8', reason: 'ops.pkg.mx.r8', owner: 'ops.pkg.mx.o8' },
   ];
 
   ngOnInit(): void {
-    this.shell.set('الباقات والحملات', 'إدارة الاشتراكات والحملة المجانية');
+    this.shell.set('ops.packages.title', 'ops.packages.sub');
     this.load();
   }
 
@@ -287,7 +289,7 @@ export class OpsPackagesComponent implements OnInit {
 
   campaignDays(item: CatalogPackage): string {
     const days = this.campaignOf(item)?.benefitDays;
-    return days ? `${days} يوم` : '—';
+    return days ? this.locale.tf('ops.ui.nDays', { n: days }) : '—';
   }
 
   openAdd(): void {
@@ -298,7 +300,7 @@ export class OpsPackagesComponent implements OnInit {
 
   create(): void {
     if (!this.canEditFeatures) {
-      this.toast.show('ليست لديكِ صلاحية تعديل مزايا الباقات');
+      this.toast.show(this.locale.t('ops.pkg.noFeaturesPerm'));
       return;
     }
     const fields = this.packageFields();
@@ -307,12 +309,12 @@ export class OpsPackagesComponent implements OnInit {
     }
     this.api.opsCreatePackage(fields).subscribe({
       next: (row) => {
-        this.toast.show('تمت إضافة الباقة. حددي خدماتها');
+        this.toast.show(this.locale.t('ops.pkg.toast.added'));
         this.draft = this.emptyDraft();
         this.adding = false;
         void this.router.navigate(['/ops/packages', row.id]);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.addFail'))),
     });
   }
 
@@ -352,7 +354,7 @@ export class OpsPackagesComponent implements OnInit {
 
   createPromo(): void {
     if (!this.canAddPromo) {
-      this.toast.show('ليست لديكِ صلاحية إضافة باقة ترويجية');
+      this.toast.show(this.locale.t('ops.pkg.noPromoPerm'));
       return;
     }
     const fields = this.packageFields();
@@ -361,15 +363,15 @@ export class OpsPackagesComponent implements OnInit {
     }
     const benefitDays = Number(this.campaignDraft.benefitDays);
     if (!benefitDays || benefitDays <= 0) {
-      this.toast.show('مدة التنشيط رقم أكبر من صفر');
+      this.toast.show(this.locale.t('ops.pkg.needBenefit'));
       return;
     }
     if (!this.campaignDraft.startDate || !this.campaignDraft.endDate) {
-      this.toast.show('حددي بداية ونهاية الحملة');
+      this.toast.show(this.locale.t('ops.pkg.needDates'));
       return;
     }
     if (this.campaignDraft.endDate < this.campaignDraft.startDate) {
-      this.toast.show('تاريخ النهاية قبل البداية');
+      this.toast.show(this.locale.t('ops.pkg.endBeforeStart'));
       return;
     }
     this.api.opsCreatePackage({ ...fields, isPromotional: true }).subscribe({
@@ -386,16 +388,16 @@ export class OpsPackagesComponent implements OnInit {
           })
           .subscribe({
             next: () => {
-              this.toast.show('تمت إضافة الباقة الترويجية. حددي خدماتها');
+              this.toast.show(this.locale.t('ops.pkg.toast.promoAdded'));
               this.finishPromo(row.id);
             },
             error: (err) => {
-              this.toast.show(apiMessage(err, 'تمت إضافة الباقة وتعذر حفظ الحملة'));
+              this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.promoPartial')));
               this.finishPromo(row.id);
             },
           });
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الباقة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.addFail'))),
     });
   }
 
@@ -419,14 +421,14 @@ export class OpsPackagesComponent implements OnInit {
     rank: number;
   } | null {
     if (!this.draft.nameAr.trim()) {
-      this.toast.show('أدخلي اسم الباقة');
+      this.toast.show(this.locale.t('ops.pkg.needName'));
       return null;
     }
     const durationMonths = Number(this.draft.durationMonths);
     const priceBefore = Number(this.draft.priceBefore);
     const rank = Number(this.draft.rank);
     if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
-      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
+      this.toast.show(this.locale.t('ops.pkg.needNumbers'));
       return null;
     }
     return {
@@ -447,11 +449,11 @@ export class OpsPackagesComponent implements OnInit {
 
   private namedServices(item: CatalogPackage): string[] {
     const ids = new Set(item.serviceIds ?? []);
-    const names = this.catalogServices.filter((service) => ids.has(service.id)).map((service) => service.nameAr);
+    const names = this.catalogServices.filter((service) => ids.has(service.id)).map((service) => this.locale.localizedName(service));
     if (names.length) {
       return names;
     }
-    return ids.size ? [`${ids.size} خدمة`] : [];
+    return ids.size ? [this.locale.tf('ops.pkg.nServices', { n: ids.size })] : [];
   }
 
   private load(): void {
@@ -468,7 +470,7 @@ export class OpsPackagesComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الباقات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.loadFail')));
       },
     });
     this.api.opsCampaigns().subscribe({

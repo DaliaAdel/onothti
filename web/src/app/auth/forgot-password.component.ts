@@ -14,18 +14,18 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <a class="auth-back" routerLink="/login/password">← رجوع</a>
-        <span class="auth-kicker">استعادة الحساب</span>
-        <h2>نسيت كلمة المرور</h2>
-        <p class="muted">أدخل رقم الجوال لاستلام رمز التحقق ثم تعيين كلمة مرور جديدة.</p>
+        <a class="auth-back" routerLink="/login/password">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.forgot.kicker') }}</span>
+        <h2>{{ locale.t('auth.forgot.title') }}</h2>
+        <p class="muted">{{ locale.t('auth.forgot.sub') }}</p>
         <div class="field">
-          <label>رقم الجوال</label>
+          <label>{{ locale.t('auth.mobile') }}</label>
           <input class="input" dir="ltr" name="phone" [(ngModel)]="phone" placeholder="05xxxxxxxx" />
         </div>
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">إرسال رمز التحقق</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.login.sendOtp') }}</button>
       </form>
     </app-auth-layout>
   `,

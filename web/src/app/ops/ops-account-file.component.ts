@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { mediaUrl } from '../core/media';
 import type { OpsManagedAccount } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { IconComponent } from '../shared/icon.component';
 import { opsDate } from './ops-ui';
 
@@ -18,62 +19,62 @@ import { opsDate } from './ops-ui';
           </div>
         }
         <div>
-          <p class="muted small" style="margin:0">ملف {{ typeLabel }} — للعرض فقط</p>
+          <p class="muted small" style="margin:0">{{ locale.tf('ops.file.viewOnly', { type: typeLabel }) }}</p>
           <b>{{ account.accountCode }}</b>
         </div>
       </div>
       <div class="form-grid">
         <div class="field">
-          <label>الاسم</label>
+          <label>{{ locale.t('ops.ui.name') }}</label>
           <div class="name-field">
             <input class="input" [value]="account.displayName" readonly />
             <span class="name-field-icon" aria-hidden="true"><app-icon name="profile" /></span>
           </div>
         </div>
         <div class="field">
-          <label>الجوال</label>
+          <label>{{ locale.t('ops.ui.mobile') }}</label>
           <input class="input" dir="ltr" [value]="account.mobile" readonly />
         </div>
         @if (account.email) {
           <div class="field">
-            <label>البريد</label>
+            <label>{{ locale.t('ops.ui.email') }}</label>
             <input class="input" dir="ltr" [value]="account.email" readonly />
           </div>
         }
         <div class="field">
-          <label>المدينة</label>
+          <label>{{ locale.t('ops.ui.city') }}</label>
           <input class="input" [value]="cityLine" readonly />
         </div>
         @if (account.accountType === 'PROVIDER') {
           <div class="field">
-            <label>الباقة</label>
+            <label>{{ locale.t('ops.ui.package') }}</label>
             <input class="input" [value]="packageName" readonly />
           </div>
           <div class="field">
-            <label>مدة الباقة</label>
+            <label>{{ locale.t('ops.file.pkgDuration') }}</label>
             <input class="input" [value]="packageDuration" readonly />
           </div>
           <div class="field">
-            <label>سعر الباقة</label>
+            <label>{{ locale.t('ops.file.pkgPrice') }}</label>
             <input class="input" [value]="packagePrice" readonly />
           </div>
           <div class="field">
-            <label>بداية الاشتراك</label>
+            <label>{{ locale.t('ops.file.pkgStart') }}</label>
             <input class="input" [value]="packageStart" readonly />
           </div>
           <div class="field">
-            <label>انتهاء الاشتراك</label>
+            <label>{{ locale.t('ops.file.pkgEnd') }}</label>
             <input class="input" [value]="packageEnd" readonly />
           </div>
         }
       </div>
       <div class="field" style="margin-top:14px">
-        <label>نبذة عني</label>
-        <textarea class="input" rows="4" [value]="account.bio || 'لا توجد نبذة بعد.'" readonly></textarea>
+        <label>{{ locale.t('ops.ui.bio') }}</label>
+        <textarea class="input" rows="4" [value]="account.bio || locale.t('ops.appr.noBio')" readonly></textarea>
       </div>
       @if (account.accountType === 'PROVIDER') {
         @if (services.length) {
-          <p class="muted small" style="margin:16px 0 8px">الخدمات</p>
+          <p class="muted small" style="margin:16px 0 8px">{{ locale.t('ops.file.services') }}</p>
           <div class="filters" style="margin:0">
             @for (service of services; track service) {
               <span class="chip">{{ service }}</span>
@@ -87,22 +88,26 @@ import { opsDate } from './ops-ui';
 export class OpsAccountFileComponent {
   @Input({ required: true }) account!: OpsManagedAccount;
   readonly mediaUrl = mediaUrl;
+  readonly locale = inject(LocaleService);
 
   get typeLabel(): string {
-    return this.account.accountType === 'PROVIDER' ? 'الخبيرة' : 'العميلة';
+    return this.account.accountType === 'PROVIDER'
+      ? this.locale.t('ops.file.provider')
+      : this.locale.t('ops.file.customer');
   }
 
   get packageName(): string {
     const pack = this.account.package;
     if (!pack) {
-      return 'لا توجد باقة نشطة';
+      return this.locale.t('ops.file.noPackage');
     }
-    return pack.code ? `${pack.nameAr} · ${pack.code}` : pack.nameAr;
+    const name = this.locale.localizedName(pack);
+    return pack.code ? `${name} · ${pack.code}` : name;
   }
 
   get packageDuration(): string {
     const months = this.account.package?.durationMonths;
-    return months ? `${months} شهر` : '—';
+    return months ? this.locale.tf('p.pkg.months', { n: months }) : '—';
   }
 
   get packagePrice(): string {
@@ -112,9 +117,9 @@ export class OpsAccountFileComponent {
     }
     const before = this.account.package?.priceBefore;
     if (before != null && before !== '' && Number(before) > Number(price)) {
-      return `${price} ر.س (قبل الخصم ${before} ر.س)`;
+      return this.locale.tf('ops.file.priceDisc', { price, before });
     }
-    return `${price} ر.س`;
+    return this.locale.tf('ops.file.price', { price });
   }
 
   get packageStart(): string {
@@ -126,16 +131,16 @@ export class OpsAccountFileComponent {
   }
 
   get cityLine(): string {
-    const city =
-      this.account.providerProfile?.city?.nameAr || this.account.customerProfile?.city?.nameAr;
-    const region = this.account.providerProfile?.region?.nameAr;
+    const cityItem = this.account.providerProfile?.city || this.account.customerProfile?.city;
+    const city = this.locale.localizedName(cityItem);
+    const region = this.locale.localizedName(this.account.providerProfile?.region);
     if (city && region) {
       return `${city} · ${region}`;
     }
-    return city || 'بدون مدينة';
+    return city || this.locale.t('ops.file.noCity');
   }
 
   get services(): string[] {
-    return (this.account.providerProfile?.services ?? []).map((row) => row.nameAr);
+    return (this.account.providerProfile?.services ?? []).map((row) => this.locale.localizedName(row));
   }
 }

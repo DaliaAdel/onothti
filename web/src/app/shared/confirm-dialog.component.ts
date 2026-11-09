@@ -1,5 +1,6 @@
 import { Component, HostListener, inject } from '@angular/core';
 import { ConfirmService } from '../core/confirm.service';
+import { LocaleService } from '../core/locale.service';
 
 @Component({
   selector: 'app-confirm-dialog',
@@ -13,7 +14,7 @@ import { ConfirmService } from '../core/confirm.service';
           aria-labelledby="confirm-title"
           (click)="$event.stopPropagation()"
         >
-          <button class="logout-close" type="button" aria-label="إغلاق" (click)="confirm.dismiss()">×</button>
+          <button class="logout-close" type="button" [attr.aria-label]="locale.t('ui.close')" (click)="confirm.dismiss()">×</button>
           <div class="logout-heart" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
@@ -32,6 +33,7 @@ import { ConfirmService } from '../core/confirm.service';
 })
 export class ConfirmDialogComponent {
   readonly confirm = inject(ConfirmService);
+  readonly locale = inject(LocaleService);
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

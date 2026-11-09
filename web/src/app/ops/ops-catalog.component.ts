@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsCatalogService, OpsSubService } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ConfirmService } from '../core/confirm.service';
@@ -22,30 +23,30 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2> الخدمات الرئيسية والفرعية</h2>
-          <p>اختر خدمة رئيسية لعرض خدماتها الفرعية وإدارتها.</p>
+          <h2>{{ locale.t('ops.cat.heading') }}</h2>
+          <p>{{ locale.t('ops.cat.intro') }}</p>
         </div>
         @if (canManage) {
-          <button class="btn primary" type="button" (click)="openAdd()">+ إضافة خدمة</button>
+          <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('ops.cat.add') }}</button>
         }
       </div>
 
-      <app-ops-modal [open]="adding" title="إضافة خدمة رئيسية" kicker="كتالوج المنصة" (closed)="closeAdd()">
+      <app-ops-modal [open]="adding" [title]="locale.t('ops.cat.addTitle')" [kicker]="locale.t('ops.cat.addKicker')" (closed)="closeAdd()">
         <div class="form-grid">
           <div class="field">
-            <label>الاسم *</label>
-            <input class="input" [(ngModel)]="serviceDraft.nameAr" placeholder="الشعر" />
+            <label>{{ locale.t('ops.ui.nameReq') }}</label>
+            <input class="input" [(ngModel)]="serviceDraft.nameAr" [placeholder]="locale.t('ops.cat.namePh')" />
           </div>
           <div class="field">
-            <label>الاسم الإنجليزي *</label>
-            <input class="input" [(ngModel)]="serviceDraft.nameEn" placeholder="Hair" />
+            <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+            <input class="input" [(ngModel)]="serviceDraft.nameEn" [placeholder]="locale.t('ops.cat.nameEnPh')" />
           </div>
           <div class="field">
-            <label>الترتيب</label>
+            <label>{{ locale.t('ops.ui.sort') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="serviceDraft.sortOrder" />
           </div>
           <div class="field full">
-            <label>صورة الخدمة</label>
+            <label>{{ locale.t('ops.cat.image') }}</label>
             <div class="ops-service-image">
               @if (draftPreview) {
                 <img class="ops-service-preview" [src]="draftPreview" alt="" />
@@ -54,24 +55,24 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
             </div>
           </div>
         </div>
-        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createService()">إضافة الخدمة</button>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createService()">{{ locale.t('ops.cat.addSubmit') }}</button>
       </app-ops-modal>
 
       @if (loading) {
-        <p class="loading">جاري التحميل...</p>
+        <p class="loading">{{ locale.t('ui.loading') }}</p>
       } @else if (!services.length) {
-        <p class="page-empty">لا توجد خدمات بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.cat.empty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الصورة</th>
-                <th>الاسم</th>
-                <th>الاسم الإنجليزي</th>
-                <th>فرعية</th>
-                <th>الترتيب</th>
-                <th>الظهور</th>
+                <th>{{ locale.t('ops.cat.col.image') }}</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.nameEn') }}</th>
+                <th>{{ locale.t('ops.cat.col.subs') }}</th>
+                <th>{{ locale.t('ops.ui.sort') }}</th>
+                <th>{{ locale.t('ops.ui.appearance') }}</th>
                 @if (canManage) {
                   <th></th>
                 }
@@ -84,21 +85,21 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
                     @if (service.imageUrl) {
                       <img class="ops-thumb" [src]="service.imageUrl" alt="" />
                     } @else {
-                      <span class="muted small">بدون صورة</span>
+                      <span class="muted small">{{ locale.t('ops.ui.noImage') }}</span>
                     }
                   </td>
-                  <td><b>{{ service.nameAr }}</b></td>
+                  <td><b>{{ locale.localizedName(service) }}</b></td>
                   <td>{{ service.nameEn }}</td>
                   <td>{{ service.subServices.length }}</td>
                   <td>{{ service.sortOrder }}</td>
                   <td>
                     <span class="status {{ service.isVisible ? 'success' : 'error' }}">
-                      {{ service.isVisible ? 'ظاهرة' : 'مخفية' }}
+                      {{ service.isVisible ? locale.t('ops.ui.visible') : locale.t('ops.ui.hidden') }}
                     </span>
                   </td>
                   @if (canManage) {
                     <td>
-                      <button class="btn ghost" type="button" (click)="removeService(service, $event)">حذف</button>
+                      <button class="btn ghost" type="button" (click)="removeService(service, $event)">{{ locale.t('ui.delete') }}</button>
                     </td>
                   }
                 </tr>
@@ -110,30 +111,30 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeService()">→ رجوع للخدمات</button>
-          <h2>{{ selected.nameAr }}</h2>
-          <p>{{ selected.nameEn }} · {{ selected.subServices.length }} خدمة فرعية</p>
+          <button class="text-link back" type="button" (click)="closeService()">{{ locale.t('ops.cat.back') }}</button>
+          <h2>{{ locale.localizedName(selected) }}</h2>
+          <p>{{ selected.nameEn }} · {{ locale.tf('ops.ui.nSubs', { n: selected.subServices.length }) }}</p>
         </div>
         @if (canManage) {
-          <button class="btn primary" type="button" (click)="openAddSub()">+ إضافة خدمة فرعية</button>
+          <button class="btn primary" type="button" (click)="openAddSub()">{{ locale.t('ops.cat.addSub') }}</button>
         }
       </div>
 
       <div class="form-grid" style="margin-bottom:18px">
         <div class="field">
-          <label>الاسم *</label>
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
           <input class="input" [(ngModel)]="selected.nameAr" [readOnly]="!canManage" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
           <input class="input" [(ngModel)]="selected.nameEn" [readOnly]="!canManage" />
         </div>
         <div class="field">
-          <label>الترتيب</label>
+          <label>{{ locale.t('ops.ui.sort') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" [readOnly]="!canManage" />
         </div>
         <div class="field full">
-          <label>صورة الخدمة</label>
+          <label>{{ locale.t('ops.cat.image') }}</label>
           <div class="ops-service-image">
             @if (selected.imageUrl) {
               <img class="ops-service-preview" [src]="selected.imageUrl" alt="" />
@@ -141,7 +142,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
             @if (canManage) {
               <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedImage($event)" />
               @if (selected.imageUrl) {
-                <button class="btn ghost" type="button" (click)="clearSelectedImage()">حذف الصورة</button>
+                <button class="btn ghost" type="button" (click)="clearSelectedImage()">{{ locale.t('ops.cat.removeImage') }}</button>
               }
             }
           </div>
@@ -149,42 +150,42 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
       </div>
       @if (canManage) {
         <div class="ops-drawer-actions" style="margin:0 0 22px">
-          <button class="btn primary" type="button" (click)="saveService(selected)">حفظ الخدمة</button>
+          <button class="btn primary" type="button" (click)="saveService(selected)">{{ locale.t('ops.cat.save') }}</button>
           <button class="btn ghost" type="button" (click)="toggleService(selected)">
-            {{ selected.isVisible ? 'إخفاء' : 'إظهار' }}
+            {{ selected.isVisible ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
           </button>
-          <button class="btn ghost" type="button" (click)="removeService(selected)">حذف</button>
+          <button class="btn ghost" type="button" (click)="removeService(selected)">{{ locale.t('ui.delete') }}</button>
         </div>
       }
 
       <div class="section-head">
         <div>
-          <h2>الخدمات الفرعية</h2>
-          <p>اضغطي على صف لتعديل الخدمة الفرعية</p>
+          <h2>{{ locale.t('ops.catalog.subs') }}</h2>
+          <p>{{ locale.t('ops.cat.subsHint') }}</p>
         </div>
       </div>
       @if (!selected.subServices.length) {
-        <p class="page-empty">لا توجد خدمات فرعية بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.cat.subsEmpty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الاسم</th>
-                <th>الاسم الإنجليزي</th>
-                <th>الترتيب</th>
-                <th>الظهور</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.nameEn') }}</th>
+                <th>{{ locale.t('ops.ui.sort') }}</th>
+                <th>{{ locale.t('ops.ui.appearance') }}</th>
               </tr>
             </thead>
             <tbody>
               @for (sub of selected.subServices; track sub.id) {
                 <tr [class.active]="selectedSub?.id === sub.id" (click)="selectedSub = sub">
-                  <td><b>{{ sub.nameAr }}</b></td>
+                  <td><b>{{ locale.localizedName(sub) }}</b></td>
                   <td>{{ sub.nameEn }}</td>
                   <td>{{ sub.sortOrder }}</td>
                   <td>
                     <span class="status {{ sub.isVisible ? 'success' : 'error' }}">
-                      {{ sub.isVisible ? 'ظاهرة' : 'مخفية' }}
+                      {{ sub.isVisible ? locale.t('ops.ui.visible') : locale.t('ops.ui.hidden') }}
                     </span>
                   </td>
                 </tr>
@@ -195,52 +196,52 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
       }
     }
 
-    <app-ops-modal [open]="addingSub" title="إضافة خدمة فرعية" [kicker]="selected?.nameAr || ''" (closed)="addingSub = false">
+    <app-ops-modal [open]="addingSub" [title]="locale.t('ops.cat.addSubTitle')" [kicker]="selected ? locale.localizedName(selected) : ''" (closed)="addingSub = false">
       <div class="form-grid">
         <div class="field">
-          <label>الاسم *</label>
-          <input class="input" [(ngModel)]="subDraft.nameAr" placeholder="قص شعر" />
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
+          <input class="input" [(ngModel)]="subDraft.nameAr" [placeholder]="locale.t('ops.cat.subPh')" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="subDraft.nameEn" placeholder="Haircut" />
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+          <input class="input" [(ngModel)]="subDraft.nameEn" [placeholder]="locale.t('ops.cat.subEnPh')" />
         </div>
         <div class="field">
-          <label>الترتيب</label>
+          <label>{{ locale.t('ops.ui.sort') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="subDraft.sortOrder" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createSub()">إضافة الخدمة الفرعية</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createSub()">{{ locale.t('ops.cat.addSubSubmit') }}</button>
     </app-ops-modal>
 
     <app-ops-drawer
       [open]="!!selectedSub"
-      [title]="selectedSub?.nameAr || ''"
-      kicker="خدمة فرعية"
+      [title]="selectedSub ? locale.localizedName(selectedSub) : ''"
+      [kicker]="locale.t('ops.cat.subKicker')"
       (closed)="selectedSub = null"
     >
       @if (selectedSub; as sub) {
         <div class="form-grid">
           <div class="field">
-            <label>الاسم *</label>
+            <label>{{ locale.t('ops.ui.nameReq') }}</label>
             <input class="input" [(ngModel)]="sub.nameAr" [readOnly]="!canManage" />
           </div>
           <div class="field">
-            <label>الاسم الإنجليزي *</label>
+            <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
             <input class="input" [(ngModel)]="sub.nameEn" [readOnly]="!canManage" />
           </div>
           <div class="field">
-            <label>الترتيب</label>
+            <label>{{ locale.t('ops.ui.sort') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="sub.sortOrder" [readOnly]="!canManage" />
           </div>
         </div>
         @if (canManage) {
           <div class="ops-drawer-actions">
-            <button class="btn primary" type="button" (click)="saveSub(sub)">حفظ</button>
+            <button class="btn primary" type="button" (click)="saveSub(sub)">{{ locale.t('ui.save') }}</button>
             <button class="btn ghost" type="button" (click)="toggleSub(sub)">
-              {{ sub.isVisible ? 'إخفاء' : 'إظهار' }}
+              {{ sub.isVisible ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
             </button>
-            <button class="btn ghost" type="button" (click)="removeSub(sub)">حذف</button>
+            <button class="btn ghost" type="button" (click)="removeSub(sub)">{{ locale.t('ui.delete') }}</button>
           </div>
         }
       }
@@ -251,6 +252,7 @@ export class OpsCatalogComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
 
@@ -270,20 +272,20 @@ export class OpsCatalogComponent implements OnInit {
   draftPreview: string | null = null;
 
   ngOnInit(): void {
-    this.shell.set('الخدمات', 'الخدمات الرئيسية والفرعية الظاهرة في المنصة');
+    this.shell.set('ops.catalog.title', 'ops.catalog.sub');
     this.load();
   }
 
   openService(service: OpsCatalogService): void {
     this.selected = service;
     this.selectedSub = null;
-    this.shell.set(service.nameAr, service.nameEn || 'الخدمات الفرعية');
+    this.shell.set(this.locale.localizedName(service), this.locale.t('ops.catalog.subs'));
   }
 
   closeService(): void {
     this.selected = null;
     this.selectedSub = null;
-    this.shell.set('الخدمات', 'الخدمات الرئيسية والفرعية الظاهرة في المنصة');
+    this.shell.set('ops.catalog.title', 'ops.catalog.sub');
   }
 
   openAdd(): void {
@@ -305,7 +307,7 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     if (!this.hasNames(this.serviceDraft.nameAr, this.serviceDraft.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     const file = this.draftFile;
@@ -319,18 +321,18 @@ export class OpsCatalogComponent implements OnInit {
       .subscribe({
         next: (row) => {
           if (!file) {
-            this.finishCreate('تمت إضافة الخدمة');
+            this.finishCreate(this.locale.t('ops.cat.toast.added'));
             return;
           }
           this.api.opsUploadServiceImage(row.id, file).subscribe({
-            next: () => this.finishCreate('تمت إضافة الخدمة مع الصورة'),
+            next: () => this.finishCreate(this.locale.t('ops.cat.toast.addedImage')),
             error: (err) => {
-              this.toast.show(apiMessage(err, 'تمت إضافة الخدمة وتعذر رفع الصورة'));
+              this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addedImageFail')));
               this.finishCreate();
             },
           });
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الخدمة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addFail'))),
       });
   }
 
@@ -352,9 +354,9 @@ export class OpsCatalogComponent implements OnInit {
     this.api.opsUploadServiceImage(this.selected.id, file).subscribe({
       next: (row) => {
         this.applyService(row);
-        this.toast.show('تم رفع صورة الخدمة');
+        this.toast.show(this.locale.t('ops.cat.toast.uploaded'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الصورة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.uploadFail'))),
     });
   }
 
@@ -365,9 +367,9 @@ export class OpsCatalogComponent implements OnInit {
     this.api.opsClearServiceImage(this.selected.id).subscribe({
       next: (row) => {
         this.applyService(row);
-        this.toast.show('تم حذف صورة الخدمة');
+        this.toast.show(this.locale.t('ops.cat.toast.imageRemoved'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الصورة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.imageRemoveFail'))),
     });
   }
 
@@ -376,7 +378,7 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     if (!this.hasNames(service.nameAr, service.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -388,10 +390,10 @@ export class OpsCatalogComponent implements OnInit {
       .subscribe({
         next: (row) => {
           Object.assign(service, row);
-          this.shell.set(service.nameAr, service.nameEn || 'الخدمات الفرعية');
-          this.toast.show('تم حفظ الخدمة');
+          this.shell.set(this.locale.localizedName(service), this.locale.t('ops.catalog.subs'));
+          this.toast.show(this.locale.t('ops.cat.toast.saved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الخدمة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.saveFail'))),
       });
   }
 
@@ -402,9 +404,9 @@ export class OpsCatalogComponent implements OnInit {
     this.api.opsPatchService(service.id, { isVisible: !service.isVisible }).subscribe({
       next: (row) => {
         service.isVisible = row.isVisible;
-        this.toast.show(row.isVisible ? 'الخدمة ظاهرة' : 'تم إخفاء الخدمة');
+        this.toast.show(row.isVisible ? this.locale.t('ops.cat.toast.visible') : this.locale.t('ops.cat.toast.hidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.visibilityFail'))),
     });
   }
 
@@ -415,26 +417,26 @@ export class OpsCatalogComponent implements OnInit {
     }
     const subCount = service.subServices.length;
     const message = subCount
-      ? `سيتم حذف «${service.nameAr}» وكل خدماتها الفرعية (${subCount}). هل تريدين المتابعة؟`
-      : `سيتم حذف «${service.nameAr}». هل تريدين المتابعة؟`;
+      ? this.locale.tf('ops.ui.deleteNamedSubs', { name: this.locale.localizedName(service), n: subCount })
+      : this.locale.tf('ops.ui.deleteNamed', { name: this.locale.localizedName(service) });
     const ok = await this.confirm.ask({
-      title: 'تأكيد الحذف',
+      title: this.locale.t('ops.ui.confirmDelete'),
       message,
-      confirmLabel: 'حذف',
-      cancelLabel: 'إلغاء',
+      confirmLabel: this.locale.t('ui.delete'),
+      cancelLabel: this.locale.t('ui.cancel'),
     });
     if (!ok) {
       return;
     }
     this.api.opsDeleteService(service.id).subscribe({
       next: () => {
-        this.toast.show('تم حذف الخدمة');
+        this.toast.show(this.locale.t('ops.cat.toast.deleted'));
         if (this.selected?.id === service.id) {
           this.closeService();
         }
         this.load();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الخدمة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.deleteFail'))),
     });
   }
 
@@ -451,7 +453,7 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     if (!this.hasNames(this.subDraft.nameAr, this.subDraft.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -462,12 +464,12 @@ export class OpsCatalogComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تمت إضافة الخدمة الفرعية');
+          this.toast.show(this.locale.t('ops.cat.toast.subAdded'));
           this.subDraft = emptySubDraft();
           this.addingSub = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الخدمة الفرعية')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.subAddFail'))),
       });
   }
 
@@ -476,7 +478,7 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     if (!this.hasNames(sub.nameAr, sub.nameEn)) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -488,9 +490,9 @@ export class OpsCatalogComponent implements OnInit {
       .subscribe({
         next: (row) => {
           Object.assign(sub, row);
-          this.toast.show('تم حفظ الخدمة الفرعية');
+          this.toast.show(this.locale.t('ops.cat.toast.subSaved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر الحفظ')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.saveGenericFail'))),
       });
   }
 
@@ -501,9 +503,9 @@ export class OpsCatalogComponent implements OnInit {
     this.api.opsPatchSubService(sub.id, { isVisible: !sub.isVisible }).subscribe({
       next: (row) => {
         sub.isVisible = row.isVisible;
-        this.toast.show(row.isVisible ? 'الخدمة الفرعية ظاهرة' : 'تم إخفاء الخدمة الفرعية');
+        this.toast.show(row.isVisible ? this.locale.t('ops.cat.toast.subVisible') : this.locale.t('ops.cat.toast.subHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.visibilityFail'))),
     });
   }
 
@@ -512,21 +514,21 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     const ok = await this.confirm.ask({
-      title: 'تأكيد الحذف',
-      message: `سيتم حذف «${sub.nameAr}». هل تريدين المتابعة؟`,
-      confirmLabel: 'حذف',
-      cancelLabel: 'إلغاء',
+      title: this.locale.t('ops.ui.confirmDelete'),
+      message: this.locale.tf('ops.ui.deleteNamed', { name: this.locale.localizedName(sub) }),
+      confirmLabel: this.locale.t('ui.delete'),
+      cancelLabel: this.locale.t('ui.cancel'),
     });
     if (!ok) {
       return;
     }
     this.api.opsDeleteSubService(sub.id).subscribe({
       next: () => {
-        this.toast.show('تم حذف الخدمة الفرعية');
+        this.toast.show(this.locale.t('ops.cat.toast.subDeleted'));
         this.selectedSub = null;
         this.load();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الخدمة الفرعية')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.subDeleteFail'))),
     });
   }
 
@@ -552,7 +554,7 @@ export class OpsCatalogComponent implements OnInit {
     const file = input.files?.[0] ?? null;
     input.value = '';
     if (file && !/^image\/(jpeg|png|webp|jpg)$/i.test(file.type)) {
-      this.toast.show('الصورة لازم تكون JPG أو PNG');
+      this.toast.show(this.locale.t('ops.ui.imageType'));
       return null;
     }
     return file;
@@ -570,7 +572,7 @@ export class OpsCatalogComponent implements OnInit {
     if (this.canManage) {
       return false;
     }
-    this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+    this.toast.show(this.locale.t('ops.ui.noPerm'));
     return true;
   }
 
@@ -588,13 +590,13 @@ export class OpsCatalogComponent implements OnInit {
           ? keepSelected(this.selected.subServices, this.selectedSub)
           : null;
         if (this.selected) {
-          this.shell.set(this.selected.nameAr, this.selected.nameEn || 'الخدمات الفرعية');
+          this.shell.set(this.locale.localizedName(this.selected), this.locale.t('ops.catalog.subs'));
         }
         this.loading = false;
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الخدمات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.loadFail')));
       },
     });
   }

@@ -28,6 +28,7 @@ export class OpsLayoutComponent implements OnInit {
           permissions: me.permissions,
           roleCode: me.role?.code,
           roleNameAr: me.role?.nameAr,
+          roleNameEn: me.role?.nameEn,
           teamId: me.teamId,
           orgTeam: me.orgTeam,
         });
@@ -38,53 +39,53 @@ export class OpsLayoutComponent implements OnInit {
 
   private buildItems(): NavItem[] {
     const can = (page: OpsPage) => canOpenOpsPage(this.session, page);
-    const items: NavItem[] = [{ icon: 'home', label: 'لوحة  المعلومات', route: '/ops', exact: true }];
+    const items: NavItem[] = [{ icon: 'home', label: 'ops.nav.dashboard', route: '/ops', exact: true }];
     if (can('approvals')) {
-      items.push({ icon: 'ratings', label: 'الاعتمادات', route: '/ops/approvals' });
+      items.push({ icon: 'ratings', label: 'ops.nav.approvals', route: '/ops/approvals' });
     }
     if (can('tickets')) {
-      items.push({ icon: 'support', label: 'الطلبات', route: '/ops/tickets' });
+      items.push({ icon: 'support', label: 'ops.nav.tickets', route: '/ops/tickets' });
     }
     if (can('clients')) {
-      items.push({ icon: 'expert', label: 'حسابات عملاء المنصة', route: '/ops/clients' });
+      items.push({ icon: 'expert', label: 'ops.nav.clients', route: '/ops/clients' });
     }
     if (can('notices')) {
-      items.push({ icon: 'bell', label: 'إشعارات المنصة', route: '/ops/notices' });
+      items.push({ icon: 'bell', label: 'ops.nav.notices', route: '/ops/notices' });
     }
     const settingsChildren: NavItem[] = [];
     if (can('settings')) {
-      settingsChildren.push({ icon: 'services', label: 'إعدادات التشغيل', route: '/ops/settings' });
+      settingsChildren.push({ icon: 'services', label: 'ops.nav.settingsOps', route: '/ops/settings' });
     }
     if (can('legal')) {
-      settingsChildren.push({ icon: 'about', label: 'اعدادات الشروط', route: '/ops/legal' });
+      settingsChildren.push({ icon: 'about', label: 'ops.nav.settingsLegal', route: '/ops/legal' });
     }
     if (can('geo')) {
-      settingsChildren.push({ icon: 'location', label: 'اعدادات المناطق', route: '/ops/geo' });
+      settingsChildren.push({ icon: 'location', label: 'ops.nav.settingsGeo', route: '/ops/geo' });
     }
     if (can('catalog')) {
-      settingsChildren.push({ icon: 'services', label: 'اعدادات الخدمات', route: '/ops/catalog' });
+      settingsChildren.push({ icon: 'services', label: 'ops.nav.settingsCatalog', route: '/ops/catalog' });
     }
     if (can('packages')) {
-      settingsChildren.push({ icon: 'package', label: 'اعدادات الباقات', route: '/ops/packages' });
+      settingsChildren.push({ icon: 'package', label: 'ops.nav.settingsPackages', route: '/ops/packages' });
     }
     if (can('org')) {
-      settingsChildren.push({ icon: 'profile', label: 'الهيكل التنظيمي', route: '/ops/org' });
+      settingsChildren.push({ icon: 'profile', label: 'ops.nav.settingsOrg', route: '/ops/org' });
     }
     if (can('staff')) {
-      settingsChildren.push({ icon: 'profile', label: 'حسابات موظفى المنصة', route: '/ops/staff' });
+      settingsChildren.push({ icon: 'profile', label: 'ops.nav.settingsStaff', route: '/ops/staff' });
     }
     if (canOpenPermissionSettings(this.session)) {
-      settingsChildren.push({ icon: 'profile', label: 'إعدادات الصلاحيات', route: '/ops/permissions' });
+      settingsChildren.push({ icon: 'profile', label: 'ops.nav.settingsPerms', route: '/ops/permissions' });
     }
     if (settingsChildren.length) {
-      items.push({ icon: 'services', label: 'الإعدادات', children: settingsChildren });
+      items.push({ icon: 'services', label: 'ops.nav.settings', children: settingsChildren });
     }
     if (can('activity')) {
-      items.push({ icon: 'views', label: 'نشاط الفريق', route: '/ops/activity' });
+      items.push({ icon: 'views', label: 'ops.nav.activity', route: '/ops/activity' });
     }
-    items.push({ icon: 'bell', label: 'التنبيهات', route: '/ops/notifications' });
-    items.push({ icon: 'profile', label: 'الملف الشخصي', route: '/ops/profile' });
-    items.push({ icon: 'about', label: 'حول المنصة', route: '/ops/about' });
+    items.push({ icon: 'bell', label: 'ops.nav.notifications', route: '/ops/notifications' });
+    items.push({ icon: 'profile', label: 'ops.nav.profile', route: '/ops/profile' });
+    items.push({ icon: 'about', label: 'ops.nav.about', route: '/ops/about' });
     return items;
   }
 }

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { LegalAudience, LegalKind, OpsLegalPage } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -24,66 +25,64 @@ const emptyDraft = () => ({
   template: `
     <div class="section-head">
       <div>
-        <h2>الشروط والسياسات</h2>
-        <p>أضف صفحة جديدة، ثم حدّد نوعها والجمهور المستهدف وحالة النشر.</p>
+        <h2>{{ locale.t('ops.legal.heading') }}</h2>
+        <p>{{ locale.t('ops.legal.intro') }}</p>
       </div>
       @if (canManage) {
-        <button class="btn primary" type="button" (click)="openAdd()">+ إضافة صفحة</button>
+        <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('ops.legal.add') }}</button>
       }
     </div>
 
-    <app-ops-modal [open]="adding" title="إضافة صفحة" kicker="شروط وسياسات" (closed)="adding = false">
+    <app-ops-modal [open]="adding" [title]="locale.t('ops.legal.addTitle')" [kicker]="locale.t('ops.legal.addKicker')" (closed)="adding = false">
       <div class="form-grid">
         <div class="field">
-          <label>الجمهور</label>
+          <label>{{ locale.t('ops.ui.audience') }}</label>
           <select class="input" [(ngModel)]="draft.audience">
-            <option value="CUSTOMER">العميلة</option>
-            <option value="PROVIDER">الخبيرة</option>
-            <option value="STAFF">موظفو المنصة</option>
+            <option value="CUSTOMER">{{ locale.t('ops.legal.audience.customer') }}</option>
+            <option value="PROVIDER">{{ locale.t('ops.legal.audience.provider') }}</option>
+            <option value="STAFF">{{ locale.t('legal.audience.staff') }}</option>
           </select>
         </div>
         <div class="field">
-          <label>النوع</label>
+          <label>{{ locale.t('ops.ui.kind') }}</label>
           <select class="input" [(ngModel)]="draft.kind">
-            <option value="TERMS">شروط وأحكام</option>
-            <!-- <option value="POLICIES">سياسة</option> -->
-            <option value="PRIVACY">سياسة الخصوصية</option>
-            <!-- <option value="OTHER">أخرى</option> -->
+            <option value="TERMS">{{ locale.t('ops.legal.kind.terms') }}</option>
+            <option value="PRIVACY">{{ locale.t('ops.legal.kind.privacy') }}</option>
           </select>
         </div>
         <div class="field">
-          <label>الحالة</label>
+          <label>{{ locale.t('ops.ui.status') }}</label>
           <select class="input" [(ngModel)]="draft.isActive">
-            <option [ngValue]="true">نشطة</option>
-            <option [ngValue]="false">غير نشطة</option>
+            <option [ngValue]="true">{{ locale.t('ui.active') }}</option>
+            <option [ngValue]="false">{{ locale.t('ui.inactive') }}</option>
           </select>
         </div>
         <div class="field full">
-          <label>العنوان</label>
+          <label>{{ locale.t('ops.ui.title') }}</label>
           <input class="input" [(ngModel)]="draft.titleAr" />
         </div>
         <div class="field full">
-          <label>النص</label>
+          <label>{{ locale.t('ops.ui.body') }}</label>
           <textarea class="input" rows="8" [(ngModel)]="draft.bodyAr"></textarea>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">إضافة الصفحة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="create()">{{ locale.t('ops.legal.addSubmit') }}</button>
     </app-ops-modal>
 
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!pages.length) {
-      <p class="page-empty">لا توجد صفحات بعد.</p>
+      <p class="page-empty">{{ locale.t('ops.legal.empty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الجمهور</th>
-              <th>النوع</th>
-              <th>العنوان</th>
-              <th>النسخة</th>
-              <th>الحالة</th>
+              <th>{{ locale.t('ops.ui.audience') }}</th>
+              <th>{{ locale.t('ops.ui.kind') }}</th>
+              <th>{{ locale.t('ops.ui.title') }}</th>
+              <th>{{ locale.t('ops.legal.col.version') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +94,7 @@ const emptyDraft = () => ({
                 <td>{{ item.version }}</td>
                 <td>
                   <span class="status {{ item.isActive ? 'success' : 'error' }}">
-                    {{ item.isActive ? 'نشطة' : 'غير نشطة' }}
+                    {{ item.isActive ? locale.t('ui.active') : locale.t('ui.inactive') }}
                   </span>
                 </td>
               </tr>
@@ -113,36 +112,36 @@ const emptyDraft = () => ({
       @if (selected; as item) {
         <div class="form-grid">
           <div class="field">
-            <label>الجمهور</label>
+            <label>{{ locale.t('ops.ui.audience') }}</label>
             <select class="input" [(ngModel)]="item.audience">
-              <option value="CUSTOMER">العميلة</option>
-              <option value="PROVIDER">الخبيرة</option>
-              <option value="STAFF">موظفو المنصة</option>
+              <option value="CUSTOMER">{{ locale.t('ops.legal.audience.customer') }}</option>
+              <option value="PROVIDER">{{ locale.t('ops.legal.audience.provider') }}</option>
+              <option value="STAFF">{{ locale.t('legal.audience.staff') }}</option>
             </select>
           </div>
           <div class="field">
-            <label>النوع</label>
+            <label>{{ locale.t('ops.ui.kind') }}</label>
             <select class="input" [(ngModel)]="item.kind">
-              <option value="TERMS">شروط وأحكام</option>
-              <option value="POLICIES">سياسة</option>
-              <option value="PRIVACY">سياسة الخصوصية</option>
-              <option value="OTHER">أخرى</option>
+              <option value="TERMS">{{ locale.t('ops.legal.kind.terms') }}</option>
+              <option value="POLICIES">{{ locale.t('ops.legal.kind.policies') }}</option>
+              <option value="PRIVACY">{{ locale.t('ops.legal.kind.privacy') }}</option>
+              <option value="OTHER">{{ locale.t('ops.legal.kind.other') }}</option>
             </select>
           </div>
         </div>
         <div class="field">
-          <label>العنوان</label>
+          <label>{{ locale.t('ops.ui.title') }}</label>
           <input class="input" [(ngModel)]="item.titleAr" />
         </div>
         <div class="field">
-          <label>النص</label>
+          <label>{{ locale.t('ops.ui.body') }}</label>
           <textarea class="input" rows="12" [(ngModel)]="item.bodyAr"></textarea>
         </div>
         @if (canManage) {
           <div class="ops-drawer-actions">
-            <button class="btn primary" type="button" (click)="save(item)">حفظ الصفحة</button>
+            <button class="btn primary" type="button" (click)="save(item)">{{ locale.t('ops.legal.save') }}</button>
             <button class="btn ghost" type="button" (click)="toggle(item)">
-              {{ item.isActive ? 'اخفاء' : 'اظهار' }}
+              {{ item.isActive ? locale.t('ops.legal.hide') : locale.t('ops.legal.show') }}
             </button>
           </div>
         }
@@ -155,6 +154,7 @@ export class OpsLegalComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
 
   get canManage(): boolean {
     return this.session.hasAnyPermission('LEGAL_MANAGE', 'RAT-05');
@@ -167,36 +167,36 @@ export class OpsLegalComponent implements OnInit {
   draft = emptyDraft();
 
   ngOnInit(): void {
-    this.shell.set('الشروط والسياسات', 'صفحات العميلة والخبيرة وموظفي المنصة');
+    this.shell.set('ops.legal.title', 'ops.legal.sub');
     this.load();
   }
 
   audienceLabel(value: string): string {
     if (value === 'PROVIDER') {
-      return 'الخبيرة';
+      return this.locale.t('ops.legal.audience.provider');
     }
     if (value === 'STAFF') {
-      return 'موظفو المنصة';
+      return this.locale.t('legal.audience.staff');
     }
-    return 'العميلة';
+    return this.locale.t('ops.legal.audience.customer');
   }
 
   kindLabel(value: string): string {
     if (value === 'POLICIES') {
-      return 'سياسة';
+      return this.locale.t('ops.legal.kind.policies');
     }
     if (value === 'PRIVACY') {
-      return 'سياسة الخصوصية';
+      return this.locale.t('ops.legal.kind.privacy');
     }
     if (value === 'OTHER') {
-      return 'أخرى';
+      return this.locale.t('ops.legal.kind.other');
     }
-    return 'شروط وأحكام';
+    return this.locale.t('ops.legal.kind.terms');
   }
 
   openAdd(): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.draft = emptyDraft();
@@ -205,11 +205,11 @@ export class OpsLegalComponent implements OnInit {
 
   create(): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     if (this.draft.titleAr.trim().length < 2 || this.draft.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي العنوان والنص');
+      this.toast.show(this.locale.t('ops.legal.needText'));
       return;
     }
     this.api.opsCreateLegal(this.draft).subscribe({
@@ -218,19 +218,19 @@ export class OpsLegalComponent implements OnInit {
         this.selected = row;
         this.adding = false;
         this.draft = emptyDraft();
-        this.toast.show('تمت إضافة الصفحة');
+        this.toast.show(this.locale.t('ops.legal.toast.added'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الصفحة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.legal.toast.addFail'))),
     });
   }
 
   save(item: OpsLegalPage): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     if (item.titleAr.trim().length < 2 || item.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي العنوان والنص');
+      this.toast.show(this.locale.t('ops.legal.needText'));
       return;
     }
     this.api
@@ -243,23 +243,23 @@ export class OpsLegalComponent implements OnInit {
       .subscribe({
         next: (row) => {
           Object.assign(item, row);
-          this.toast.show('تم حفظ الصفحة');
+          this.toast.show(this.locale.t('ops.legal.toast.saved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الصفحة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.legal.toast.saveFail'))),
       });
   }
 
   toggle(item: OpsLegalPage): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.api.opsPatchLegal(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         Object.assign(item, row);
-        this.toast.show(row.isActive ? 'الصفحة نشطة' : 'تم إيقاف الصفحة');
+        this.toast.show(row.isActive ? this.locale.t('ops.legal.toast.active') : this.locale.t('ops.legal.toast.stopped'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.legal.toast.toggleFail'))),
     });
   }
 
@@ -272,7 +272,7 @@ export class OpsLegalComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الصفحات القانونية'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.legal.toast.loadFail')));
       },
     });
   }

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsComplaint } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -16,29 +17,29 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
   template: `
     <div class="section-head" style="margin-top:0">
       <div>
-        <h2>المراجعات</h2>
-        <p>بلاغات العميلات والخبيرات. الاسم والصورة والنبذة والتقييم في الاعتمادات.</p>
+        <h2>{{ locale.t('ops.rev.heading') }}</h2>
+        <p>{{ locale.t('ops.rev.intro') }}</p>
       </div>
     </div>
     <div class="filters">
-      <button class="chip" type="button" [class.active]="complaintStatus === 'OPEN'" (click)="setComplaintStatus('OPEN')">مفتوحة</button>
-      <button class="chip" type="button" [class.active]="complaintStatus === 'ESCALATED'" (click)="setComplaintStatus('ESCALATED')">مصعّدة</button>
-      <button class="chip" type="button" [class.active]="complaintStatus === 'CLOSED'" (click)="setComplaintStatus('CLOSED')">مغلقة</button>
+      <button class="chip" type="button" [class.active]="complaintStatus === 'OPEN'" (click)="setComplaintStatus('OPEN')">{{ locale.t('ops.rev.open') }}</button>
+      <button class="chip" type="button" [class.active]="complaintStatus === 'ESCALATED'" (click)="setComplaintStatus('ESCALATED')">{{ locale.t('ops.rev.escalated') }}</button>
+      <button class="chip" type="button" [class.active]="complaintStatus === 'CLOSED'" (click)="setComplaintStatus('CLOSED')">{{ locale.t('ops.rev.closed') }}</button>
     </div>
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!complaints.length) {
-      <p class="page-empty">لا توجد بلاغات في هذا التبويب.</p>
+      <p class="page-empty">{{ locale.t('ops.rev.empty') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>المبلِّغة</th>
-              <th>ضد</th>
-              <th>السبب</th>
-              <th>الحالة</th>
-              <th>التاريخ</th>
+              <th>{{ locale.t('ops.rev.col.reporter') }}</th>
+              <th>{{ locale.t('ops.rev.col.target') }}</th>
+              <th>{{ locale.t('ops.ui.reason') }}</th>
+              <th>{{ locale.t('ops.ui.status') }}</th>
+              <th>{{ locale.t('ops.ui.date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -48,7 +49,7 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                   <b>{{ item.reporter.displayName }}</b>
                   <div class="muted small">{{ accountLabel(item.reporter.accountType) }}</div>
                 </td>
-                <td>{{ item.target?.displayName || item.targetRef || 'غير محدد' }}</td>
+                <td>{{ item.target?.displayName || item.targetRef || locale.t('ops.rev.unspecified') }}</td>
                 <td class="clip">{{ clip(item.reason) }}</td>
                 <td><span class="status {{ statusTone(item.status) }}">{{ complaintStatusAr(item.status) }}</span></td>
                 <td>{{ opsDate(item.createdAt) }}</td>
@@ -61,13 +62,13 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
     <app-ops-drawer
       [open]="!!selectedComplaint"
       [title]="selectedComplaint?.reporter?.displayName || ''"
-      kicker="بلاغ"
+      [kicker]="locale.t('ops.rev.kicker')"
       (closed)="selectedComplaint = null"
     >
       @if (selectedComplaint; as item) {
         <p class="muted small">{{ accountLabel(item.reporter.accountType) }} · {{ item.reporter.accountCode }}</p>
         <p class="muted small">
-          ضد {{ item.target?.displayName || item.targetRef || 'غير محدد' }}
+          {{ locale.tf('ops.rev.against', { name: item.target?.displayName || item.targetRef || locale.t('ops.rev.unspecified') }) }}
           @if (item.target) {
             · {{ item.target.accountCode }}
           }
@@ -75,17 +76,17 @@ import { clip, keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
         <p class="muted small">{{ opsDate(item.createdAt) }}</p>
         <p style="margin:14px 0;white-space:pre-wrap;line-height:1.8">{{ item.reason }}</p>
         @if (item.status !== 'CLOSED' && (canEscalateComplaint || canCloseComplaint)) {
-          <textarea class="input" rows="2" placeholder="ملاحظة للمبلِّغة" [(ngModel)]="complaintNotes[item.id]"></textarea>
+          <textarea class="input" rows="2" [placeholder]="locale.t('ops.rev.notePh')" [(ngModel)]="complaintNotes[item.id]"></textarea>
           <div class="ops-drawer-actions">
             @if (item.status === 'OPEN' && canEscalateComplaint) {
-              <button class="btn soft" type="button" (click)="patchComplaint(item, 'ESCALATED')">تصعيد</button>
+              <button class="btn soft" type="button" (click)="patchComplaint(item, 'ESCALATED')">{{ locale.t('ops.rev.escalate') }}</button>
             }
             @if (canCloseComplaint) {
-              <button class="btn primary" type="button" (click)="patchComplaint(item, 'CLOSED')">إغلاق</button>
+              <button class="btn primary" type="button" (click)="patchComplaint(item, 'CLOSED')">{{ locale.t('ops.rev.close') }}</button>
             }
           </div>
         } @else if (item.status === 'CLOSED') {
-          <p class="muted small">مغلق</p>
+          <p class="muted small">{{ locale.t('ops.rev.status.CLOSED') }}</p>
         }
       }
     </app-ops-drawer>
@@ -98,6 +99,7 @@ export class OpsReviewsComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  readonly locale = inject(LocaleService);
 
   get canEscalateComplaint(): boolean {
     return this.session.hasAnyPermission('TKT-01', 'RAT-01');
@@ -118,7 +120,7 @@ export class OpsReviewsComponent implements OnInit {
   complaintNotes: Record<string, string> = {};
 
   ngOnInit(): void {
-    this.shell.set('المراجعات', 'بلاغات المنصة');
+    this.shell.set('ops.reviews.title', 'ops.reviews.sub');
     const tab = this.route.snapshot.queryParamMap.get('tab');
     if (tab === 'ratings' || tab === 'changes') {
       void this.router.navigate(['/ops/approvals'], {
@@ -137,32 +139,32 @@ export class OpsReviewsComponent implements OnInit {
 
   accountLabel(type?: string): string {
     if (type === 'CUSTOMER') {
-      return 'عميلة';
+      return this.locale.t('ops.type.customer');
     }
     if (type === 'PROVIDER') {
-      return 'خبيرة';
+      return this.locale.t('ops.type.provider');
     }
-    return 'حساب';
+    return this.locale.t('ops.appr.type.account');
   }
 
   complaintStatusAr(status: string): string {
     if (status === 'ESCALATED') {
-      return 'مصعّد';
+      return this.locale.t('ops.rev.status.ESCALATED');
     }
     if (status === 'CLOSED') {
-      return 'مغلق';
+      return this.locale.t('ops.rev.status.CLOSED');
     }
-    return 'مفتوح';
+    return this.locale.t('ops.rev.status.OPEN');
   }
 
   patchComplaint(item: OpsComplaint, status: 'CLOSED' | 'ESCALATED'): void {
     this.api.opsPatchComplaint(item.id, status, this.complaintNotes[item.id]).subscribe({
       next: () => {
-        this.toast.show(status === 'CLOSED' ? 'تم إغلاق البلاغ' : 'تم تصعيد البلاغ');
+        this.toast.show(status === 'CLOSED' ? this.locale.t('ops.rev.toast.closed') : this.locale.t('ops.rev.toast.escalated'));
         this.selectedComplaint = null;
         this.load();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث البلاغ')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.rev.toast.patchFail'))),
     });
   }
 
@@ -179,7 +181,7 @@ export class OpsReviewsComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل البلاغات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.rev.toast.loadFail')));
       },
     });
   }

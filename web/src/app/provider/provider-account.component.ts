@@ -4,6 +4,7 @@ import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
 import { apiMessage, displayPhone } from '../core/phone';
 import type { CatalogRegion, ProviderMe } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -15,55 +16,55 @@ import { IconComponent } from '../shared/icon.component';
   template: `
     <div class="page-head">
       <div>
-        <h1>الملف الشخصي</h1>
-        <p>حدّثي بيانات الحساب التي تظهر للعميلات</p>
+        <h1>{{ locale.t('p.acc.title') }}</h1>
+        <p>{{ locale.t('p.acc.sub') }}</p>
       </div>
-      <button class="btn primary" type="button" [hidden]="!dirty" [disabled]="loading" (click)="save()">حفظ التعديلات</button>
+      <button class="btn primary" type="button" [hidden]="!dirty" [disabled]="loading" (click)="save()">{{ locale.t('p.acc.save') }}</button>
     </div>
     <div class="grid wide-side">
       <form class="card" (ngSubmit)="save()">
         <div class="grid cols-2">
           <div class="field">
-            <label>اسم العرض</label>
+            <label>{{ locale.t('c.account.displayName') }}</label>
             <input name="displayName" [(ngModel)]="displayName" (ngModelChange)="dirty = true" />
           </div>
           <div class="field">
-            <label>المنطقة</label>
+            <label>{{ locale.t('c.account.region') }}</label>
             <select name="regionId" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-              <option value="">اختاري المنطقة</option>
+              <option value="">{{ locale.t('c.account.pickRegion') }}</option>
               @for (region of regions; track region.id) {
-                <option [value]="region.id">{{ region.nameAr }}</option>
+                <option [value]="region.id">{{ locale.localizedName(region) }}</option>
               }
             </select>
           </div>
         </div>
         <div class="field city-multi">
-          <label>المدن</label>
-          <small class="city-hint">يمكنك اختيار أكثر من مدينة في نفس المنطقة</small>
+          <label>{{ locale.t('p.acc.cities') }}</label>
+          <small class="city-hint">{{ locale.t('p.acc.citiesHint') }}</small>
           <div class="chips">
             @if (!regionId) {
-              <span class="muted small">اختاري المنطقة أولًا</span>
+              <span class="muted small">{{ locale.t('p.acc.pickRegionFirst') }}</span>
             }
             @for (city of cities; track city.id) {
               <button class="chip" type="button" [class.active]="cityIds.includes(city.id)" (click)="toggleCity(city.id)">
-                {{ city.nameAr }}
+                {{ locale.localizedName(city) }}
               </button>
             }
           </div>
         </div>
         <div class="grid cols-2">
           <!-- <div class="field">
-            <label>رقم التواصل عبر واتساب</label>
+            <label>{{ locale.t('p.acc.whatsapp') }}</label>
             <input dir="ltr" [value]="loginMobile" disabled />
-            <small class="muted">هو رقم تسجيل الدخول ولا يمكن تغييره من هنا</small>
+            <small class="muted">{{ locale.t('p.acc.whatsappHint') }}</small>
           </div> -->
           <div class="field">
-            <label>البريد الإلكتروني <span class="muted">(اختياري)</span></label>
+            <label>{{ locale.t('p.acc.email') }} <span class="muted">{{ locale.t('p.acc.optional') }}</span></label>
             <input type="email" dir="ltr" name="email" [(ngModel)]="email" placeholder="name@example.com" (ngModelChange)="dirty = true" />
           </div>
         </div>
         <div class="field">
-          <label>النبذة الاحترافية</label>
+          <label>{{ locale.t('p.acc.bio') }}</label>
           <textarea name="bio" [(ngModel)]="bio" [maxlength]="bioMax" (ngModelChange)="dirty = true"></textarea>
           <small class="muted">{{ bio.length }} / {{ bioMax }}</small>
         </div>
@@ -74,13 +75,13 @@ import { IconComponent } from '../shared/icon.component';
             <app-icon name="profile" />
           }
         </div>
-        <h3>{{ displayName || 'الخبيرة' }}</h3>
+        <h3>{{ displayName || locale.t('p.nameFallback') }}</h3>
         @if (profile?.badge) {
-          <span class="badge">✓ حساب موثق</span>
+          <span class="badge">✓ {{ locale.t('p.acc.verified') }}</span>
         }
         <p class="small muted">{{ cityName }}</p>
         <button class="btn secondary" type="button" (click)="picker.click()" [disabled]="uploading">
-          {{ uploading ? 'جاري رفع الصورة...' : 'تغيير الصورة' }}
+          {{ uploading ? locale.t('c.account.uploading') : locale.t('c.account.changePhoto') }}
         </button>
         <input #picker type="file" hidden accept="image/jpeg,image/png,image/webp" (change)="onPhoto($event)" />
       </div>
@@ -92,6 +93,7 @@ export class ProviderAccountComponent implements OnInit {
   private readonly session = inject(SessionService);
   readonly toast = inject(ToastService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
 
   profile: ProviderMe | null = null;
   displayName = '';
@@ -112,9 +114,12 @@ export class ProviderAccountComponent implements OnInit {
 
   get cityName(): string {
     const names = this.cityIds
-      .map((id) => this.regions.flatMap((region) => region.cities).find((city) => city.id === id)?.nameAr)
+      .map((id) => {
+        const city = this.regions.flatMap((region) => region.cities).find((item) => item.id === id);
+        return city ? this.locale.localizedName(city) : '';
+      })
       .filter((name): name is string => Boolean(name));
-    return names.join(' · ') || 'المدينة';
+    return names.join(' · ') || this.locale.t('shell.city');
   }
 
   get loginMobile(): string {
@@ -122,7 +127,7 @@ export class ProviderAccountComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('الملف الشخصي');
+    this.shell.set('nav.profile');
     this.api.platformSettings().subscribe({
       next: (settings) => {
         this.bioMax = settings.providerBioMax || 1000;
@@ -180,7 +185,7 @@ export class ProviderAccountComponent implements OnInit {
       return;
     }
     if (!/^image\/(jpeg|png|webp|jpg)$/i.test(file.type)) {
-      this.toast.show('الصورة لازم تكون JPG أو PNG');
+      this.toast.show(this.locale.t('c.account.badImage'));
       return;
     }
     this.previewUrl = URL.createObjectURL(file);
@@ -189,22 +194,22 @@ export class ProviderAccountComponent implements OnInit {
       next: (profile) => {
         this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
         this.uploading = false;
-        this.toast.show('تم رفع صورة الحساب');
+        this.toast.show(this.locale.t('c.account.photoOk'));
       },
       error: (err) => {
         this.uploading = false;
-        this.toast.show(apiMessage(err, 'تعذر رفع الصورة'));
+        this.toast.show(apiMessage(err, this.locale.t('c.account.photoFail')));
       },
     });
   }
 
   save(): void {
     if (!this.cityIds.length) {
-      this.toast.show('اختاري مدينة واحدة على الأقل');
+      this.toast.show(this.locale.t('p.acc.needCity'));
       return;
     }
     if (this.bio.length > this.bioMax) {
-      this.toast.show(`نبذة الخبيرة بحد أقصى ${this.bioMax} حرف`);
+      this.toast.show(this.locale.tf('p.acc.bioMax', { n: this.bioMax }));
       return;
     }
     this.loading = true;
@@ -221,11 +226,11 @@ export class ProviderAccountComponent implements OnInit {
           this.previewUrl = mediaUrl(profile.avatarUrl) || this.previewUrl;
           this.loading = false;
           this.dirty = false;
-          this.toast.show('تم حفظ التعديلات');
+          this.toast.show(this.locale.t('p.acc.saved'));
         },
         error: (err) => {
           this.loading = false;
-          this.toast.show(apiMessage(err, 'تعذر حفظ التغييرات'));
+          this.toast.show(apiMessage(err, this.locale.t('c.account.saveFail')));
         },
       });
   }

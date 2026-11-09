@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsDashboard, OpsInboxItem } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { SessionService } from '../core/session.service';
@@ -16,104 +17,104 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
   template: `
     <div class="section-head" style="margin-top:0">
       <div>
-        <h2>لوحة المعلومات</h2>
-        <p>ملخص المنصة والمهام المخصصة لحسابك.</p>
+        <h2>{{ locale.t('ops.dash.heading') }}</h2>
+        <p>{{ locale.t('ops.dash.intro') }}</p>
       </div>
     </div>
     <div class="stats stats-6">
       @if (canPage('clients')) {
         <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
-          <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.customers') }}</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.customers ?? '—' }}</b>
-          <span>حساب عميلة مسجّل</span>
+          <span>{{ locale.t('ops.dash.customersHint') }}</span>
         </a>
         <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
-          <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.providers') }}</span><span class="head-icon"><app-icon name="expert" /></span></div>
           <b>{{ dash?.activeProviders ?? '—' }}</b>
-          <span>حساب خبيرة نشط</span>
+          <span>{{ locale.t('ops.dash.providersHint') }}</span>
         </a>
         <!-- <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'CUSTOMER' }">
-          <div class="top"><span>عميلات أونلاين</span><span class="head-icon online"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.onlineCustomers') }}</span><span class="head-icon online"><app-icon name="profile" /></span></div>
           <b>{{ dash?.onlineCustomers ?? 0 }}</b>
-          <span>متواجدة الآن</span>
+          <span>{{ locale.t('ops.dash.onlineNow') }}</span>
         </a>
         <a class="stat" routerLink="/ops/clients" [queryParams]="{ type: 'PROVIDER' }">
-          <div class="top"><span>خبيرات أونلاين</span><span class="head-icon online"><app-icon name="expert" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.onlineProviders') }}</span><span class="head-icon online"><app-icon name="expert" /></span></div>
           <b>{{ dash?.onlineProviders ?? 0 }}</b>
-          <span>متواجدة الآن</span>
+          <span>{{ locale.t('ops.dash.onlineNow') }}</span>
         </a> -->
       } @else {
         <article class="stat">
-          <div class="top"><span>عدد العميلات</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.customers') }}</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.customers ?? '—' }}</b>
-          <span>حساب عميلة مسجّل</span>
+          <span>{{ locale.t('ops.dash.customersHint') }}</span>
         </article>
         <article class="stat">
-          <div class="top"><span>الخبيرات</span><span class="head-icon"><app-icon name="expert" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.providers') }}</span><span class="head-icon"><app-icon name="expert" /></span></div>
           <b>{{ dash?.activeProviders ?? '—' }}</b>
-          <span>حساب خبيرة نشط</span>
+          <span>{{ locale.t('ops.dash.providersHint') }}</span>
         </article>
         <!-- <article class="stat">
-          <div class="top"><span>عميلات أونلاين</span><span class="head-icon online"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.onlineCustomers') }}</span><span class="head-icon online"><app-icon name="profile" /></span></div>
           <b>{{ dash?.onlineCustomers ?? 0 }}</b>
-          <span>متواجدة الآن</span>
+          <span>{{ locale.t('ops.dash.onlineNow') }}</span>
         </article>
         <article class="stat">
-          <div class="top"><span>خبيرات أونلاين</span><span class="head-icon online"><app-icon name="expert" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.onlineProviders') }}</span><span class="head-icon online"><app-icon name="expert" /></span></div>
           <b>{{ dash?.onlineProviders ?? 0 }}</b>
-          <span>متواجدة الآن</span>
+          <span>{{ locale.t('ops.dash.onlineNow') }}</span>
         </article> -->
       }
       <article class="stat">
-        <div class="top"><span>الحسابات النشطة</span><span class="head-icon"><app-icon name="home" /></span></div>
+        <div class="top"><span>{{ locale.t('ops.dash.active') }}</span><span class="head-icon"><app-icon name="home" /></span></div>
         <b>{{ dash?.activeAccounts ?? '—' }}</b>
-        <span>عميلات وخبيرات</span>
+        <span>{{ locale.t('ops.dash.activeHint') }}</span>
       </article>
       @if (canPage('staff')) {
         <a class="stat" routerLink="/ops/staff">
-          <div class="top"><span>حسابات الموظفين</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.staff') }}</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.staffCount ?? '—' }}</b>
-          <span>حسابات إدارية وتشغيلية ومالية</span>
+          <span>{{ locale.t('ops.dash.staffHint') }}</span>
         </a>
       } @else {
         <article class="stat">
-          <div class="top"><span>حسابات الموظفين</span><span class="head-icon"><app-icon name="profile" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.staff') }}</span><span class="head-icon"><app-icon name="profile" /></span></div>
           <b>{{ dash?.staffCount ?? '—' }}</b>
-          <span>حسابات إدارية وتشغيلية ومالية</span>
+          <span>{{ locale.t('ops.dash.staffHint') }}</span>
         </article>
       }
       @if (canPage('tickets')) {
         <a class="stat" routerLink="/ops/tickets" [queryParams]="{ priority: '1' }">
-          <div class="top"><span>الطلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.escalated') }}</span><span class="head-icon"><app-icon name="support" /></span></div>
           <b>{{ dash?.escalatedTickets ?? 0 }}</b>
-          <span> طلبات تحتاج مراجعة إدارية </span>
+          <span>{{ locale.t('ops.dash.escalatedHint') }}</span>
         </a>
       } @else {
         <article class="stat">
-          <div class="top"><span>الطلبات مصعّدة</span><span class="head-icon"><app-icon name="support" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.escalated') }}</span><span class="head-icon"><app-icon name="support" /></span></div>
           <b>{{ dash?.escalatedTickets ?? 0 }}</b>
-          <span> طلبات تحتاج مراجعة إدارية </span>
+          <span>{{ locale.t('ops.dash.escalatedHint') }}</span>
         </article>
       }
       @if (canPage('events')) {
         <a class="stat" routerLink="/ops/events">
-          <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.events') }}</span><span class="head-icon"><app-icon name="views" /></span></div>
           <b>{{ dash?.eventsToday ?? 0 }}</b>
-          <span>مسجّلة في السجل</span>
+          <span>{{ locale.t('ops.dash.eventsHint') }}</span>
         </a>
       } @else {
         <article class="stat">
-          <div class="top"><span>أحداث اليوم</span><span class="head-icon"><app-icon name="views" /></span></div>
+          <div class="top"><span>{{ locale.t('ops.dash.events') }}</span><span class="head-icon"><app-icon name="views" /></span></div>
           <b>{{ dash?.eventsToday ?? 0 }}</b>
-          <span>مسجّلة في السجل</span>
+          <span>{{ locale.t('ops.dash.eventsHint') }}</span>
         </article>
       }
     </div>
 
     <div class="section-head">
       <div>
-        <h2>مهام تحتاج إجراء</h2>
-        <p>اختر مهمة لعرض تفاصيلها واتخاذ الاجراء </p>
+        <h2>{{ locale.t('ops.dash.tasks') }}</h2>
+        <p>{{ locale.t('ops.dash.tasksSub') }}</p>
       </div>
     </div>
 
@@ -121,7 +122,7 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
-            <tr><th>النوع</th><th>التفاصيل</th><th>التاريخ</th></tr>
+            <tr><th>{{ locale.t('ops.dash.kind') }}</th><th>{{ locale.t('ops.dash.details') }}</th><th>{{ locale.t('ops.dash.date') }}</th></tr>
           </thead>
           <tbody>
             @for (row of skeleton; track row) {
@@ -135,15 +136,15 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
         </table>
       </div>
     } @else if (!inbox.length) {
-      <p class="page-empty">لا توجد مهام معلّقة الآن.</p>
+      <p class="page-empty">{{ locale.t('ops.dash.noTasks') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>النوع</th>
-              <th>التفاصيل</th>
-              <th>التاريخ</th>
+              <th>{{ locale.t('ops.dash.kind') }}</th>
+              <th>{{ locale.t('ops.dash.details') }}</th>
+              <th>{{ locale.t('ops.dash.date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -164,73 +165,73 @@ import { canOpenOpsPage, type OpsPage } from './ops-access';
 
     <div class="grid two" style="margin-top:22px">
       <article class="card">
-        <h3>ملخص العمل اليوم</h3>
+        <h3>{{ locale.t('ops.dash.today') }}</h3>
         @if (canPage('approvals')) {
           <a class="activity" routerLink="/ops/approvals">
             <span class="dot"></span>
-            <div><b>الاعتمادات</b><span>{{ countLabel(pendingApprovals, 'عنصر', 'عناصر') }}</span></div>
+            <div><b>{{ locale.t('ops.dash.approvals') }}</b><span>{{ countLabel(pendingApprovals, 'ops.count.item', 'ops.count.items') }}</span></div>
           </a>
           <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'receipt' }">
             <span class="dot"></span>
-            <div><b>إيصالات تحويل</b><span>{{ countLabel(dash?.pendingReceipts ?? 0, 'إيصال', 'إيصالات') }}</span></div>
+            <div><b>{{ locale.t('ops.dash.receipts') }}</b><span>{{ countLabel(dash?.pendingReceipts ?? 0, 'ops.count.receipt', 'ops.count.receipts') }}</span></div>
           </a>
           <a class="activity" routerLink="/ops/approvals" [queryParams]="{ kind: 'accounts' }">
             <span class="dot"></span>
-            <div><b>حسابات خبيرات للمراجعة</b><span>{{ countLabel(dash?.pendingProviders ?? 0, 'حساب', 'حسابات') }}</span></div>
+            <div><b>{{ locale.t('ops.dash.pendingProviders') }}</b><span>{{ countLabel(dash?.pendingProviders ?? 0, 'ops.count.account', 'ops.count.accounts') }}</span></div>
           </a>
         }
         @if (canPage('reviews')) {
           <a class="activity" routerLink="/ops/reviews">
             <span class="dot"></span>
-            <div><b>بلاغات</b><span>{{ countLabel(dash?.openComplaints ?? 0, 'بلاغ', 'بلاغات') }}</span></div>
+            <div><b>{{ locale.t('ops.dash.complaints') }}</b><span>{{ countLabel(dash?.openComplaints ?? 0, 'ops.count.complaint', 'ops.count.complaints') }}</span></div>
           </a>
         }
         @if (canPage('packages')) {
           <a class="activity" routerLink="/ops/packages">
             <span class="dot"></span>
-            <div><b>اشتراكات تنتهي خلال 7 أيام</b><span>{{ countLabel(dash?.expiringSubscriptions ?? 0, 'باقة', 'باقات') }}</span></div>
+            <div><b>{{ locale.t('ops.dash.expiring') }}</b><span>{{ countLabel(dash?.expiringSubscriptions ?? 0, 'ops.count.package', 'ops.count.packages') }}</span></div>
           </a>
         }
       </article>
       <article class="card">
-        <h3>اختصارات الإدارة</h3>
+        <h3>{{ locale.t('ops.dash.shortcuts') }}</h3>
         <div class="ops-shortcuts">
           @if (canPage('approvals')) {
-            <a class="btn ghost" routerLink="/ops/approvals">الاعتمادات</a>
+            <a class="btn ghost" routerLink="/ops/approvals">{{ locale.t('ops.nav.approvals') }}</a>
           }
           @if (canPage('catalog')) {
-            <a class="btn ghost" routerLink="/ops/catalog">الخدمات</a>
+            <a class="btn ghost" routerLink="/ops/catalog">{{ locale.t('ops.short.catalog') }}</a>
           }
           @if (canPage('geo')) {
-            <a class="btn ghost" routerLink="/ops/geo">المناطق</a>
+            <a class="btn ghost" routerLink="/ops/geo">{{ locale.t('ops.short.geo') }}</a>
           }
           @if (canPage('packages')) {
-            <a class="btn ghost" routerLink="/ops/packages">الباقات</a>
+            <a class="btn ghost" routerLink="/ops/packages">{{ locale.t('ops.short.packages') }}</a>
           }
           @if (canPage('settings')) {
-            <a class="btn ghost" routerLink="/ops/settings">الإعدادات</a>
+            <a class="btn ghost" routerLink="/ops/settings">{{ locale.t('ops.short.settings') }}</a>
           }
           @if (canPage('notices')) {
-            <a class="btn ghost" routerLink="/ops/notices">إشعارات المنصة</a>
+            <a class="btn ghost" routerLink="/ops/notices">{{ locale.t('ops.nav.notices') }}</a>
           }
           @if (canPage('clients')) {
-            <a class="btn ghost" routerLink="/ops/clients">عملاء المنصة</a>
+            <a class="btn ghost" routerLink="/ops/clients">{{ locale.t('ops.short.clients') }}</a>
           }
           @if (canPage('org')) {
-            <a class="btn ghost" routerLink="/ops/org">الهيكل التنظيمي</a>
+            <a class="btn ghost" routerLink="/ops/org">{{ locale.t('ops.nav.settingsOrg') }}</a>
           }
           @if (canPage('staff')) {
-            <a class="btn ghost" routerLink="/ops/staff">الموظفات</a>
+            <a class="btn ghost" routerLink="/ops/staff">{{ locale.t('ops.short.staff') }}</a>
           }
           @if (canPage('legal')) {
-            <a class="btn ghost" routerLink="/ops/legal">الشروط</a>
+            <a class="btn ghost" routerLink="/ops/legal">{{ locale.t('ops.short.legal') }}</a>
           }
           @if (canPage('activity')) {
-            <a class="btn ghost" routerLink="/ops/activity">نشاط الفريق</a>
+            <a class="btn ghost" routerLink="/ops/activity">{{ locale.t('ops.nav.activity') }}</a>
           }
         </div>
         <p class="notice" style="margin-top:16px">
-         إدارة جميع الاعتمادات ومراجعتها  من شاشة واحدة.
+         {{ locale.t('ops.dash.notice') }}
         </p>
       </article>
     </div>
@@ -241,6 +242,7 @@ export class OpsDashboardComponent implements OnInit {
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
   readonly session = inject(SessionService);
+  readonly locale = inject(LocaleService);
   readonly opsDate = opsDate;
   readonly skeleton = [1, 2, 3, 4, 5];
 
@@ -266,16 +268,16 @@ export class OpsDashboardComponent implements OnInit {
 
   countLabel(count: number, singular: string, plural: string): string {
     if (count <= 0) {
-      return 'لا يوجد';
+      return this.locale.t('ops.dash.none');
     }
     if (count === 1) {
-      return `1 ${singular}`;
+      return `1 ${this.locale.t(singular)}`;
     }
-    return `${count} ${plural}`;
+    return `${count} ${this.locale.t(plural)}`;
   }
 
   ngOnInit(): void {
-    this.shell.set('لوحة  المعلومات', 'مهام الاعتماد والمراجعة');
+    this.shell.set('ops.dash.title', 'ops.dash.sub');
     this.api.opsDashboard().subscribe({
       next: (dash) => {
         this.dash = dash;
@@ -283,23 +285,15 @@ export class OpsDashboardComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل اللوحة'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.dash.loadFail')));
       },
     });
   }
 
   kindLabel(kind: string): string {
-    const labels: Record<string, string> = {
-      MEDIA: 'ملف',
-      RECEIPT: 'إيصال',
-      AVATAR: 'صورة',
-      PROVIDER: 'حساب خبيرة',
-      CHANGE: 'تعديل ملف',
-      RATING: 'تقييم',
-      COMPLAINT: 'بلاغ',
-      TICKET: 'طلب دعم',
-    };
-    return labels[kind] ?? kind;
+    const key = `ops.kind.${kind}`;
+    const label = this.locale.t(key);
+    return label === key ? kind : label;
   }
 
   inboxRoute(item: OpsInboxItem): string {

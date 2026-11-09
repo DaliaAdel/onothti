@@ -9,7 +9,7 @@ import { LocaleService } from '../core/locale.service';
     <a class="brand" [routerLink]="link">
       <img src="/assets/logo-auth.png" [alt]="locale.t('brand.alt')" />
       <div>
-        <small>منصة الأنوثة والجمال</small>
+        <small>{{ locale.t('brand.platform') }}</small>
       </div>
     </a>
   `,

@@ -10,43 +10,43 @@ import { ShellService } from '../core/shell.service';
   imports: [RouterLink],
   template: `
     @if (locked) {
-      <div class="page-head"><div><h1>الميزة غير متاحة</h1><p>يجب تفعيل الاشتراك أولًا</p></div></div>
+      <div class="page-head"><div><h1>{{ locale.t('p.locked.title') }}</h1><p>{{ locale.t('p.locked.sub') }}</p></div></div>
       <div class="card subscription-lock">
         <div class="symbol">♢</div>
-        <h2>اشتركي لتفعيل أدوات الخبيرة</h2>
-        <p class="muted">بعد اختيار الباقة واعتماد الدفع يمكنكِ إضافة الخدمات ورفع الألبومات واستخدام الإحصاءات والتقييمات.</p>
-        <a class="btn primary" routerLink="/p/package">عرض الباقات</a>
+        <h2>{{ locale.t('p.locked.ctaTitle') }}</h2>
+        <p class="muted">{{ locale.t('p.locked.ctaText') }}</p>
+        <a class="btn primary" routerLink="/p/package">{{ locale.t('p.locked.viewPackages') }}</a>
       </div>
     } @else {
       <div class="page-head">
         <div>
-          <h1>المشاهدات والإحصاءات</h1>
-          <p>تابعي أداء ملفك وخدماتك</p>
+          <h1>{{ locale.t('p.viewsTitle') }}</h1>
+          <p>{{ locale.t('p.views.sub') }}</p>
         </div>
       </div>
       <div class="grid cols-3">
         <div class="card metric">
-          <span class="muted small">إجمالي المشاهدات</span>
+          <span class="muted small">{{ locale.t('p.views.total') }}</span>
           <div class="value">{{ data?.total ?? 0 }}</div>
         </div>
         <div class="card metric">
-          <span class="muted small">مشاهدات آخر 7 أيام</span>
+          <span class="muted small">{{ locale.t('p.views.last7') }}</span>
           <div class="value">{{ last7 }}</div>
         </div>
         <div class="card metric">
-          <span class="muted small">معدل التحويل للتواصل</span>
+          <span class="muted small">{{ locale.t('p.views.conv') }}</span>
           <div class="value">{{ data?.items?.length ?? 0 }}</div>
         </div>
       </div>
       <br />
       <div class="card">
-        <h3>مشاهدات الملف خلال آخر 7 أيام</h3>
+        <h3>{{ locale.t('p.views.chart') }}</h3>
         @if (chartBars.length) {
           <div class="chart-summary">
-            <span><b>{{ last7 }}</b> إجمالي المشاهدات</span>
+            <span><b>{{ last7 }}</b> {{ locale.t('p.views.total') }}</span>
           </div>
           <div class="chart-layout">
-            <div class="chart-scale"><span>أعلى</span><span></span><span></span><span></span><span>0</span></div>
+            <div class="chart-scale"><span>{{ locale.t('p.high') }}</span><span></span><span></span><span></span><span>0</span></div>
             <div class="chart clear-chart">
               @for (bar of chartBars; track bar.label) {
                 <div class="bar-item">
@@ -58,7 +58,7 @@ import { ShellService } from '../core/shell.service';
             </div>
           </div>
         } @else {
-          <p class="muted small">لا توجد مشاهدات بعد.</p>
+          <p class="muted small">{{ locale.t('p.views.empty') }}</p>
         }
       </div>
     }
@@ -72,7 +72,7 @@ export class ProviderViewsPageComponent implements OnInit {
   locked = false;
 
   ngOnInit(): void {
-    this.shell.set('المشاهدات والإحصاءات');
+    this.shell.set('p.viewsTitle');
     this.api.providerSubscription().subscribe({
       next: (sub) => (this.locked = !isLiveSubscription(sub.current)),
     });

@@ -98,16 +98,20 @@ const collection = {
       "",
       "السيرفر: {{baseUrl}}  (افتراضي http://localhost:3000)",
       "Swagger: http://localhost:3000/docs",
-      "OTP التطوير: 123456",
+      "OTP التطوير: 123456  (OTP_DEV_CODE — لا يُستخدم في production)",
       "",
-      "حسابات تجريبية بعد الـ seed (كلمة المرور Secret123):",
+      "الدخول:",
+      "- عميلة وخبيرة: جوال + OTP فقط. POST /auth/phone/start ثم /auth/phone/verify",
+      "- Staff فقط: جوال + كلمة مرور عبر POST /auth/login",
+      "",
+      "حسابات تجريبية بعد الـ seed:",
       "- عميلة: سارة / 0504444444",
       "- خبيرة: نورة 0501111111 | هند 0502222222 | منى 0503333333",
       "- Staff: 0500000001 — عيّني staffPassword من STAFF_PASSWORD وقت الـ seed",
       "",
       "الترتيب:",
       "1) Catalog → المدن والخدمات (يحفظ cityId / serviceId)",
-      "2) Auth → دخول العميلة / الخبيرة / Staff (يحفظ التوكن)",
+      "2) Auth → OTP للعميلة/الخبيرة أو كلمة مرور للـ Staff (يحفظ التوكن)",
       "3) شغّلي طلبات المجلد المناسب",
     ].join("\n"),
     schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -117,7 +121,6 @@ const collection = {
     { key: "customerMobile", value: "0504444444" },
     { key: "providerMobile", value: "0501111111" },
     { key: "staffMobile", value: "0500000001" },
-    { key: "password", value: "Secret123" },
     { key: "staffPassword", value: "Secret123" },
     { key: "otp", value: "123456" },
     { key: "customerToken", value: "" },
@@ -224,18 +227,28 @@ const collection = {
     folder(
       "1. Auth — دخول لكل نوع",
       [
-        req("Login — عميلة (سارة)", "POST", "/auth/login", {
+        req("عميلة — 1 إرسال OTP", "POST", "/auth/phone/start", {
           noauth: true,
-          body: { mobile: "{{customerMobile}}", password: "{{password}}", channel: "WEB" },
-          desc: "يحفظ customerToken",
+          body: { mobile: "{{customerMobile}}", channel: "WEB" },
+          desc: "العميلة تدخل بالجوال فقط. يرسل OTP. في التطوير الرمز {{otp}}.",
+        }),
+        req("عميلة — 2 تحقق OTP", "POST", "/auth/phone/verify", {
+          noauth: true,
+          body: { mobile: "{{customerMobile}}", code: "{{otp}}", channel: "WEB" },
+          desc: "بدون كلمة مرور. يحفظ customerToken",
           event: saveToken("customerToken", [
             "if (json.user?.id) pm.collectionVariables.set('accountId', json.user.id);",
           ]),
         }),
-        req("Login — خبيرة (نورة)", "POST", "/auth/login", {
+        req("خبيرة — 1 إرسال OTP", "POST", "/auth/phone/start", {
           noauth: true,
-          body: { mobile: "{{providerMobile}}", password: "{{password}}", channel: "WEB" },
-          desc: "يحفظ providerToken و providerId",
+          body: { mobile: "{{providerMobile}}", channel: "WEB" },
+          desc: "الخبيرة تدخل بالجوال فقط. يرسل OTP. في التطوير الرمز {{otp}}.",
+        }),
+        req("خبيرة — 2 تحقق OTP", "POST", "/auth/phone/verify", {
+          noauth: true,
+          body: { mobile: "{{providerMobile}}", code: "{{otp}}", channel: "WEB" },
+          desc: "بدون كلمة مرور. يحفظ providerToken و providerId",
           event: saveToken("providerToken", [
             "if (json.user?.id) {",
             "  pm.collectionVariables.set('providerId', json.user.id);",
@@ -243,10 +256,10 @@ const collection = {
             "}",
           ]),
         }),
-        req("Login — Staff", "POST", "/auth/login", {
+        req("Staff — دخول بكلمة المرور", "POST", "/auth/login", {
           noauth: true,
           body: { mobile: "{{staffMobile}}", password: "{{staffPassword}}", channel: "WEB" },
-          desc: "يحفظ staffToken. غيّري staffPassword حسب الـ seed.",
+          desc: "حساب التشغيل فقط يستخدم كلمة مرور. يحفظ staffToken.",
           event: saveToken("staffToken", [
             "if (json.user?.id) pm.collectionVariables.set('staffId', json.user.id);",
           ]),
@@ -258,14 +271,6 @@ const collection = {
           token: "staffToken",
           body: {},
           desc: "تحديث lastActiveAt (أي توكن صالح)",
-        }),
-        req("POST /auth/phone/start", "POST", "/auth/phone/start", {
-          noauth: true,
-          body: { mobile: "{{customerMobile}}", channel: "WEB" },
-        }),
-        req("POST /auth/phone/verify", "POST", "/auth/phone/verify", {
-          noauth: true,
-          body: { mobile: "{{customerMobile}}", code: "{{otp}}", channel: "WEB" },
         }),
         req("POST /auth/otp/send", "POST", "/auth/otp/send", {
           noauth: true,
@@ -291,25 +296,31 @@ const collection = {
           token: "staffToken",
           body: { currentPassword: "{{staffPassword}}", newPassword: "{{staffPassword}}" },
         }),
-        req("POST /auth/register — عميلة جديدة", "POST", "/auth/register", {
+        req("حساب جديد — عميلة (phone/complete)", "POST", "/auth/phone/complete", {
           noauth: true,
           body: {
+            mobile: "0505555555",
+            code: "{{otp}}",
             accountType: "CUSTOMER",
             displayName: "لينا",
-            mobile: "0505555555",
-            password: "Secret123",
+            cityId: "{{cityId}}",
             acceptTerms: true,
+            channel: "WEB",
           },
+          desc: "بعد phone/start و phone/verify لحساب جديد. بدون كلمة مرور.",
         }),
-        req("POST /auth/register — خبيرة جديدة", "POST", "/auth/register", {
+        req("حساب جديد — خبيرة (phone/complete)", "POST", "/auth/phone/complete", {
           noauth: true,
           body: {
+            mobile: "0509876543",
+            code: "{{otp}}",
             accountType: "PROVIDER",
             displayName: "لمى",
-            mobile: "0509876543",
-            password: "Secret123",
+            cityId: "{{cityId}}",
             acceptTerms: true,
+            channel: "WEB",
           },
+          desc: "بعد phone/start و phone/verify لحساب جديد. بدون كلمة مرور.",
         }),
         req("POST /auth/logout — عميلة", "POST", "/auth/logout", {
           token: "customerToken",
@@ -682,7 +693,6 @@ const environment = {
     { key: "customerMobile", value: "0504444444", enabled: true },
     { key: "providerMobile", value: "0501111111", enabled: true },
     { key: "staffMobile", value: "0500000001", enabled: true },
-    { key: "password", value: "Secret123", enabled: true },
     { key: "staffPassword", value: "Secret123", enabled: true },
     { key: "otp", value: "123456", enabled: true },
     { key: "customerToken", value: "", enabled: true },

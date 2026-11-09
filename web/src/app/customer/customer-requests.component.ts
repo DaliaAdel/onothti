@@ -13,12 +13,12 @@ import { ToastService } from '../core/toast.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>طلباتي</h1>
-        <p>ارفعي طلبًا جديدًا وتابعي الطلبات السابقة</p>
+        <h1>{{ locale.t('req.title') }}</h1>
+        <p>{{ locale.t('req.sub') }}</p>
       </div>
     </div>
     @if (selected) {
-      <button class="btn secondary back" type="button" (click)="selected = null">← الرجوع إلى الطلبات</button>
+      <button class="btn secondary back" type="button" (click)="selected = null">{{ locale.t('req.back') }}</button>
       <div class="request-detail-head card">
         <div>
           <span class="request-type">{{ locale.localizedName(selected.type) }}</span>
@@ -29,11 +29,11 @@ import { ToastService } from '../core/toast.service';
       </div>
       <div class="grid request-detail-layout">
         <div class="card">
-          <h3>تفاصيل الطلب</h3>
+          <h3>{{ locale.t('req.details') }}</h3>
           <p class="request-description">{{ selected.body }}</p>
         </div>
         <div class="card request-reply">
-          <h3>رد المنصة</h3>
+          <h3>{{ locale.t('req.reply') }}</h3>
           @if (selected.comments?.length) {
             @for (comment of selected.comments; track comment.id) {
               <p class="muted small" style="margin:0 0 8px">
@@ -41,40 +41,40 @@ import { ToastService } from '../core/toast.service';
               </p>
             }
           } @else {
-            <p class="muted small">يتم الرد من فريق المنصة بعد المراجعة.</p>
+            <p class="muted small">{{ locale.t('req.replyWait') }}</p>
           }
         </div>
       </div>
     } @else {
       <div class="card request-form">
-        <h3>فتح طلب جديد</h3>
+        <h3>{{ locale.t('req.new') }}</h3>
         <div class="grid cols-2">
           <div class="field">
-            <label>نوع الطلب</label>
+            <label>{{ locale.t('req.type') }}</label>
             <select name="typeCode" [(ngModel)]="typeCode">
-              <option value="">اختاري النوع</option>
+              <option value="">{{ locale.t('req.pickType') }}</option>
               @for (type of types; track type.id) {
                 <option [value]="type.code">{{ locale.localizedName(type) }}</option>
               }
             </select>
           </div>
           <div class="field">
-            <label>عنوان المشكلة</label>
-            <input name="title" [(ngModel)]="title" placeholder="اكتبي عنوان المشكلة" />
+            <label>{{ locale.t('req.issueTitle') }}</label>
+            <input name="title" [(ngModel)]="title" [placeholder]="locale.t('req.issuePh')" />
           </div>
         </div>
         <div class="field">
-          <label>تفاصيل الطلب</label>
-          <textarea name="body" [(ngModel)]="body" placeholder="اكتبي تفاصيل الطلب هنا..."></textarea>
+          <label>{{ locale.t('req.body') }}</label>
+          <textarea name="body" [(ngModel)]="body" [placeholder]="locale.t('req.bodyPh')"></textarea>
         </div>
-        <button class="btn primary" type="button" [disabled]="loading" (click)="send()">إرسال الطلب</button>
+        <button class="btn primary" type="button" [disabled]="loading" (click)="send()">{{ locale.t('req.send') }}</button>
       </div>
       <div class="section-title requests-history-title">
-        <h3>الطلبات السابقة</h3>
+        <h3>{{ locale.t('req.history') }}</h3>
         <div class="request-counts">
-          <span><b>{{ tickets.length }}</b> الإجمالي</span>
-          <span class="reviewed"><b>{{ reviewed }}</b> تمت المراجعة</span>
-          <span class="processing"><b>{{ processing }}</b> قيد التنفيذ</span>
+          <span><b>{{ tickets.length }}</b> {{ locale.t('req.total') }}</span>
+          <span class="reviewed"><b>{{ reviewed }}</b> {{ locale.t('req.reviewed') }}</span>
+          <span class="processing"><b>{{ processing }}</b> {{ locale.t('req.processing') }}</span>
         </div>
       </div>
       <div class="card list">
@@ -88,11 +88,11 @@ import { ToastService } from '../core/toast.service';
               </div>
               <p>{{ ticket.refNo }}</p>
             </div>
-            <button class="btn ghost" type="button" (click)="selected = ticket">عرض</button>
+            <button class="btn ghost" type="button" (click)="selected = ticket">{{ locale.t('ui.view') }}</button>
           </div>
         }
         @if (!tickets.length) {
-          <p class="muted small" style="margin:0">لا توجد طلبات بعد.</p>
+          <p class="muted small" style="margin:0">{{ locale.t('req.empty') }}</p>
         }
       </div>
     }
@@ -120,10 +120,10 @@ export class CustomerRequestsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('طلباتي');
+    this.shell.set('c.requests.title');
     this.api.customerTicketTypes().subscribe({
       next: (types) => (this.types = types),
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل أنواع الطلب')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('req.loadTypesFail'))),
     });
     this.reload();
   }
@@ -134,12 +134,12 @@ export class CustomerRequestsComponent implements OnInit {
 
   statusLabel(status: string): string {
     if (this.isDone(status)) {
-      return 'تمت المراجعة';
+      return this.locale.t('req.status.reviewed');
     }
     if (status === 'SENT' || status === 'OPEN' || status === 'PENDING') {
-      return 'قيد المراجعة';
+      return this.locale.t('req.status.pending');
     }
-    return 'قيد التنفيذ';
+    return this.locale.t('req.status.processing');
   }
 
   titleOf(ticket: ProviderTicket): string {
@@ -157,7 +157,7 @@ export class CustomerRequestsComponent implements OnInit {
 
   send(): void {
     if (!this.typeCode || this.title.trim().length < 2 || this.body.trim().length < 8) {
-      this.toast.show('اختاري النوع واكتبي عنوان المشكلة وتفاصيل أوضح');
+      this.toast.show(this.locale.t('req.fill'));
       return;
     }
     this.loading = true;
@@ -166,12 +166,12 @@ export class CustomerRequestsComponent implements OnInit {
         this.loading = false;
         this.body = '';
         this.title = '';
-        this.toast.show('تم إرسال الطلب');
+        this.toast.show(this.locale.t('req.sent'));
         this.reload();
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر إرسال التذكرة'));
+        this.toast.show(apiMessage(err, this.locale.t('req.sendFail')));
       },
     });
   }

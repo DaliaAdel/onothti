@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import type { AppNotification } from '../core/models';
 import { notificationLink } from '../core/notification-link';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { NotifyListComponent } from '../shared/notify-list.component';
@@ -13,14 +14,14 @@ import { NotifyListComponent } from '../shared/notify-list.component';
   template: `
     <div class="page-head">
       <div>
-        <h1>الإشعارات</h1>
-        <p>تحديثات الحساب والاشتراك والطلبات</p>
+        <h1>{{ locale.t('p.notify.title') }}</h1>
+        <p>{{ locale.t('p.notify.sub') }}</p>
       </div>
       <div class="notify-actions">
         @if (unread) {
-          <span class="notify-badge">{{ unread }} غير مقروء</span>
+          <span class="notify-badge">{{ unread }} {{ locale.t('p.notify.unread') }}</span>
         }
-        <button class="btn ghost" type="button" (click)="readAll()">تحديد الكل كمقروء</button>
+        <button class="btn ghost" type="button" (click)="readAll()">{{ locale.t('p.notify.readAll') }}</button>
       </div>
     </div>
     <app-notify-list [items]="items" (opened)="open($event)" />
@@ -31,6 +32,7 @@ export class ProviderNotificationsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   items: AppNotification[] = [];
 
   get unread(): number {
@@ -38,7 +40,7 @@ export class ProviderNotificationsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('الإشعارات');
+    this.shell.set('nav.notifications');
     this.reload();
   }
 

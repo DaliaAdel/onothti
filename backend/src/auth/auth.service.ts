@@ -625,11 +625,12 @@ export class AuthService {
       },
     });
     if (!staff) {
-      return { roleCode: null as string | null, roleNameAr: null as string | null, permissions: [] as string[] };
+      return { roleCode: null as string | null, roleNameAr: null as string | null, roleNameEn: null as string | null, permissions: [] as string[] };
     }
     return {
       roleCode: staff.role.code,
       roleNameAr: staff.role.nameAr,
+      roleNameEn: staff.role.nameEn,
       permissions: effectivePermissionCodes(staff).codes,
     };
   }

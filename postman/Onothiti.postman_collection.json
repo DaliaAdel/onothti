@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "أنوثتي API — Customer · Provider · Staff",
-    "description": "Collection كاملة لحسابات العميلة والخبيرة وStaff.\n\nالسيرفر: {{baseUrl}}  (افتراضي http://localhost:3000)\nSwagger: http://localhost:3000/docs\nOTP التطوير: 123456\n\nحسابات تجريبية بعد الـ seed (كلمة المرور Secret123):\n- عميلة: سارة / 0504444444\n- خبيرة: نورة 0501111111 | هند 0502222222 | منى 0503333333\n- Staff: 0500000001 — عيّني staffPassword من STAFF_PASSWORD وقت الـ seed\n\nالترتيب:\n1) Catalog → المدن والخدمات (يحفظ cityId / serviceId)\n2) Auth → دخول العميلة / الخبيرة / Staff (يحفظ التوكن)\n3) شغّلي طلبات المجلد المناسب",
+    "description": "Collection كاملة لحسابات العميلة والخبيرة وStaff.\n\nالسيرفر: {{baseUrl}}  (افتراضي http://localhost:3000)\nSwagger: http://localhost:3000/docs\nOTP التطوير: 123456  (OTP_DEV_CODE — لا يُستخدم في production)\n\nالدخول:\n- عميلة وخبيرة: جوال + OTP فقط. POST /auth/phone/start ثم /auth/phone/verify\n- Staff فقط: جوال + كلمة مرور عبر POST /auth/login\n\nحسابات تجريبية بعد الـ seed:\n- عميلة: سارة / 0504444444\n- خبيرة: نورة 0501111111 | هند 0502222222 | منى 0503333333\n- Staff: 0500000001 — عيّني staffPassword من STAFF_PASSWORD وقت الـ seed\n\nالترتيب:\n1) Catalog → المدن والخدمات (يحفظ cityId / serviceId)\n2) Auth → OTP للعميلة/الخبيرة أو كلمة مرور للـ Staff (يحفظ التوكن)\n3) شغّلي طلبات المجلد المناسب",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -20,10 +20,6 @@
     {
       "key": "staffMobile",
       "value": "0500000001"
-    },
-    {
-      "key": "password",
-      "value": "Secret123"
     },
     {
       "key": "staffPassword",
@@ -477,7 +473,7 @@
       "name": "1. Auth — دخول لكل نوع",
       "item": [
         {
-          "name": "Login — عميلة (سارة)",
+          "name": "عميلة — 1 إرسال OTP",
           "request": {
             "method": "POST",
             "header": [
@@ -486,14 +482,35 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "يحفظ customerToken",
+            "url": "{{baseUrl}}/api/auth/phone/start",
+            "description": "العميلة تدخل بالجوال فقط. يرسل OTP. في التطوير الرمز {{otp}}.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"password\": \"{{password}}\",\n  \"channel\": \"WEB\"\n}"
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "عميلة — 2 تحقق OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/phone/verify",
+            "description": "بدون كلمة مرور. يحفظ customerToken",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"channel\": \"WEB\"\n}"
             }
           },
           "event": [
@@ -516,7 +533,7 @@
           ]
         },
         {
-          "name": "Login — خبيرة (نورة)",
+          "name": "خبيرة — 1 إرسال OTP",
           "request": {
             "method": "POST",
             "header": [
@@ -525,14 +542,35 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "يحفظ providerToken و providerId",
+            "url": "{{baseUrl}}/api/auth/phone/start",
+            "description": "الخبيرة تدخل بالجوال فقط. يرسل OTP. في التطوير الرمز {{otp}}.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"{{providerMobile}}\",\n  \"password\": \"{{password}}\",\n  \"channel\": \"WEB\"\n}"
+              "raw": "{\n  \"mobile\": \"{{providerMobile}}\",\n  \"channel\": \"WEB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "خبيرة — 2 تحقق OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/phone/verify",
+            "description": "بدون كلمة مرور. يحفظ providerToken و providerId",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{providerMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"channel\": \"WEB\"\n}"
             }
           },
           "event": [
@@ -558,7 +596,7 @@
           ]
         },
         {
-          "name": "Login — Staff",
+          "name": "Staff — دخول بكلمة المرور",
           "request": {
             "method": "POST",
             "header": [
@@ -568,7 +606,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/auth/login",
-            "description": "يحفظ staffToken. غيّري staffPassword حسب الـ seed.",
+            "description": "حساب التشغيل فقط يستخدم كلمة مرور. يحفظ staffToken.",
             "auth": {
               "type": "noauth"
             },
@@ -678,48 +716,6 @@
             "body": {
               "mode": "raw",
               "raw": "{}"
-            }
-          }
-        },
-        {
-          "name": "POST /auth/phone/start",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/auth/phone/start",
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"channel\": \"WEB\"\n}"
-            }
-          }
-        },
-        {
-          "name": "POST /auth/phone/verify",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/auth/phone/verify",
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobile\": \"{{customerMobile}}\",\n  \"code\": \"{{otp}}\",\n  \"channel\": \"WEB\"\n}"
             }
           }
         },
@@ -857,7 +853,7 @@
           }
         },
         {
-          "name": "POST /auth/register — عميلة جديدة",
+          "name": "حساب جديد — عميلة (phone/complete)",
           "request": {
             "method": "POST",
             "header": [
@@ -866,19 +862,19 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/api/auth/register",
-            "description": "",
+            "url": "{{baseUrl}}/api/auth/phone/complete",
+            "description": "بعد phone/start و phone/verify لحساب جديد. بدون كلمة مرور.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"mobile\": \"0505555555\",\n  \"password\": \"Secret123\",\n  \"acceptTerms\": true\n}"
+              "raw": "{\n  \"mobile\": \"0505555555\",\n  \"code\": \"{{otp}}\",\n  \"accountType\": \"CUSTOMER\",\n  \"displayName\": \"لينا\",\n  \"cityId\": \"{{cityId}}\",\n  \"acceptTerms\": true,\n  \"channel\": \"WEB\"\n}"
             }
           }
         },
         {
-          "name": "POST /auth/register — خبيرة جديدة",
+          "name": "حساب جديد — خبيرة (phone/complete)",
           "request": {
             "method": "POST",
             "header": [
@@ -887,14 +883,14 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/api/auth/register",
-            "description": "",
+            "url": "{{baseUrl}}/api/auth/phone/complete",
+            "description": "بعد phone/start و phone/verify لحساب جديد. بدون كلمة مرور.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"mobile\": \"0509876543\",\n  \"password\": \"Secret123\",\n  \"acceptTerms\": true\n}"
+              "raw": "{\n  \"mobile\": \"0509876543\",\n  \"code\": \"{{otp}}\",\n  \"accountType\": \"PROVIDER\",\n  \"displayName\": \"لمى\",\n  \"cityId\": \"{{cityId}}\",\n  \"acceptTerms\": true,\n  \"channel\": \"WEB\"\n}"
             }
           }
         },

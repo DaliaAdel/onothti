@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LocaleService } from '../core/locale.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
 
 @Component({
@@ -8,24 +9,26 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <div class="auth-box">
-        <a class="auth-back" routerLink="/">← الرئيسية</a>
-        <span class="auth-kicker">مرحبًا بكِ</span>
-        <h2>اختار طريقة المتابعة</h2>
-        <p class="muted">سجّل الدخول إلى حسابك أو ابدأ إنشاء حساب جديد.</p>
+        <a class="auth-back" routerLink="/">{{ locale.t('auth.home') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.choice.kicker') }}</span>
+        <h2>{{ locale.t('auth.choice.title') }}</h2>
+        <p class="muted">{{ locale.t('auth.choice.sub') }}</p>
         <div class="entry-options">
           <a class="entry-card" routerLink="/login/phone">
             <span class="entry-icon">✓</span>
-            <b>لدي حساب</b>
-            <small>الدخول برقم الجوال ثم رمز التحقق أو كلمة المرور</small>
+            <b>{{ locale.t('auth.choice.hasAccount') }}</b>
+            <small>{{ locale.t('auth.choice.hasAccountText') }}</small>
           </a>
           <a class="entry-card" routerLink="/signup">
             <span class="entry-icon">＋</span>
-            <b>مستخدم جديد</b>
-            <small>إنشاء حساب لأول مرة</small>
+            <b>{{ locale.t('auth.choice.new') }}</b>
+            <small>{{ locale.t('auth.choice.newText') }}</small>
           </a>
         </div>
       </div>
     </app-auth-layout>
   `,
 })
-export class LoginComponent {}
+export class LoginComponent {
+  readonly locale = inject(LocaleService);
+}

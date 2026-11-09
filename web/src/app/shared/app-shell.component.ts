@@ -25,11 +25,11 @@ export interface NavItem {
   imports: [AuthLayoutComponent, BrandComponent, IconComponent, RouterLink, RouterLinkActive],
   template: `
     <div class="app" [class.ops-app]="home === '/ops'" [class.menu-open]="menuOpen">
-      <button class="nav-backdrop" type="button" aria-label="إغلاق القائمة" (click)="closeMenu()"></button>
+      <button class="nav-backdrop" type="button" [attr.aria-label]="locale.t('shell.closeMenu')" (click)="closeMenu()"></button>
       <aside class="sidebar" id="app-sidebar">
         <div class="sidebar-top">
           <app-brand [link]="home" />
-          <button class="menu-close icon-btn" type="button" aria-label="إغلاق القائمة" (click)="closeMenu()">×</button>
+          <button class="menu-close icon-btn" type="button" [attr.aria-label]="locale.t('shell.closeMenu')" (click)="closeMenu()">×</button>
         </div>
         @if (home === '/ops') {
           <div class="role-card">
@@ -76,7 +76,7 @@ export interface NavItem {
           </div>
           <button class="logout" type="button" (click)="logout()">
             <span class="ico nav-icon"><app-icon name="logout" /></span>
-            تسجيل الخروج
+            {{ locale.t('shell.logout') }}
           </button>
         </div>
       </aside>
@@ -87,31 +87,31 @@ export interface NavItem {
             type="button"
             [attr.aria-expanded]="menuOpen"
             aria-controls="app-sidebar"
-            aria-label="القائمة"
+            [attr.aria-label]="locale.t('shell.menu')"
             (click)="toggleMenu()"
           >
             <span class="menu-bars" [class.open]="menuOpen" aria-hidden="true"><i></i><i></i><i></i></span>
           </button>
           <div class="crumb">
             @if (home === '/c') {
-              <small>حساب العميلة</small>
+              <small>{{ locale.t('shell.customerAccount') }}</small>
             }
             @if (home === '/p') {
-              <small>حساب الخبيرة</small>
+              <small>{{ locale.t('shell.providerAccount') }}</small>
             }
-            <b>{{ shell.title() }}</b>
+            <b>{{ locale.t(shell.title()) }}</b>
           </div>
           <div class="top-actions">
             @if (home === '/ops') {
-              <div class="online-pills" aria-label="المتواجدون الآن">
-                <span class="online-pill" title="عميلات أونلاين">
+              <div class="online-pills" [attr.aria-label]="locale.t('shell.onlineNow')">
+                <span class="online-pill" [attr.title]="locale.t('shell.onlineCustomers')">
                   <i class="online-dot" aria-hidden="true"></i>
-                  <span class="online-label">عميلات</span>
+                  <span class="online-label">{{ locale.t('shell.onlineCustomers') }}</span>
                   <b>{{ onlineCustomers }}</b>
                 </span>
-                <span class="online-pill" title="خبيرات أونلاين">
+                <span class="online-pill" [attr.title]="locale.t('shell.onlineProviders')">
                   <i class="online-dot" aria-hidden="true"></i>
-                  <span class="online-label">خبيرات</span>
+                  <span class="online-label">{{ locale.t('shell.onlineProviders') }}</span>
                   <b>{{ onlineProviders }}</b>
                 </span>
               </div>
@@ -134,7 +134,7 @@ export interface NavItem {
               [class.has-photo]="!!avatarUrl"
               [routerLink]="profileRoute"
               [style.background-image]="avatarUrl ? 'url(' + avatarUrl + ')' : 'none'"
-              aria-label="الملف الشخصي"
+              [attr.aria-label]="locale.t('shell.profile')"
             >
               @if (!avatarUrl) {
                 <app-icon name="profile" />
@@ -151,12 +151,12 @@ export interface NavItem {
       <div class="logout-auth" role="dialog" aria-modal="true" aria-labelledby="logout-title">
         <app-auth-layout>
           <div class="auth-box">
-            <button class="auth-back" type="button" (click)="cancelLogout()">← البقاء في الحساب</button>
-            <span class="auth-kicker">تسجيل الخروج</span>
-            <h2 id="logout-title">إلى لقاء قريب</h2>
-            <p class="muted">نتمنى لك يومًا جميلًا، وننتظر عودتك قريبًا لمواصلة رحلتك معنا.</p>
+            <button class="auth-back" type="button" (click)="cancelLogout()">← {{ locale.t('shell.stay') }}</button>
+            <span class="auth-kicker">{{ locale.t('shell.logoutKicker') }}</span>
+            <h2 id="logout-title">{{ locale.t('shell.logoutTitle') }}</h2>
+            <p class="muted">{{ locale.t('shell.logoutText') }}</p>
             <button class="btn primary auth-submit full" type="button" [disabled]="loggingOut" (click)="confirmLogout()">
-              تسجيل الخروج
+              {{ locale.t('shell.logout') }}
             </button>
           </div>
         </app-auth-layout>
@@ -197,11 +197,12 @@ export class AppShellComponent implements OnInit {
   get cityLabel(): string {
     return this.session.user()?.city
       ? this.locale.localizedName(this.session.user()!.city)
-      : 'المدينة';
+      : this.locale.t('shell.city');
   }
 
   get roleLabel(): string {
-    return this.session.user()?.roleNameAr || 'حساب تشغيلي';
+    const user = this.session.user();
+    return this.locale.localizedName({ nameAr: user?.roleNameAr, nameEn: user?.roleNameEn }, this.locale.t('shell.opsAccount'));
   }
 
   isFolderOpen(item: NavItem): boolean {

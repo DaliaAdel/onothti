@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsOrgDepartment, OpsOrgTeam, OpsStaff } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -22,61 +23,61 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2>الهيكل التنظيمي</h2>
-          <p>يضم كل قسم فريقًا واحدًا أو أكثر. اربط كل موظف بالفريق المناسب من خلال شاشة «حسابات موظفي المنصة».</p>
+          <h2>{{ locale.t('ops.org.heading') }}</h2>
+          <p>{{ locale.t('ops.org.intro') }}</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn ghost" routerLink="/ops/staff">حسابات الموظفين</a>
+          <a class="btn ghost" routerLink="/ops/staff">{{ locale.t('ops.org.staffLink') }}</a>
           @if (canEditOrg) {
-            <button class="btn primary" type="button" (click)="addingDept = true">+ إضافة قسم</button>
+            <button class="btn primary" type="button" (click)="addingDept = true">{{ locale.t('ops.org.addDept') }}</button>
           }
         </div>
       </div>
 
-      <app-ops-modal [open]="addingDept" title="إضافة قسم" kicker="الهيكل التنظيمي" (closed)="addingDept = false">
+      <app-ops-modal [open]="addingDept" [title]="locale.t('ops.org.addDeptTitle')" [kicker]="locale.t('ops.org.addDeptKicker')" (closed)="addingDept = false">
         <div class="form-grid">
           <div class="field">
-            <label>الاسم *</label>
-            <input class="input" [(ngModel)]="deptDraft.nameAr" placeholder="التشغيل" />
+            <label>{{ locale.t('ops.ui.nameReq') }}</label>
+            <input class="input" [(ngModel)]="deptDraft.nameAr" [placeholder]="locale.t('ops.org.deptPh')" />
           </div>
           <div class="field">
-            <label>الاسم الإنجليزي *</label>
-            <input class="input" [(ngModel)]="deptDraft.nameEn" placeholder="Operations" />
+            <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+            <input class="input" [(ngModel)]="deptDraft.nameEn" [placeholder]="locale.t('ops.org.deptEnPh')" />
           </div>
           <div class="field">
-            <label>الترتيب</label>
+            <label>{{ locale.t('ops.ui.sort') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="deptDraft.sortOrder" />
           </div>
         </div>
-        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createDepartment()">إضافة القسم</button>
+        <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createDepartment()">{{ locale.t('ops.org.addDeptSubmit') }}</button>
       </app-ops-modal>
 
       @if (loading) {
-        <p class="loading">جاري التحميل...</p>
+        <p class="loading">{{ locale.t('ui.loading') }}</p>
       } @else if (!departments.length) {
-        <p class="page-empty">لا توجد أقسام بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.org.empty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>القسم</th>
-                <th>الاسم الإنجليزي</th>
-                <th>الفرق</th>
-                <th>الموظفات</th>
-                <th>الظهور</th>
+                <th>{{ locale.t('ops.org.col.dept') }}</th>
+                <th>{{ locale.t('ops.ui.nameEn') }}</th>
+                <th>{{ locale.t('ops.org.col.teams') }}</th>
+                <th>{{ locale.t('ops.org.col.staff') }}</th>
+                <th>{{ locale.t('ops.ui.appearance') }}</th>
               </tr>
             </thead>
             <tbody>
               @for (department of departments; track department.id) {
                 <tr (click)="openDepartment(department)">
-                  <td><b>{{ department.nameAr }}</b></td>
+                  <td><b>{{ locale.localizedName(department) }}</b></td>
                   <td>{{ department.nameEn }}</td>
                   <td>{{ department.teams.length }}</td>
                   <td>{{ memberCount(department) }}</td>
                   <td>
                     <span class="status {{ department.isActive ? 'success' : 'error' }}">
-                      {{ department.isActive ? 'ظاهر' : 'مخفي' }}
+                      {{ department.isActive ? locale.t('ops.ui.shown') : locale.t('ops.ui.hiddenM') }}
                     </span>
                   </td>
                 </tr>
@@ -88,48 +89,48 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeDepartment()">→ رجوع للأقسام</button>
-          <h2>{{ selected.nameAr }}</h2>
-          <p>كل فريق تشغيل يحتوي على مدير وموظفات، ويمكن تحديد صلاحيات مستقلة لكل حساب.</p>
+          <button class="text-link back" type="button" (click)="closeDepartment()">{{ locale.t('ops.org.back') }}</button>
+          <h2>{{ locale.localizedName(selected) }}</h2>
+          <p>{{ locale.t('ops.org.deptHint') }}</p>
         </div>
         @if (canEditOrg) {
-          <button class="btn primary" type="button" (click)="openAddTeam()">+ إضافة فريق</button>
+          <button class="btn primary" type="button" (click)="openAddTeam()">{{ locale.t('ops.org.addTeam') }}</button>
         }
       </div>
 
       @if (canEditOrg) {
         <div class="form-grid" style="margin-bottom:18px">
           <div class="field">
-            <label>الاسم *</label>
+            <label>{{ locale.t('ops.ui.nameReq') }}</label>
             <input class="input" [(ngModel)]="selected.nameAr" />
           </div>
           <div class="field">
-            <label>الاسم الإنجليزي *</label>
+            <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
             <input class="input" [(ngModel)]="selected.nameEn" />
           </div>
           <div class="field">
-            <label>الترتيب</label>
+            <label>{{ locale.t('ops.ui.sort') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="selected.sortOrder" />
           </div>
         </div>
         <div class="ops-drawer-actions" style="margin:0 0 22px">
-          <button class="btn primary" type="button" (click)="saveDepartment(selected)">حفظ القسم</button>
+          <button class="btn primary" type="button" (click)="saveDepartment(selected)">{{ locale.t('ops.org.saveDept') }}</button>
           <button class="btn ghost" type="button" (click)="toggleDepartment(selected)">
-            {{ selected.isActive ? 'إخفاء' : 'إظهار' }}
+            {{ selected.isActive ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
           </button>
         </div>
       }
 
       @if (!selected.teams.length) {
-        <p class="page-empty">لا توجد فرق في هذا القسم بعد.</p>
+        <p class="page-empty">{{ locale.t('ops.org.teamsEmpty') }}</p>
       } @else {
         <div class="org-teams">
           @for (team of selected.teams; track team.id) {
             <article class="org-team" [class.active]="selectedTeam?.id === team.id" (click)="selectedTeam = team">
-              <h3>{{ team.nameAr }}</h3>
-              <p class="meta">{{ team.memberCount }} حسابات تشغيلية</p>
+              <h3>{{ locale.localizedName(team) }}</h3>
+              <p class="meta">{{ locale.tf('ops.org.memberCount', { n: team.memberCount }) }}</p>
               @if (!team.members.length) {
-                <p class="muted small">لا توجد موظفات مربوطة بعد.</p>
+                <p class="muted small">{{ locale.t('ops.org.noMembers') }}</p>
               }
               @for (member of team.members; track member.id) {
                 <div class="org-member">
@@ -143,50 +144,50 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
       }
     }
 
-    <app-ops-modal [open]="addingTeam" title="إضافة فريق" [kicker]="selected?.nameAr || ''" (closed)="addingTeam = false">
+    <app-ops-modal [open]="addingTeam" [title]="locale.t('ops.org.addTeamTitle')" [kicker]="selected ? locale.localizedName(selected) : ''" (closed)="addingTeam = false">
       <div class="form-grid">
         <div class="field">
-          <label>الاسم *</label>
-          <input class="input" [(ngModel)]="teamDraft.nameAr" placeholder="فريق التشغيل الأول" />
+          <label>{{ locale.t('ops.ui.nameReq') }}</label>
+          <input class="input" [(ngModel)]="teamDraft.nameAr" [placeholder]="locale.t('ops.org.teamPh')" />
         </div>
         <div class="field">
-          <label>الاسم الإنجليزي *</label>
-          <input class="input" [(ngModel)]="teamDraft.nameEn" placeholder="Operations Team 1" />
+          <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
+          <input class="input" [(ngModel)]="teamDraft.nameEn" [placeholder]="locale.t('ops.org.teamEnPh')" />
         </div>
         <div class="field">
-          <label>مديرة الفريق</label>
+          <label>{{ locale.t('ops.org.lead') }}</label>
           <select class="input" [(ngModel)]="teamDraft.leadUserId">
-            <option value="">بدون تحديد</option>
+            <option value="">{{ locale.t('ops.org.noLead') }}</option>
             @for (item of staff; track item.id) {
               <option [value]="item.id">{{ item.displayName }}</option>
             }
           </select>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createTeam()">إضافة الفريق</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createTeam()">{{ locale.t('ops.org.addTeamSubmit') }}</button>
     </app-ops-modal>
 
     <app-ops-drawer
       [open]="!!selectedTeam"
-      [title]="selectedTeam?.nameAr || ''"
-      kicker="فريق"
+      [title]="selectedTeam ? locale.localizedName(selectedTeam) : ''"
+      [kicker]="locale.t('ops.org.teamKicker')"
       (closed)="selectedTeam = null"
     >
       @if (selectedTeam; as team) {
         @if (canEditOrg) {
           <div class="form-grid">
             <div class="field">
-              <label>الاسم *</label>
+              <label>{{ locale.t('ops.ui.nameReq') }}</label>
               <input class="input" [(ngModel)]="team.nameAr" />
             </div>
             <div class="field">
-              <label>الاسم الإنجليزي *</label>
+              <label>{{ locale.t('ops.ui.nameEnReq') }}</label>
               <input class="input" [(ngModel)]="team.nameEn" />
             </div>
             <div class="field">
-              <label>مديرة الفريق</label>
+              <label>{{ locale.t('ops.org.lead') }}</label>
               <select class="input" [(ngModel)]="team.leadUserId">
-                <option [ngValue]="null">بدون تحديد</option>
+                <option [ngValue]="null">{{ locale.t('ops.org.noLead') }}</option>
                 @for (item of staff; track item.id) {
                   <option [value]="item.id">{{ item.displayName }}</option>
                 }
@@ -196,12 +197,12 @@ const emptyTeamDraft = () => ({ nameAr: '', nameEn: '', sortOrder: 0, leadUserId
         }
         <div class="ops-drawer-actions">
           @if (canEditOrg) {
-            <button class="btn primary" type="button" (click)="saveTeam(team)">حفظ الفريق</button>
+            <button class="btn primary" type="button" (click)="saveTeam(team)">{{ locale.t('ops.org.saveTeam') }}</button>
             <button class="btn ghost" type="button" (click)="toggleTeam(team)">
-              {{ team.isActive ? 'إخفاء' : 'إظهار' }}
+              {{ team.isActive ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
             </button>
           }
-          <a class="btn ghost" routerLink="/ops/staff" [queryParams]="{ teamId: team.id }">حسابات الفريق</a>
+          <a class="btn ghost" routerLink="/ops/staff" [queryParams]="{ teamId: team.id }">{{ locale.t('ops.org.teamAccounts') }}</a>
         </div>
       }
     </app-ops-drawer>
@@ -211,6 +212,7 @@ export class OpsOrgComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
 
   get canEditOrg(): boolean {
@@ -228,7 +230,7 @@ export class OpsOrgComponent implements OnInit {
   teamDraft = emptyTeamDraft();
 
   ngOnInit(): void {
-    this.shell.set('الهيكل التنظيمي', 'أقسام وفرق موظفي المنصة');
+    this.shell.set('ops.org.title', 'ops.org.sub');
     this.api.opsStaff().subscribe({
       next: (rows) => (this.staff = rows),
       error: () => undefined,
@@ -243,18 +245,18 @@ export class OpsOrgComponent implements OnInit {
   openDepartment(department: OpsOrgDepartment): void {
     this.selected = department;
     this.selectedTeam = null;
-    this.shell.set(department.nameAr, department.nameEn || 'فرق القسم');
+    this.shell.set(this.locale.localizedName(department), this.locale.t('ops.org.teams'));
   }
 
   closeDepartment(): void {
     this.selected = null;
     this.selectedTeam = null;
-    this.shell.set('الهيكل التنظيمي', 'أقسام وفرق موظفي المنصة');
+    this.shell.set('ops.org.title', 'ops.org.sub');
   }
 
   createDepartment(): void {
     if (this.deptDraft.nameAr.trim().length < 2 || this.deptDraft.nameEn.trim().length < 2) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -266,18 +268,18 @@ export class OpsOrgComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تمت إضافة القسم');
+          this.toast.show(this.locale.t('ops.org.toast.deptAdded'));
           this.deptDraft = emptyDeptDraft();
           this.addingDept = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة القسم')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.org.toast.deptAddFail'))),
       });
   }
 
   saveDepartment(department: OpsOrgDepartment): void {
     if (department.nameAr.trim().length < 2 || department.nameEn.trim().length < 2) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -289,10 +291,10 @@ export class OpsOrgComponent implements OnInit {
       .subscribe({
         next: (row) => {
           this.selected = row;
-          this.shell.set(row.nameAr, row.nameEn || 'فرق القسم');
-          this.toast.show('تم حفظ القسم');
+          this.shell.set(this.locale.localizedName(row), this.locale.t('ops.org.teams'));
+          this.toast.show(this.locale.t('ops.org.toast.deptSaved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ القسم')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.org.toast.deptSaveFail'))),
       });
   }
 
@@ -300,9 +302,9 @@ export class OpsOrgComponent implements OnInit {
     this.api.opsPatchDepartment(department.id, { isActive: !department.isActive }).subscribe({
       next: (row) => {
         department.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'القسم ظاهر' : 'تم إخفاء القسم');
+        this.toast.show(row.isActive ? this.locale.t('ops.org.toast.deptVisible') : this.locale.t('ops.org.toast.deptHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.visibilityFail'))),
     });
   }
 
@@ -316,7 +318,7 @@ export class OpsOrgComponent implements OnInit {
       return;
     }
     if (this.teamDraft.nameAr.trim().length < 2 || this.teamDraft.nameEn.trim().length < 2) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -329,18 +331,18 @@ export class OpsOrgComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تمت إضافة الفريق');
+          this.toast.show(this.locale.t('ops.org.toast.teamAdded'));
           this.teamDraft = emptyTeamDraft();
           this.addingTeam = false;
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الفريق')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.org.toast.teamAddFail'))),
       });
   }
 
   saveTeam(team: OpsOrgTeam): void {
     if (team.nameAr.trim().length < 2 || team.nameEn.trim().length < 2) {
-      this.toast.show('الاسم والاسم الإنجليزي مطلوبان');
+      this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
     this.api
@@ -351,10 +353,10 @@ export class OpsOrgComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('تم حفظ الفريق');
+          this.toast.show(this.locale.t('ops.org.toast.teamSaved'));
           this.load();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الفريق')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.org.toast.teamSaveFail'))),
       });
   }
 
@@ -362,9 +364,9 @@ export class OpsOrgComponent implements OnInit {
     this.api.opsPatchTeam(team.id, { isActive: !team.isActive }).subscribe({
       next: (row) => {
         team.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'الفريق ظاهر' : 'تم إخفاء الفريق');
+        this.toast.show(row.isActive ? this.locale.t('ops.org.toast.teamVisible') : this.locale.t('ops.org.toast.teamHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الظهور')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.visibilityFail'))),
     });
   }
 
@@ -376,13 +378,13 @@ export class OpsOrgComponent implements OnInit {
         this.selected = keepSelected(this.departments, this.selected);
         this.selectedTeam = this.selected ? keepSelected(this.selected.teams, this.selectedTeam) : null;
         if (this.selected) {
-          this.shell.set(this.selected.nameAr, this.selected.nameEn || 'فرق القسم');
+          this.shell.set(this.locale.localizedName(this.selected), this.locale.t('ops.org.teams'));
         }
         this.loading = false;
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الهيكل التنظيمي'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.org.toast.loadFail')));
       },
     });
   }

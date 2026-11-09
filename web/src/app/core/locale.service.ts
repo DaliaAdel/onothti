@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { extraAr, extraEn } from './i18n-extra';
 
 export type AppLang = 'ar' | 'en';
 
@@ -404,7 +405,10 @@ const en: Record<keyof typeof ar, string> = {
   'auth.staff.alreadySet': 'A password is already set. Sign in with it',
 };
 
-const messages: Record<AppLang, Record<string, string>> = { ar, en };
+const messages: Record<AppLang, Record<string, string>> = {
+  ar: { ...ar, ...extraAr },
+  en: { ...en, ...extraEn },
+};
 const STORAGE_KEY = 'onothiti_lang';
 
 @Injectable({ providedIn: 'root' })
@@ -418,6 +422,13 @@ export class LocaleService {
   t(key: string): string {
     const table = messages[this.lang()];
     return table[key] ?? messages.ar[key] ?? key;
+  }
+
+  tf(key: string, vars: Record<string, string | number>): string {
+    return Object.entries(vars).reduce(
+      (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+      this.t(key),
+    );
   }
 
   messageKey(text: string): string | null {

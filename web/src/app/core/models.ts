@@ -14,6 +14,7 @@ export interface SessionUser {
   bio?: string | null;
   roleCode?: string | null;
   roleNameAr?: string | null;
+  roleNameEn?: string | null;
   permissions?: string[];
   teamId?: string | null;
   orgTeam?: {
@@ -483,7 +484,7 @@ export interface OpsMediaItem {
     opsStatus: string;
     financeStatus?: string;
     amount: number;
-    package: { code: string; nameAr: string; durationMonths: number };
+    package: { code: string; nameAr: string; nameEn?: string; durationMonths: number };
   }[];
 }
 
@@ -493,8 +494,8 @@ export interface OpsPendingProvider {
   accountCode: string;
   mobile: string;
   status: string;
-  city?: { nameAr: string } | null;
-  package?: { code: string; nameAr: string } | null;
+  city?: { nameAr: string; nameEn?: string } | null;
+  package?: { code: string; nameAr: string; nameEn?: string } | null;
   createdAt: string;
 }
 

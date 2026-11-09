@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { AuthLayoutComponent } from '../shared/auth-layout.component';
 
@@ -10,11 +11,11 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <div class="auth-box signup-details">
-        <a [routerLink]="backLink" class="back-link">→ العودة</a>
+        <a [routerLink]="backLink" class="back-link">{{ locale.t('legal.back') }}</a>
         <span class="eyebrow">{{ audienceLabel }}</span>
         <h1>{{ title }}</h1>
         @if (loading) {
-          <p class="loading">جاري التحميل...</p>
+          <p class="loading">{{ locale.t('legal.loading') }}</p>
         } @else {
           <p class="legal-body">{{ body }}</p>
         }
@@ -26,21 +27,51 @@ export class LegalComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(SessionService);
+  readonly locale = inject(LocaleService);
 
   kind: 'TERMS' | 'POLICIES' | 'PRIVACY' | 'OTHER' = 'TERMS';
   audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF' = 'CUSTOMER';
-  title = 'الشروط والسياسات';
-  body = '';
+  titleAr = '';
+  titleEn = '';
+  bodyAr = '';
+  bodyEn = '';
   loading = true;
 
   get audienceLabel(): string {
     if (this.audience === 'PROVIDER') {
-      return 'الخبيرة';
+      return this.locale.t('role.provider');
     }
     if (this.audience === 'STAFF') {
-      return 'موظفو المنصة';
+      return this.locale.t('legal.audience.staff');
     }
-    return 'العميلة';
+    return this.locale.t('role.customer');
+  }
+
+  get fallbackTitle(): string {
+    if (this.kind === 'POLICIES') {
+      return this.locale.t('legal.policies');
+    }
+    if (this.kind === 'PRIVACY') {
+      return this.locale.t('auth.privacyLink');
+    }
+    if (this.kind === 'OTHER') {
+      return this.locale.t('legal.page');
+    }
+    return this.locale.t('auth.termsLink');
+  }
+
+  get title(): string {
+    return this.locale.lang() === 'en'
+      ? this.titleEn || this.titleAr || this.fallbackTitle
+      : this.titleAr || this.titleEn || this.fallbackTitle;
+  }
+
+  get body(): string {
+    const text =
+      this.locale.lang() === 'en'
+        ? this.bodyEn || this.bodyAr
+        : this.bodyAr || this.bodyEn;
+    return text || this.locale.t('legal.unavailable');
   }
 
   get backLink(): string {
@@ -68,22 +99,17 @@ export class LegalComponent implements OnInit {
             : 'TERMS';
     const audience = this.route.snapshot.queryParamMap.get('audience');
     this.audience = audience === 'PROVIDER' || audience === 'STAFF' ? audience : 'CUSTOMER';
-    this.title =
-      this.kind === 'POLICIES'
-        ? 'السياسات'
-        : this.kind === 'PRIVACY'
-          ? 'سياسة الخصوصية'
-          : this.kind === 'OTHER'
-            ? 'صفحة قانونية'
-            : 'شروط الاستخدام';
     this.api.legalPage(this.kind, this.audience).subscribe({
       next: (page) => {
-        this.title = page.titleAr || this.title;
-        this.body = page.bodyAr || page.contentAr || 'المحتوى غير متاح حاليًا.';
+        this.titleAr = page.titleAr || '';
+        this.titleEn = page.titleEn || '';
+        this.bodyAr = page.bodyAr || page.contentAr || '';
+        this.bodyEn = page.bodyEn || '';
         this.loading = false;
       },
       error: () => {
-        this.body = 'تعذر تحميل الصفحة الآن.';
+        this.bodyAr = this.locale.t('legal.fail');
+        this.bodyEn = this.locale.t('legal.fail');
         this.loading = false;
       },
     });

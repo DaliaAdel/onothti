@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FavoritesService } from '../core/favorites.service';
+import { LocaleService } from '../core/locale.service';
 import { InitialsPipe } from '../core/name-initials';
 import { serviceIcon, servicePhoto, type FavoriteRow } from '../core/models';
 import { ShellService } from '../core/shell.service';
@@ -14,9 +15,9 @@ type FavTab = 'SERVICE' | 'PROVIDER';
   imports: [RouterLink, FavoriteBtnComponent, IconComponent, InitialsPipe],
   template: `
     @if (!favorites.loaded()) {
-      <p class="loading">جاري تحميل المفضلة...</p>
+      <p class="loading">{{ locale.t('c.fav.loading') }}</p>
     } @else {
-      <div class="filter-tabs fav-switch" role="tablist" aria-label="نوع المفضلة">
+      <div class="filter-tabs fav-switch" role="tablist" [attr.aria-label]="locale.t('c.fav.typeAria')">
         <button
           type="button"
           role="tab"
@@ -24,7 +25,7 @@ type FavTab = 'SERVICE' | 'PROVIDER';
           [attr.aria-selected]="tab === 'SERVICE'"
           (click)="setTab('SERVICE')"
         >
-          الخدمات
+          {{ locale.t('c.fav.services') }}
           <span>{{ serviceCount }}</span>
         </button>
         <button
@@ -34,7 +35,7 @@ type FavTab = 'SERVICE' | 'PROVIDER';
           [attr.aria-selected]="tab === 'PROVIDER'"
           (click)="setTab('PROVIDER')"
         >
-          الخبيرات
+          {{ locale.t('c.fav.experts') }}
           <span>{{ providerCount }}</span>
         </button>
       </div>
@@ -56,7 +57,7 @@ type FavTab = 'SERVICE' | 'PROVIDER';
                 </div>
                 <div class="service-body">
                   <h3>{{ label(row) }}</h3>
-                  <p>اكتشفي الخبيرات لهذه الخدمة</p>
+                  <p>{{ locale.t('c.serviceFallback') }}</p>
                   <span class="arrow"><app-icon name="chev" /></span>
                 </div>
               </a>
@@ -70,11 +71,11 @@ type FavTab = 'SERVICE' | 'PROVIDER';
               <div class="provider-photo">{{ label(row) | initials }}</div>
               <div>
                 <h3>{{ label(row) }}</h3>
-                <p>خبيرة</p>
+                <p>{{ locale.t('c.fav.expert') }}</p>
               </div>
               <div class="provider-actions">
                 <app-favorite-btn targetType="PROVIDER" [targetId]="row.targetId" />
-                <a class="btn ghost" [routerLink]="['/c/providers', row.targetId]">عرض الملف</a>
+                <a class="btn ghost" [routerLink]="['/c/providers', row.targetId]">{{ locale.t('c.view') }}</a>
               </div>
             </article>
           }
@@ -86,10 +87,11 @@ type FavTab = 'SERVICE' | 'PROVIDER';
 export class CustomerFavoritesComponent implements OnInit {
   readonly favorites = inject(FavoritesService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   tab: FavTab = 'SERVICE';
 
   ngOnInit(): void {
-    this.shell.set('المفضلة', 'الخبيرات والخدمات التي حفظتِها');
+    this.shell.set('c.fav.title', 'c.fav.sub');
     this.favorites.reload();
   }
 
@@ -110,13 +112,11 @@ export class CustomerFavoritesComponent implements OnInit {
   }
 
   get emptyTitle(): string {
-    return this.tab === 'SERVICE' ? 'لا توجد خدمات في المفضلة' : 'لا توجد خبيرات في المفضلة';
+    return this.tab === 'SERVICE' ? this.locale.t('c.fav.emptyServices') : this.locale.t('c.fav.emptyExperts');
   }
 
   get emptyText(): string {
-    return this.tab === 'SERVICE'
-      ? 'اضغطي القلب على بطاقة الخدمة لحفظها هنا.'
-      : 'اضغطي القلب على ملف الخبيرة لحفظها هنا.';
+    return this.tab === 'SERVICE' ? this.locale.t('c.fav.emptyServicesText') : this.locale.t('c.fav.emptyExpertsText');
   }
 
   get emptyLink(): string {
@@ -124,11 +124,11 @@ export class CustomerFavoritesComponent implements OnInit {
   }
 
   get emptyAction(): string {
-    return this.tab === 'SERVICE' ? 'تصفح الخدمات' : 'تصفح الخبيرات';
+    return this.tab === 'SERVICE' ? this.locale.t('c.fav.browseServices') : this.locale.t('c.fav.browseExperts');
   }
 
   label(row: FavoriteRow): string {
-    return row.item?.displayName || row.item?.nameAr || 'عنصر محفوظ';
+    return row.item?.displayName || this.locale.localizedName(row.item, this.locale.t('c.fav.savedItem'));
   }
 
   photoOf(row: FavoriteRow): string {

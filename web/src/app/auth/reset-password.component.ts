@@ -15,10 +15,10 @@ import { PasswordInputComponent } from '../shared/password-input.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <a class="auth-back" routerLink="/otp" [queryParams]="{ purpose: 'RESET_PASSWORD' }">← رجوع</a>
-        <span class="auth-kicker">استعادة الحساب</span>
-        <h2>إنشاء كلمة مرور جديدة</h2>
-        <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> أدخلي كلمة المرور الجديدة مرتين.</p>
+        <a class="auth-back" routerLink="/otp" [queryParams]="{ purpose: 'RESET_PASSWORD' }">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.forgot.kicker') }}</span>
+        <h2>{{ locale.t('auth.reset.title') }}</h2>
+        <p class="muted">{{ locale.tf('auth.reset.sub', { phone: phoneLabel }) }}</p>
         <div class="field">
           <label>{{ locale.t('auth.password') }}</label>
           <app-password-input name="password" [(value)]="password" autocomplete="new-password" />
@@ -30,7 +30,7 @@ import { PasswordInputComponent } from '../shared/password-input.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ ثم تسجيل الدخول</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.reset.submit') }}</button>
       </form>
     </app-auth-layout>
   `,

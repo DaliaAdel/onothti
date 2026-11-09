@@ -15,14 +15,14 @@ import { PasswordInputComponent } from '../shared/password-input.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <a class="auth-back" routerLink="/login/phone">← رجوع</a>
-        <span class="auth-kicker">حساب التشغيل</span>
-        <h2>كلمة المرور</h2>
-        <p class="muted">أدخل كلمة مرور حساب التشغيل المرتبط بـ <b dir="ltr">{{ phoneLabel }}</b></p>
+        <a class="auth-back" routerLink="/login/phone">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.staff.kicker') }}</span>
+        <h2>{{ locale.t('auth.staff.passTitle') }}</h2>
+        <p class="muted">{{ locale.t('auth.staff.passSub') }} <b dir="ltr">{{ phoneLabel }}</b></p>
         <div class="field">
           <div class="field-label">
             <label>{{ locale.t('auth.password') }}</label>
-            <a class="link" routerLink="/login/forgot">نسيت كلمة المرور؟</a>
+            <a class="link" routerLink="/login/forgot">{{ locale.t('auth.staff.forgot') }}</a>
           </div>
           <app-password-input
             name="password"
@@ -34,7 +34,7 @@ import { PasswordInputComponent } from '../shared/password-input.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">دخول لوحة  المعلومات</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.staff.enter') }}</button>
       </form>
     </app-auth-layout>
   `,

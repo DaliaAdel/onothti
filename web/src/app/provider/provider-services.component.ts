@@ -14,32 +14,32 @@ import { ToastService } from '../core/toast.service';
   imports: [RouterLink, FormsModule],
   template: `
     @if (locked) {
-      <div class="page-head"><div><h1>الميزة غير متاحة</h1><p>يجب تفعيل الاشتراك أولًا</p></div></div>
+      <div class="page-head"><div><h1>{{ locale.t('p.locked.title') }}</h1><p>{{ locale.t('p.locked.sub') }}</p></div></div>
       <div class="card subscription-lock">
         <div class="symbol">♢</div>
-        <h2>اشتركي لتفعيل أدوات الخبيرة</h2>
-        <p class="muted">بعد اختيار الباقة واعتماد الدفع يمكنكِ إضافة الخدمات ورفع الألبومات واستخدام الإحصاءات والتقييمات.</p>
-        <a class="btn primary" routerLink="/p/package">عرض الباقات</a>
+        <h2>{{ locale.t('p.locked.ctaTitle') }}</h2>
+        <p class="muted">{{ locale.t('p.locked.ctaText') }}</p>
+        <a class="btn primary" routerLink="/p/package">{{ locale.t('p.locked.viewPackages') }}</a>
       </div>
     } @else if (mode === 'add') {
       <div class="page-head">
         <div>
-          <h1>إضافة خدمة جديدة</h1>
-          <p>اختاري الخدمة الرئيسية ثم خدمة فرعية أو أكثر</p>
+          <h1>{{ locale.t('p.svc.addTitle') }}</h1>
+          <p>{{ locale.t('p.svc.addSub') }}</p>
         </div>
-        <button class="btn secondary back" type="button" (click)="mode = 'list'">← الرجوع إلى خدماتي</button>
+        <button class="btn secondary back" type="button" (click)="mode = 'list'">{{ locale.t('p.svc.back') }}</button>
       </div>
       <div class="service-steps">
-        <span [class.active]="!!serviceId"><i>1</i>الخدمة الرئيسية</span>
+        <span [class.active]="!!serviceId"><i>1</i>{{ locale.t('p.svc.stepMain') }}</span>
         <b></b>
-        <span [class.active]="hasSubSelection"><i>2</i>الخدمة الفرعية</span>
+        <span [class.active]="hasSubSelection"><i>2</i>{{ locale.t('p.svc.stepSub') }}</span>
         <b></b>
-        <span [class.active]="!!serviceId && hasSubSelection"><i>3</i>المراجعة والحفظ</span>
+        <span [class.active]="!!serviceId && hasSubSelection"><i>3</i>{{ locale.t('p.svc.stepReview') }}</span>
       </div>
       <div class="card add-service-section">
-        <div class="section-title"><div><h3>اختاري الخدمة الرئيسية</h3><p class="small muted">يمكن اختيار خدمة رئيسية واحدة في كل مرة.</p></div></div>
+        <div class="section-title"><div><h3>{{ locale.t('p.svc.pickMain') }}</h3><p class="small muted">{{ locale.t('p.svc.pickMainHint') }}</p></div></div>
         @if (!selectableCatalog.length) {
-          <p class="muted small">باقتك الحالية لا تشمل خدمات رئيسية متاحة للإضافة.</p>
+          <p class="muted small">{{ locale.t('p.svc.noMain') }}</p>
         }
         <div class="add-service-grid">
           @for (service of selectableCatalog; track service.id) {
@@ -54,7 +54,7 @@ import { ToastService } from '../core/toast.service';
       <div class="card add-service-section">
         <div class="section-title">
           <div>
-            <h3>اختاري الخدمات الفرعية</h3>
+            <h3>{{ locale.t('p.svc.pickSubs') }}</h3>
             <p class="small muted">{{ subHint }}</p>
           </div>
         </div>
@@ -68,60 +68,60 @@ import { ToastService } from '../core/toast.service';
       </div>
       <div class="card service-review">
         <div>
-          <h3>مراجعة الاختيار</h3>
-          <p class="small muted">الخدمة الرئيسية: <b>{{ selectedMainName }}</b></p>
-          <p class="small muted">الخدمات الفرعية: <b>{{ selectedSubName }}</b></p>
+          <h3>{{ locale.t('p.svc.review') }}</h3>
+          <p class="small muted">{{ locale.t('p.svc.mainLabel') }} <b>{{ selectedMainName }}</b></p>
+          <p class="small muted">{{ locale.t('p.svc.subLabel') }} <b>{{ selectedSubName }}</b></p>
         </div>
-        <button class="btn primary" type="button" [disabled]="loading || !serviceId || !hasSubSelection" (click)="add()">إضافة إلى خدماتي</button>
+        <button class="btn primary" type="button" [disabled]="loading || !serviceId || !hasSubSelection" (click)="add()">{{ locale.t('p.svc.addToMine') }}</button>
       </div>
     } @else if (mode === 'edit' && editingGroup) {
       <div class="page-head">
         <div>
-          <h1>تعديل الخدمة</h1>
-          <p>الخدمات الفرعية التابعة لـ {{ locale.localizedName(editingGroup.service) }}</p>
+          <h1>{{ locale.t('p.svc.editTitle') }}</h1>
+          <p>{{ locale.tf('p.svc.editSub', { name: locale.localizedName(editingGroup.service) }) }}</p>
         </div>
-        <button class="btn secondary back" type="button" (click)="closeEdit()">← الرجوع إلى خدماتي</button>
+        <button class="btn secondary back" type="button" (click)="closeEdit()">{{ locale.t('p.svc.back') }}</button>
       </div>
       <div class="card edit-service-form">
         <div class="edit-service-heading">
           <img class="service-edit-photo" [src]="photoFor(editingGroup.service)" alt="" />
           <div>
             <h2>{{ locale.localizedName(editingGroup.service) }}</h2>
-            <p class="small muted">{{ editingGroup.items.length === 1 ? 'خدمة فرعية واحدة' : editingGroup.items.length + ' خدمات فرعية' }}</p>
+            <p class="small muted">{{ editingGroup.items.length === 1 ? locale.t('p.svc.oneSub') : locale.tf('p.svc.nSubs', { n: editingGroup.items.length }) }}</p>
           </div>
         </div>
         <div class="list">
           @for (item of editingGroup.items; track item.id) {
             <div class="list-row">
               <div class="copy">
-                <b>{{ item.subService ? locale.localizedName(item.subService) : 'الخدمة الرئيسية' }}</b>
-                <p>{{ isItemActive(item) ? 'نشطة' : 'غير نشطة' }}</p>
+                <b>{{ item.subService ? locale.localizedName(item.subService) : locale.t('p.svc.mainItem') }}</b>
+                <p>{{ isItemActive(item) ? locale.t('ui.active') : locale.t('ui.inactive') }}</p>
               </div>
               <span class="status" [class.success]="isItemActive(item)" [class.warning]="!isItemActive(item)">
-                {{ isItemActive(item) ? 'نشطة' : 'غير نشطة' }}
+                {{ isItemActive(item) ? locale.t('ui.active') : locale.t('ui.inactive') }}
               </span>
-              <button class="favorite service-delete" type="button" [disabled]="loading" aria-label="حذف الخدمة الفرعية" (click)="removeSub(item)">×</button>
+              <button class="favorite service-delete" type="button" [disabled]="loading" [attr.aria-label]="locale.t('p.svc.deleteSub')" (click)="removeSub(item)">×</button>
             </div>
           }
         </div>
         <div class="edit-service-actions">
-          <button class="btn ghost" type="button" [disabled]="loading" (click)="removeMainFromEdit()">حذف الخدمة الرئيسية</button>
-          <button class="btn secondary back" type="button" (click)="closeEdit()">رجوع</button>
+          <button class="btn ghost" type="button" [disabled]="loading" (click)="removeMainFromEdit()">{{ locale.t('p.svc.deleteMain') }}</button>
+          <button class="btn secondary back" type="button" (click)="closeEdit()">{{ locale.t('ui.back') }}</button>
         </div>
       </div>
     } @else {
       <div class="page-head">
         <div>
-          <h1>خدماتي</h1>
-          <p>أديري خدماتك وترتيب ظهورها</p>
+          <h1>{{ locale.t('p.svc.listTitle') }}</h1>
+          <p>{{ locale.t('p.svc.listSub') }}</p>
         </div>
-        <button class="btn primary" type="button" (click)="openAdd()">إضافة خدمة</button>
+        <button class="btn primary" type="button" (click)="openAdd()">{{ locale.t('p.servicesAdd') }}</button>
       </div>
       <div class="grid cols-2">
         <div class="card">
-          <h3>الخدمات</h3>
+          <h3>{{ locale.t('nav.services') }}</h3>
           @if (!items.length) {
-            <p class="muted small">لا توجد خدمات مضافة بعد.</p>
+            <p class="muted small">{{ locale.t('p.svc.empty') }}</p>
           } @else {
             <div class="list">
               @for (group of serviceGroups; track group.serviceId; let i = $index) {
@@ -136,28 +136,28 @@ import { ToastService } from '../core/toast.service';
                   (drop)="onDrop($event, i)"
                   (dragend)="onDragEnd()"
                 >
-                  <b class="drag-handle" title="اسحبي لإعادة الترتيب">⋮⋮</b>
+                  <b class="drag-handle" [attr.title]="locale.t('p.svc.reorder')">⋮⋮</b>
                   <img class="service-row-photo" [src]="photoFor(group.service)" alt="" />
                   <div class="copy">
                     <b>{{ locale.localizedName(group.service) }}</b>
                     <p>{{ groupSubNames(group) }}</p>
                   </div>
                   <span class="status" [class.success]="isGroupActive(group)" [class.warning]="!isGroupActive(group)">
-                    {{ isGroupActive(group) ? 'نشطة' : 'غير نشطة' }}
+                    {{ isGroupActive(group) ? locale.t('ui.active') : locale.t('ui.inactive') }}
                   </span>
-                  <button class="favorite" type="button" aria-label="تعديل الخدمة" (click)="openEdit(group.items[0]); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">✎</button>
-                  <button class="favorite service-delete" type="button" aria-label="حذف الخدمة الرئيسية" (click)="removeMain(group); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">×</button>
+                  <button class="favorite" type="button" [attr.aria-label]="locale.t('p.svc.editTitle')" (click)="openEdit(group.items[0]); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">✎</button>
+                  <button class="favorite service-delete" type="button" [attr.aria-label]="locale.t('p.svc.deleteMain')" (click)="removeMain(group); $event.stopPropagation()" (mousedown)="$event.stopPropagation()">×</button>
                 </div>
               }
             </div>
           }
         </div>
         <div class="card">
-          <h3>ترتيب ظهور الخدمات</h3>
-          <p class="muted small">اسحبي الخدمات لتغيير ترتيبها حسب الباقة النشطة.</p>
-          <div class="notice">يمكنكِ تعديل مدينة تقديم الخدمات من الملف الشخصي.</div>
+          <h3>{{ locale.t('p.svc.reorder') }}</h3>
+          <p class="muted small">{{ locale.t('p.svc.listSub') }}</p>
+          <div class="notice">{{ locale.t('p.acc.sub') }}</div>
           <br />
-          <a class="btn secondary" routerLink="/p/account">الانتقال إلى الملف الشخصي</a>
+          <a class="btn secondary" routerLink="/p/account">{{ locale.t('nav.profile') }}</a>
         </div>
       </div>
     }
@@ -207,21 +207,21 @@ export class ProviderServicesPageComponent implements OnInit {
 
   get subHint(): string {
     if (!this.serviceId) {
-      return 'اختاري الخدمة الرئيسية أولًا.';
+      return this.locale.t('p.svc.hintPickMain');
     }
     if (!this.subServiceIds.length) {
-      return 'تقدري تختاري أكتر من خدمة فرعية.';
+      return this.locale.t('p.svc.hintPickSubs');
     }
     return this.subServiceIds.length === 1
-      ? 'تم اختيار خدمة فرعية واحدة.'
-      : `تم اختيار ${this.subServiceIds.length} خدمات فرعية.`;
+      ? this.locale.t('p.svc.hintOne')
+      : this.locale.tf('p.svc.hintN', { n: this.subServiceIds.length });
   }
 
   get selectedSubName(): string {
     const names = this.subServices
       .filter((item) => this.subServiceIds.includes(item.id))
       .map((item) => this.locale.localizedName(item));
-    return names.length ? names.join('، ') : '—';
+    return names.length ? names.join(this.locale.lang() === 'ar' ? '، ' : ', ') : '—';
   }
 
   get serviceGroups(): { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }[] {
@@ -247,7 +247,7 @@ export class ProviderServicesPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('خدماتي');
+    this.shell.set('nav.myServices');
     this.api.services().subscribe({ next: (services) => (this.catalog = services) });
     this.api.providerSubscription().subscribe({
       next: (data) => {
@@ -288,21 +288,21 @@ export class ProviderServicesPageComponent implements OnInit {
     this.subServiceIds = [];
     this.editing = null;
     this.editingServiceId = '';
-    this.shell.set('إضافة خدمة');
+    this.shell.set('p.servicesAdd');
   }
 
   openEdit(item: ProviderServiceRow): void {
     this.mode = 'edit';
     this.editing = item;
     this.editingServiceId = item.serviceId;
-    this.shell.set('تعديل الخدمة');
+    this.shell.set('p.servicesEdit');
   }
 
   closeEdit(): void {
     this.mode = 'list';
     this.editing = null;
     this.editingServiceId = '';
-    this.shell.set('خدماتي');
+    this.shell.set('nav.myServices');
   }
 
   isItemActive(item: ProviderServiceRow): boolean {
@@ -317,7 +317,7 @@ export class ProviderServicesPageComponent implements OnInit {
     const names = group.items
       .map((item) => (item.subService ? this.locale.localizedName(item.subService) : ''))
       .filter((name) => name);
-    return names.length ? names.join('، ') : 'الخدمة الرئيسية';
+    return names.length ? names.join(this.locale.lang() === 'ar' ? '، ' : ', ') : this.locale.t('p.svc.mainItem');
   }
 
   async removeMain(group: { serviceId: string; service: CatalogService; items: ProviderServiceRow[] }): Promise<void> {
@@ -325,13 +325,13 @@ export class ProviderServicesPageComponent implements OnInit {
     const subCount = group.items.length;
     const message =
       subCount > 1
-        ? `سيتم حذف «${name}» وكل خدماتها الفرعية (${subCount}). هل تريدين المتابعة؟`
-        : `سيتم حذف «${name}» وكل خدماتها الفرعية. هل تريدين المتابعة؟`;
+        ? this.locale.tf('p.svc.deleteMainMsg', { name, n: subCount })
+        : this.locale.tf('p.svc.deleteMainMsgOne', { name });
     const ok = await this.confirm.ask({
-      title: 'تأكيد الحذف',
+      title: this.locale.t('ops.ui.confirmDelete'),
       message,
-      confirmLabel: 'حذف',
-      cancelLabel: 'إلغاء',
+      confirmLabel: this.locale.t('ui.delete'),
+      cancelLabel: this.locale.t('ui.cancel'),
     });
     if (!ok) {
       return;
@@ -347,12 +347,12 @@ export class ProviderServicesPageComponent implements OnInit {
   }
 
   async removeSub(item: ProviderServiceRow): Promise<void> {
-    const name = item.subService ? this.locale.localizedName(item.subService) : 'هذه الخدمة الفرعية';
+    const name = item.subService ? this.locale.localizedName(item.subService) : this.locale.t('p.svc.thisSub');
     const ok = await this.confirm.ask({
-      title: 'تأكيد الحذف',
-      message: `سيتم حذف «${name}». هل تريدين المتابعة؟`,
-      confirmLabel: 'حذف',
-      cancelLabel: 'إلغاء',
+      title: this.locale.t('ops.ui.confirmDelete'),
+      message: this.locale.tf('p.svc.deleteSubMsg', { name }),
+      confirmLabel: this.locale.t('ui.delete'),
+      cancelLabel: this.locale.t('ui.cancel'),
     });
     if (!ok) {
       return;
@@ -361,7 +361,7 @@ export class ProviderServicesPageComponent implements OnInit {
     this.api.removeProviderService(item.id).subscribe({
       next: () => {
         this.loading = false;
-        this.toast.show('تم حذف الخدمة الفرعية');
+        this.toast.show(this.locale.t('p.svc.toast.subDeleted'));
         this.api.providerServices().subscribe({
           next: (items) => {
             this.items = items;
@@ -373,7 +373,7 @@ export class ProviderServicesPageComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر حذف الخدمة الفرعية'));
+        this.toast.show(apiMessage(err, this.locale.t('p.svc.toast.subDeleteFail')));
       },
     });
   }
@@ -383,7 +383,7 @@ export class ProviderServicesPageComponent implements OnInit {
     this.api.removeProviderMainService(serviceId).subscribe({
       next: () => {
         this.loading = false;
-        this.toast.show('تم حذف الخدمة الرئيسية وكل خدماتها الفرعية');
+        this.toast.show(this.locale.t('p.svc.toast.mainDeleted'));
         if (this.mode === 'edit') {
           this.closeEdit();
         }
@@ -391,14 +391,14 @@ export class ProviderServicesPageComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر حذف الخدمة'));
+        this.toast.show(apiMessage(err, this.locale.t('p.svc.toast.mainDeleteFail')));
       },
     });
   }
 
   add(): void {
     if (!this.serviceId || !this.subServiceIds.length) {
-      this.toast.show('اختاري خدمة رئيسية وفرعية واحدة على الأقل');
+      this.toast.show(this.locale.t('p.svc.needPick'));
       return;
     }
     this.loading = true;
@@ -406,13 +406,13 @@ export class ProviderServicesPageComponent implements OnInit {
       next: () => {
         this.loading = false;
         this.mode = 'list';
-        this.shell.set('خدماتي');
-        this.toast.show(this.subServiceIds.length > 1 ? 'تمت إضافة الخدمات' : 'تمت إضافة الخدمة');
+        this.shell.set('nav.myServices');
+        this.toast.show(this.subServiceIds.length > 1 ? this.locale.t('p.svc.toast.addedMany') : this.locale.t('p.svc.toast.addedOne'));
         this.reload();
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر إضافة الخدمة'));
+        this.toast.show(apiMessage(err, this.locale.t('p.svc.toast.addFail')));
       },
     });
   }
@@ -476,10 +476,10 @@ export class ProviderServicesPageComponent implements OnInit {
     this.api.reorderProviderServices(ids).subscribe({
       next: (items) => {
         this.items = items;
-        this.toast.show('تم حفظ ترتيب الخدمات');
+        this.toast.show(this.locale.t('p.svc.toast.orderSaved'));
       },
       error: (err) => {
-        this.toast.show(apiMessage(err, 'تعذر حفظ الترتيب'));
+        this.toast.show(apiMessage(err, this.locale.t('p.svc.toast.orderFail')));
         this.reload();
       },
     });

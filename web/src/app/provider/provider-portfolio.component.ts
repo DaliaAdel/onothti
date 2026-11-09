@@ -6,6 +6,7 @@ import { ApiService } from '../core/api.service';
 import { mediaUrl } from '../core/media';
 import { apiMessage } from '../core/phone';
 import { isLiveSubscription, type ProviderAlbum, type ProviderPortfolioItem } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { ShellService } from '../core/shell.service';
 import { ConfirmService } from '../core/confirm.service';
 import { ToastService } from '../core/toast.service';
@@ -15,42 +16,42 @@ import { ToastService } from '../core/toast.service';
   imports: [RouterLink, FormsModule],
   template: `
     @if (locked) {
-      <div class="page-head"><div><h1>الميزة غير متاحة</h1><p>يجب تفعيل الاشتراك أولًا</p></div></div>
+      <div class="page-head"><div><h1>{{ locale.t('p.locked.title') }}</h1><p>{{ locale.t('p.locked.sub') }}</p></div></div>
       <div class="card subscription-lock">
         <div class="symbol">♢</div>
-        <h2>اشتركي لتفعيل أدوات الخبيرة</h2>
-        <p class="muted">بعد اختيار الباقة واعتماد الدفع يمكنكِ إضافة الخدمات ورفع الألبومات واستخدام الإحصاءات والتقييمات.</p>
-        <a class="btn primary" routerLink="/p/package">عرض الباقات</a>
+        <h2>{{ locale.t('p.locked.ctaTitle') }}</h2>
+        <p class="muted">{{ locale.t('p.locked.ctaText') }}</p>
+        <a class="btn primary" routerLink="/p/package">{{ locale.t('p.locked.viewPackages') }}</a>
       </div>
     } @else if (album) {
       <div class="page-head">
         <div>
           <h1>{{ album.name }}</h1>
-          <p>أضيفي صور وفيديوهات الألبوم</p>
+          <p>{{ locale.t('p.album.addMedia') }}</p>
         </div>
       </div>
-      <button class="btn secondary back album-back" type="button" (click)="closeAlbum()">← الرجوع إلى ألبوماتي</button>
+      <button class="btn secondary back album-back" type="button" (click)="closeAlbum()">{{ locale.t('p.album.back') }}</button>
       <div class="card album-upload">
-        <button type="button" class="upload-icon album-upload-trigger" aria-label="رفع صور أو فيديوهات" (click)="fileInput.click()">＋</button>
+        <button type="button" class="upload-icon album-upload-trigger" [attr.aria-label]="locale.t('p.album.upload')" (click)="fileInput.click()">＋</button>
         <div>
-          <h3>رفع صور أو فيديوهات</h3>
-          <p class="muted small">اختاري أكثر من ملف مرة واحدة · الصور والفيديوهات مدعومة</p>
+          <h3>{{ locale.t('p.album.upload') }}</h3>
+          <p class="muted small">{{ locale.t('p.album.uploadHint') }}</p>
         </div>
         <label class="btn primary">
-          اختيار الملفات
+          {{ locale.t('p.album.pickFiles') }}
           <input #fileInput type="file" accept="image/*,video/*" multiple hidden (change)="onFiles($event)" />
         </label>
-        <span class="small muted">{{ fileName || 'لم يتم اختيار ملفات' }}</span>
+        <span class="small muted">{{ fileName || locale.t('p.album.noFiles') }}</span>
       </div>
       <div class="section-title">
-        <h3>محتوى الألبوم</h3>
-        <span class="small muted">{{ items.length ? items.length + ' عنصر' : 'لا يوجد محتوى مرفوع' }}</span>
+        <h3>{{ locale.t('p.album.content') }}</h3>
+        <span class="small muted">{{ items.length ? locale.tf('p.album.nItems', { n: items.length }) : locale.t('p.album.noContent') }}</span>
       </div>
       @if (!items.length) {
         <div class="album-empty">
           <div class="album-empty-icon">▧</div>
-          <h3>الألبوم فارغ</h3>
-          <p>ارفعي الصور أو الفيديوهات لتظهر هنا.</p>
+          <h3>{{ locale.t('p.album.emptyTitle') }}</h3>
+          <p>{{ locale.t('p.album.emptyText') }}</p>
         </div>
       } @else {
         <div class="album-media-grid">
@@ -61,10 +62,10 @@ import { ToastService } from '../core/toast.service';
               } @else if (item.url) {
                 <img [src]="mediaUrl(item.url)" [alt]="statusLabel(item.approvalStatus)" loading="lazy" decoding="async" />
               } @else {
-                <div class="album-cover"><span>{{ item.kind === 'VIDEO' ? 'فيديو' : 'عمل' }}</span></div>
+                <div class="album-cover"><span>{{ item.kind === 'VIDEO' ? locale.t('c.profile.video') : locale.t('c.profile.work') }}</span></div>
               }
               <b>{{ statusLabel(item.approvalStatus) }}</b>
-              <button class="btn ghost" type="button" style="width:100%;margin:0 0 8px" (click)="remove(item.id)">حذف</button>
+              <button class="btn ghost" type="button" style="width:100%;margin:0 0 8px" (click)="remove(item.id)">{{ locale.t('ui.delete') }}</button>
             </div>
           }
         </div>
@@ -72,67 +73,67 @@ import { ToastService } from '../core/toast.service';
     } @else {
       <div class="page-head">
         <div>
-          <h1>ألبوماتي</h1>
-          <p>اختاري الألبوم لإضافة الصور أو الفيديوهات</p>
+          <h1>{{ locale.t('p.album.listTitle') }}</h1>
+          <p>{{ locale.t('p.album.listSub') }}</p>
         </div>
-        <button class="btn primary" type="button" [disabled]="!canCreateAlbum" (click)="creating = true">إنشاء ألبوم</button>
+        <button class="btn primary" type="button" [disabled]="!canCreateAlbum" (click)="creating = true">{{ locale.t('p.album.create') }}</button>
       </div>
       <div class="album-usage card">
         <div class="usage-item">
           <div>
-            <span>الصور المرفوعة</span>
-            <b>{{ photos }} من {{ maxPhotos }} صورة</b>
+            <span>{{ locale.t('p.album.photos') }}</span>
+            <b>{{ locale.tf('p.album.photosOf', { a: photos, b: maxPhotos }) }}</b>
           </div>
           <div class="usage-track"><i [style.width.%]="photoPercent"></i></div>
         </div>
         <div class="usage-item">
           <div>
-            <span>الألبومات</span>
-            <b>{{ realAlbumCount }} من {{ maxAlbums }} ألبوم</b>
+            <span>{{ locale.t('p.album.albums') }}</span>
+            <b>{{ locale.tf('p.album.albumsOf', { a: realAlbumCount, b: maxAlbums }) }}</b>
           </div>
           <div class="usage-track"><i [style.width.%]="albumPercent"></i></div>
         </div>
-        <small>الحدود الحالية حسب {{ packageName }}</small>
+        <small>{{ locale.tf('p.album.limitsBy', { name: packageName }) }}</small>
       </div>
       @if (creating) {
         <div class="card" style="margin-bottom:16px">
           <div class="field">
-            <label>اسم الألبوم</label>
-            <input name="newAlbumName" [(ngModel)]="newAlbumName" placeholder="مثال: مكياج عرائس" />
+            <label>{{ locale.t('p.album.name') }}</label>
+            <input name="newAlbumName" [(ngModel)]="newAlbumName" [placeholder]="locale.t('p.album.namePh')" />
           </div>
           <div class="edit-service-actions">
-            <button class="btn secondary" type="button" (click)="creating = false; newAlbumName = ''">إلغاء</button>
-            <button class="btn primary" type="button" [disabled]="loading || newAlbumName.trim().length < 2" (click)="createAlbum()">حفظ الألبوم</button>
+            <button class="btn secondary" type="button" (click)="creating = false; newAlbumName = ''">{{ locale.t('ui.cancel') }}</button>
+            <button class="btn primary" type="button" [disabled]="loading || newAlbumName.trim().length < 2" (click)="createAlbum()">{{ locale.t('p.album.save') }}</button>
           </div>
         </div>
       }
       @if (!albums.length && !creating) {
         <div class="album-empty">
           <div class="album-empty-icon">▧</div>
-          <h3>لا توجد ألبومات بعد</h3>
-          <p>أنشئي ألبومًا ثم أضيفي الصور أو الفيديوهات داخله.</p>
+          <h3>{{ locale.t('p.album.emptyTitle2') }}</h3>
+          <p>{{ locale.t('p.album.emptyText2') }}</p>
         </div>
       } @else {
         <div class="album-grid">
           @for (item of albums; track item.id; let i = $index) {
             <div class="card album-card" [class.menu-open]="openMenuId === item.id" (click)="openAlbum(item)">
               <div class="album-cover" [class.has-photo]="!!item.coverUrl" [style.background]="coverStyle(item, i)">
-                <span>عرض المحتوى</span>
+                <span>{{ locale.t('p.album.viewContent') }}</span>
               </div>
               <div class="album-row">
                 <div>
                   <b class="small album-name">{{ item.name }}</b>
-                  <p class="small muted album-status">{{ item.isActive ? 'نشط' : 'غير نشط' }} · {{ item.itemCount }} عنصر</p>
+                  <p class="small muted album-status">{{ locale.tf('p.album.statusLine', { status: item.isActive ? locale.t('ops.status.ACTIVE') : locale.t('ops.status.INACTIVE'), n: item.itemCount }) }}</p>
                 </div>
                 @if (!item.virtual) {
                   <div class="album-menu" [class.open]="openMenuId === item.id" (click)="$event.stopPropagation()">
-                    <button class="album-menu-toggle" type="button" aria-label="خيارات الألبوم" (click)="toggleAlbumMenu(item.id, $event)">•••</button>
+                    <button class="album-menu-toggle" type="button" [attr.aria-label]="locale.t('p.album.menuAria')" (click)="toggleAlbumMenu(item.id, $event)">•••</button>
                     @if (openMenuId === item.id) {
                       <div class="album-menu-panel">
-                        <button type="button" (click)="setAlbumActive(item, true)">نشط</button>
-                        <button type="button" (click)="setAlbumActive(item, false)">غير نشط</button>
-                        <button type="button" (click)="renameAlbum(item)">إعادة التسمية</button>
-                        <button type="button" class="danger-action" (click)="deleteAlbum(item)">حذف الألبوم</button>
+                        <button type="button" (click)="setAlbumActive(item, true)">{{ locale.t('ops.status.ACTIVE') }}</button>
+                        <button type="button" (click)="setAlbumActive(item, false)">{{ locale.t('ops.status.INACTIVE') }}</button>
+                        <button type="button" (click)="renameAlbum(item)">{{ locale.t('p.album.rename') }}</button>
+                        <button type="button" class="danger-action" (click)="deleteAlbum(item)">{{ locale.t('p.album.delete') }}</button>
                       </div>
                     }
                   </div>
@@ -148,6 +149,7 @@ import { ToastService } from '../core/toast.service';
 export class ProviderPortfolioPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   readonly mediaUrl = mediaUrl;
@@ -160,7 +162,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
   newAlbumName = '';
   maxPhotos = 40;
   maxAlbums = 5;
-  packageName = 'الباقة';
+  packageName = '';
   fileName = '';
   loading = false;
   openMenuId = '';
@@ -186,13 +188,13 @@ export class ProviderPortfolioPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('ألبوماتي');
+    this.shell.set('nav.portfolio');
     this.api.providerSubscription().subscribe({
       next: (data) => {
         this.locked = !isLiveSubscription(data.current);
         this.maxPhotos = data.current?.package.maxPhotos ?? 40;
         this.maxAlbums = data.current?.package.maxAlbums ?? 5;
-        this.packageName = data.current ? data.current.package.nameAr : 'بدون باقة';
+        this.packageName = data.current ? this.locale.localizedName(data.current.package) : this.locale.t('p.album.noPackage');
       },
     });
     this.reload();
@@ -229,7 +231,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
         this.fileName = '';
         this.shell.set(data.album.name);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر فتح الألبوم')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.album.toast.openFail'))),
     });
   }
 
@@ -237,7 +239,7 @@ export class ProviderPortfolioPageComponent implements OnInit {
     this.album = null;
     this.items = [];
     this.fileName = '';
-    this.shell.set('ألبوماتي');
+    this.shell.set('nav.portfolio');
     this.reload();
   }
 
@@ -252,12 +254,12 @@ export class ProviderPortfolioPageComponent implements OnInit {
         this.loading = false;
         this.creating = false;
         this.newAlbumName = '';
-        this.toast.show('تم إنشاء الألبوم');
+        this.toast.show(this.locale.t('p.album.toast.created'));
         this.reload();
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر إنشاء الألبوم'));
+        this.toast.show(apiMessage(err, this.locale.t('p.album.toast.createFail')));
       },
     });
   }
@@ -266,45 +268,45 @@ export class ProviderPortfolioPageComponent implements OnInit {
     this.openMenuId = '';
     this.api.patchProviderAlbum(album.id, { isActive }).subscribe({
       next: () => {
-        this.toast.show(isActive ? 'الألبوم نشط' : 'الألبوم غير نشط');
+        this.toast.show(isActive ? this.locale.t('p.album.toast.active') : this.locale.t('p.album.toast.inactive'));
         this.reload();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الألبوم')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.album.toast.patchFail'))),
     });
   }
 
   renameAlbum(album: ProviderAlbum): void {
     this.openMenuId = '';
-    const name = window.prompt('اكتبي اسم الألبوم الجديد', album.name)?.trim();
+    const name = window.prompt(this.locale.t('p.album.renamePrompt'), album.name)?.trim();
     if (!name || name === album.name) {
       return;
     }
     this.api.patchProviderAlbum(album.id, { name }).subscribe({
       next: () => {
-        this.toast.show('تم تغيير اسم الألبوم');
+        this.toast.show(this.locale.t('p.album.toast.renamed'));
         this.reload();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إعادة التسمية')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.album.toast.renameFail'))),
     });
   }
 
   async deleteAlbum(album: ProviderAlbum): Promise<void> {
     this.openMenuId = '';
     const ok = await this.confirm.ask({
-      title: 'تأكيد الحذف',
-      message: 'سيتم حذف الألبوم وكل محتواه. هل تريدين المتابعة؟',
-      confirmLabel: 'حذف',
-      cancelLabel: 'إلغاء',
+      title: this.locale.t('ops.ui.confirmDelete'),
+      message: this.locale.t('p.album.deleteMsg'),
+      confirmLabel: this.locale.t('ui.delete'),
+      cancelLabel: this.locale.t('ui.cancel'),
     });
     if (!ok) {
       return;
     }
     this.api.removeProviderAlbum(album.id).subscribe({
       next: () => {
-        this.toast.show('تم حذف الألبوم');
+        this.toast.show(this.locale.t('p.album.toast.deleted'));
         this.reload();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف الألبوم')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.album.toast.deleteFail'))),
     });
   }
 
@@ -315,18 +317,18 @@ export class ProviderPortfolioPageComponent implements OnInit {
     if (!files.length || !this.album) {
       return;
     }
-    this.fileName = files.length === 1 ? files[0].name : `تم اختيار ${files.length} ملف`;
+    this.fileName = files.length === 1 ? files[0].name : this.locale.tf('p.album.filesPicked', { n: files.length });
     this.loading = true;
     try {
       for (const file of files) {
         const kind: 'IMAGE' | 'VIDEO' = file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE';
         await firstValueFrom(this.api.addProviderPortfolio(file, kind, this.album.id));
       }
-      this.toast.show(files.length > 1 ? 'تم إرسال الأعمال للمراجعة' : 'تم إرسال العمل للمراجعة');
+      this.toast.show(files.length > 1 ? this.locale.t('p.album.toast.sentMany') : this.locale.t('p.album.toast.sentOne'));
       this.openAlbum(this.album);
       this.api.providerPortfolio().subscribe({ next: (items) => (this.allItems = items) });
     } catch (err) {
-      this.toast.show(apiMessage(err, 'تعذر إضافة العمل'));
+      this.toast.show(apiMessage(err, this.locale.t('p.album.toast.addFail')));
     } finally {
       this.loading = false;
     }
@@ -335,22 +337,22 @@ export class ProviderPortfolioPageComponent implements OnInit {
   remove(id: string): void {
     this.api.removeProviderPortfolio(id).subscribe({
       next: () => {
-        this.toast.show('تم حذف العمل');
+        this.toast.show(this.locale.t('p.album.toast.itemDeleted'));
         if (this.album) {
           this.openAlbum(this.album);
         }
         this.api.providerPortfolio().subscribe({ next: (items) => (this.allItems = items) });
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حذف العمل')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.album.toast.itemDeleteFail'))),
     });
   }
 
   statusLabel(status: string): string {
     if (status === 'PENDING') {
-      return 'قيد المراجعة';
+      return this.locale.t('p.album.st.pending');
     }
     if (status === 'APPROVED') {
-      return 'معتمد';
+      return this.locale.t('p.album.st.approved');
     }
     return status;
   }

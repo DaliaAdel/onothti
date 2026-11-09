@@ -18,22 +18,22 @@ import { ShellService } from '../core/shell.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>الاشتراك والباقات</h1>
-        <p>اختاري الباقة المناسبة، وتُفتح الخدمات والألبومات بعد اعتماد الدفع</p>
+        <h1>{{ locale.t('p.pkg.title') }}</h1>
+        <p>{{ locale.t('p.pkg.sub') }}</p>
       </div>
     </div>
     @if (current && live) {
       <div class="active-package">
         <div>
-          <span class="status success">الباقة مفعّلة</span>
+          <span class="status success">{{ locale.t('p.pkg.active') }}</span>
           <h3>{{ locale.localizedName(current.package) }}</h3>
-          <p>{{ current.status }} · حتى {{ endAt }}</p>
+          <p>{{ locale.tf('p.pkg.untilStatus', { status: current.status, date: endAt }) }}</p>
         </div>
       </div>
     }
     <div class="packages-intro">
       <div>
-        <b>باقات الخبيرة</b>
+        <b>{{ locale.t('p.pkg.list') }}</b>
       </div>
     </div>
     <div class="grid package-grid">
@@ -49,40 +49,40 @@ import { ShellService } from '../core/shell.service';
           <div class="package-body">
             @if (hasDiscount(item)) {
               <div class="price-row">
-                <span>قبل الخصم</span>
-                <del>{{ money(item.priceBefore) }} ر.س</del>
+                <span>{{ locale.t('p.pkg.before') }}</span>
+                <del>{{ money(item.priceBefore) }} {{ locale.t('ui.sar') }}</del>
               </div>
               <div class="price-row">
-                <span>الخصم</span>
+                <span>{{ locale.t('p.pkg.discount') }}</span>
                 <b>{{ money(item.discountPercent) }}%</b>
               </div>
             }
             <div class="price-row final">
-              <span>{{ hasDiscount(item) ? 'بعد الخصم' : 'قيمة الباقة' }}</span>
+              <span>{{ hasDiscount(item) ? locale.t('p.pkg.after') : locale.t('p.pkg.value') }}</span>
               <strong>{{ priceOf(item) }}</strong>
             </div>
             <details class="package-policy">
-              <summary>تفاصيل وسياسة الباقة</summary>
+              <summary>{{ locale.t('p.pkg.details') }}</summary>
               <div class="package-policy-body">
-                <p><b>المدة:</b> {{ policyOf(item).duration }}</p>
-                <p><b>الحدود:</b> {{ policyOf(item).limits }}</p>
-                <h4>المميزات</h4>
+                <p><b>{{ locale.t('p.pkg.duration') }}</b> {{ policyOf(item).duration }}</p>
+                <p><b>{{ locale.t('p.pkg.limits') }}</b> {{ policyOf(item).limits }}</p>
+                <h4>{{ locale.t('p.pkg.features') }}</h4>
                 <ul>
                   @for (feature of policyOf(item).features; track feature) {
                     <li>{{ feature }}</li>
                   }
                 </ul>
-                <h4>سياسة الباقة</h4>
+                <h4>{{ locale.t('p.pkg.policy') }}</h4>
                 <p>{{ policyOf(item).policy }}</p>
               </div>
             </details>
-            <div class="package-feature"><span>✓</span> تفعيل الخدمات والألبومات بعد اعتماد الاشتراك</div>
+            <div class="package-feature"><span>✓</span> {{ locale.t('p.pkg.unlock') }}</div>
             @if (isCampaignPackage(item)) {
-              <button class="btn package-action" type="button" (click)="join(item)">الاستفادة من الحملة</button>
+              <button class="btn package-action" type="button" (click)="join(item)">{{ locale.t('p.pkg.campaign') }}</button>
             } @else if (item.code === 'FREE') {
-              <button class="btn package-action" type="button" disabled>تُفعّل من إدارة المنصة</button>
+              <button class="btn package-action" type="button" disabled>{{ locale.t('p.pkg.opsOnly') }}</button>
             } @else {
-              <button class="btn package-action" type="button" (click)="choose(item)">اختيار الباقة والاشتراك</button>
+              <button class="btn package-action" type="button" (click)="choose(item)">{{ locale.t('p.pkg.choose') }}</button>
             }
           </div>
         </div>
@@ -118,7 +118,7 @@ export class ProviderPackageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('الاشتراك والباقات');
+    this.shell.set('nav.package');
     this.api.providerSubscription().subscribe({ next: (data) => (this.data = data) });
   }
 
@@ -127,7 +127,13 @@ export class ProviderPackageComponent implements OnInit {
   }
 
   durationOf(item: CatalogPackage): string {
-    return PACKAGE_POLICIES[item.code]?.duration || (item.durationMonths ? `${item.durationMonths} شهر` : 'مدة مرنة');
+    const code = PACKAGE_POLICIES[item.code] ? item.code : '';
+    if (code) {
+      return this.locale.t(`p.pkg.pol.${code}.duration`);
+    }
+    return item.durationMonths
+      ? this.locale.tf('p.pkg.months', { n: item.durationMonths })
+      : this.locale.t('p.pkg.flex');
   }
 
   money(value: number | string | null | undefined): number {
@@ -146,13 +152,21 @@ export class ProviderPackageComponent implements OnInit {
   priceOf(item: CatalogPackage): string {
     const price = this.money(item.price);
     if (item.code === 'FREE' || price === 0) {
-      return 'بدون مقابل';
+      return this.locale.t('p.pkg.free');
     }
-    return `${price} ر.س`;
+    return `${price} ${this.locale.t('ui.sar')}`;
   }
 
-  policyOf(item: CatalogPackage) {
-    return PACKAGE_POLICIES[item.code] || PACKAGE_POLICIES['GREEN'];
+  policyOf(item: CatalogPackage): { duration: string; limits: string; policy: string; features: string[] } {
+    const code = PACKAGE_POLICIES[item.code] ? item.code : 'GREEN';
+    const counts: Record<string, number> = { FREE: 6, GREEN: 6, BRONZE: 7, SILVER: 7, GOLD: 8 };
+    const n = counts[code] ?? 6;
+    return {
+      duration: this.locale.t(`p.pkg.pol.${code}.duration`),
+      limits: this.locale.t(`p.pkg.pol.${code}.limits`),
+      policy: this.locale.t(`p.pkg.pol.${code}.policy`),
+      features: Array.from({ length: n }, (_, i) => this.locale.t(`p.pkg.pol.${code}.f${i + 1}`)),
+    };
   }
 
   choose(item: CatalogPackage): void {
@@ -162,10 +176,10 @@ export class ProviderPackageComponent implements OnInit {
   join(item: CatalogPackage): void {
     this.api.joinCampaign(item.id).subscribe({
       next: () => {
-        this.toast.show(`تم تفعيل ${this.locale.localizedName(item)} من الحملة`);
+        this.toast.show(this.locale.tf('p.pkg.campaignOk', { name: this.locale.localizedName(item) }));
         this.api.providerSubscription().subscribe({ next: (data) => (this.data = data) });
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر الاستفادة من الحملة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('p.pkg.campaignFail'))),
     });
   }
 }

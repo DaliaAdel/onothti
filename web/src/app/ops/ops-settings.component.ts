@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsBankAccount, OpsWelcome } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -15,25 +16,15 @@ type SettingKind = 'text' | 'number' | 'idle';
 type IdleUnit = 'day' | 'month' | 'year';
 
 const SETTING_META: { key: string; label: string; hint: string; kind: SettingKind }[] = [
-  { key: 'whatsapp_disclaimer', label: 'تنبيه واتساب', hint: 'يظهر عند التواصل خارج المنصة', kind: 'text' },
-  { key: 'whatsapp_disclaimer_en', label: 'تنبيه واتساب بالإنجليزي', hint: 'النص الإنجليزي لنفس التنبيه', kind: 'text' },
-  { key: 'otp_ttl_seconds', label: 'مدة رمز التحقق (ثوانٍ)', hint: 'الرمز ينتهي بعد هذا العدد', kind: 'number' },
-  {
-    key: 'idle_customer',
-    label: 'فترة خمول العميلة',
-    hint: 'بعدها يُعد حساب العميلة غير نشط دون نشاط. حددي المدة واختاري يوم أو شهر أو سنة',
-    kind: 'idle',
-  },
-  {
-    key: 'idle_provider',
-    label: 'فترة خمول الخبيرة',
-    hint: 'بعد انتهاء الباقة، المدة قبل إخفاء الظهور. حددي المدة واختاري يوم أو شهر أو سنة',
-    kind: 'idle',
-  },
-  { key: 'provider_bio_max', label: 'حد حروف نبذة الخبيرة', hint: 'الحد الأقصى لنص «نبذة عن» في ملف الخبيرة', kind: 'number' },
-  { key: 'customer_bio_max', label: 'حد حروف نبذة العميلة', hint: 'الحد الأقصى لنص «نبذة عن» في حساب العميلة', kind: 'number' },
-  { key: 'rating_note_max', label: 'حد حروف تقييم العميلة', hint: 'الحد الأقصى لتعليق التقييم الذي تكتبه العميلة', kind: 'number' },
-  { key: 'terms_version', label: 'نسخة الشروط', hint: 'ارفع الرقم عند تحديث الشروط', kind: 'number' },
+  { key: 'whatsapp_disclaimer', label: 'ops.set.whatsapp', hint: 'ops.set.whatsappHint', kind: 'text' },
+  { key: 'whatsapp_disclaimer_en', label: 'ops.set.whatsappEn', hint: 'ops.set.whatsappEnHint', kind: 'text' },
+  { key: 'otp_ttl_seconds', label: 'ops.set.otp', hint: 'ops.set.otpHint', kind: 'number' },
+  { key: 'idle_customer', label: 'ops.set.idleCustomer', hint: 'ops.set.idleCustomerHint', kind: 'idle' },
+  { key: 'idle_provider', label: 'ops.set.idleProvider', hint: 'ops.set.idleProviderHint', kind: 'idle' },
+  { key: 'provider_bio_max', label: 'ops.set.bioProvider', hint: 'ops.set.bioProviderHint', kind: 'number' },
+  { key: 'customer_bio_max', label: 'ops.set.bioCustomer', hint: 'ops.set.bioCustomerHint', kind: 'number' },
+  { key: 'rating_note_max', label: 'ops.set.ratingNote', hint: 'ops.set.ratingNoteHint', kind: 'number' },
+  { key: 'terms_version', label: 'ops.set.terms', hint: 'ops.set.termsHint', kind: 'number' },
 ];
 
 function parseIdle(value: string, fallback = 90): { amount: number; unit: IdleUnit } {
@@ -43,14 +34,14 @@ function parseIdle(value: string, fallback = 90): { amount: number; unit: IdleUn
   return { amount: Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : fallback, unit };
 }
 
-function unitLabel(unit: IdleUnit): string {
+function unitKey(unit: IdleUnit): string {
   if (unit === 'month') {
-    return 'شهر';
+    return 'ops.set.unit.month';
   }
   if (unit === 'year') {
-    return 'سنة';
+    return 'ops.set.unit.year';
   }
-  return 'يوم';
+  return 'ops.set.unit.day';
 }
 
 const BANK_LETTERS_RE = /[^\p{L}\s]/gu;
@@ -83,15 +74,15 @@ function writeSanitized(event: Event, sanitize: (value: string) => string): stri
 }
 
 function bankNameError(value: string): string {
-  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'اسم البنك حروف فقط';
+  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'ops.set.err.bankName';
 }
 
 function accountNameError(value: string): string {
-  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'اسم المستفيد حروف فقط';
+  return BANK_NAME_RE.test(value.trim()) && value.trim().length >= 2 ? '' : 'ops.set.err.accountName';
 }
 
 function ibanError(value: string): string {
-  return BANK_IBAN_RE.test(ibanOnly(value)) ? '' : 'الآيبان مزيج من الحروف والأرقام';
+  return BANK_IBAN_RE.test(ibanOnly(value)) ? '' : 'ops.set.err.iban';
 }
 
 @Component({
@@ -100,25 +91,25 @@ function ibanError(value: string): string {
   template: `
     <div class="section-head">
       <div>
-        <h2>إعدادات التشغيل</h2>
-        <p>نصوص المنصة والمدد التي تظهر للعميلة والخبيرة</p>
+        <h2>{{ locale.t('ops.set.heading') }}</h2>
+        <p>{{ locale.t('ops.set.intro') }}</p>
       </div>
     </div>
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else {
       <div class="ops-table-wrap">
         <table class="ops-table">
           <thead>
             <tr>
-              <th>الإعداد</th>
-              <th>القيمة</th>
+              <th>{{ locale.t('ops.set.col.setting') }}</th>
+              <th>{{ locale.t('ops.set.col.value') }}</th>
             </tr>
           </thead>
           <tbody>
             @for (item of settingRows; track item.key) {
               <tr [class.active]="selectedSetting?.key === item.key" (click)="selectedSetting = item">
-                <td><b>{{ item.label }}</b></td>
+                <td><b>{{ locale.t(item.label) }}</b></td>
                 <td class="clip">{{ displayValue(item) }}</td>
               </tr>
             }
@@ -128,23 +119,23 @@ function ibanError(value: string): string {
     }
     <app-ops-drawer
       [open]="!!selectedSetting"
-      [title]="selectedSetting?.label || ''"
-      [kicker]="selectedSetting?.hint || ''"
+      [title]="selectedSetting ? locale.t(selectedSetting.label) : ''"
+      [kicker]="selectedSetting ? locale.t(selectedSetting.hint) : ''"
       (closed)="selectedSetting = null"
     >
       @if (selectedSetting; as item) {
         @if (item.kind === 'idle') {
           <div class="form-grid">
             <div class="field">
-              <label>المدة</label>
+              <label>{{ locale.t('ops.set.amount') }}</label>
               <input class="input" inputmode="numeric" positiveInt [(ngModel)]="idleAfter[item.key]" />
             </div>
             <div class="field">
-              <label>الوحدة</label>
+              <label>{{ locale.t('ops.set.unit') }}</label>
               <select class="input" [(ngModel)]="idleUnit[item.key]">
-                <option value="day">يوم</option>
-                <option value="month">شهر</option>
-                <option value="year">سنة</option>
+                <option value="day">{{ locale.t('ops.set.unit.day') }}</option>
+                <option value="month">{{ locale.t('ops.set.unit.month') }}</option>
+                <option value="year">{{ locale.t('ops.set.unit.year') }}</option>
               </select>
             </div>
           </div>
@@ -155,7 +146,7 @@ function ibanError(value: string): string {
         }
         <div class="ops-drawer-actions">
           @if (canManage) {
-            <button class="btn primary" type="button" (click)="saveSetting(item)">حفظ</button>
+            <button class="btn primary" type="button" (click)="saveSetting(item)">{{ locale.t('ui.save') }}</button>
           }
         </div>
       }
@@ -163,21 +154,21 @@ function ibanError(value: string): string {
 
     <div class="section-head">
       <div>
-        <h2>رسائل الترحيب</h2>
-        <p>إدارة رسائل الترحيب والتحفيز التى تظهر للعميلة والخبيرة عند تسجيل الدخول</p>
+        <h2>{{ locale.t('ops.set.welcomeTitle') }}</h2>
+        <p>{{ locale.t('ops.set.welcomeSub') }}</p>
       </div>
       @if (canManage) {
-        <button class="btn primary" type="button" (click)="addingWelcome = true">+ إضافة رسالة</button>
+        <button class="btn primary" type="button" (click)="addingWelcome = true">{{ locale.t('ops.set.addWelcome') }}</button>
       }
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
         <thead>
           <tr>
-            <th>الجمهور المستهدف</th>
-            <th>نوع الرسالة</th>
-            <th>محتوى الرسالة</th>
-            <th>الحالة</th>
+            <th>{{ locale.t('ops.set.col.audience') }}</th>
+            <th>{{ locale.t('ops.set.col.msgKind') }}</th>
+            <th>{{ locale.t('ops.set.col.content') }}</th>
+            <th>{{ locale.t('ops.ui.status') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -186,7 +177,7 @@ function ibanError(value: string): string {
               <td><b>{{ audienceLabel(item.audience) }}</b></td>
               <td>{{ kindLabel(item.kind) }}</td>
               <td class="clip">{{ clip(item.bodyAr) }}</td>
-              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'ظاهرة' : 'متوقفة' }}</span></td>
+              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? locale.t('ops.ui.visible') : locale.t('ops.status.paused') }}</span></td>
             </tr>
           }
         </tbody>
@@ -195,64 +186,64 @@ function ibanError(value: string): string {
     <app-ops-drawer
       [open]="!!selectedWelcome"
       [title]="selectedWelcome ? audienceLabel(selectedWelcome.audience) + ' · ' + kindLabel(selectedWelcome.kind) : ''"
-      kicker="رسالة ترحيب"
+      [kicker]="locale.t('ops.set.welcomeKicker')"
       (closed)="selectedWelcome = null"
     >
       @if (selectedWelcome; as item) {
         <textarea class="input" rows="5" maxlength="400" [(ngModel)]="item.bodyAr"></textarea>
         <div class="ops-drawer-actions">
           @if (canManage) {
-            <button class="btn primary" type="button" (click)="saveWelcome(item)">حفظ</button>
+            <button class="btn primary" type="button" (click)="saveWelcome(item)">{{ locale.t('ui.save') }}</button>
             <button class="btn ghost" type="button" (click)="toggleWelcome(item)">
-              {{ item.isActive ? 'إخفاء' : 'إظهار' }}
+              {{ item.isActive ? locale.t('ops.ui.hide') : locale.t('ops.ui.show') }}
             </button>
           }
         </div>
       }
     </app-ops-drawer>
 
-    <app-ops-modal [open]="addingWelcome" title="إضافة رسالة" kicker="ترحيب وتحفيز" (closed)="addingWelcome = false">
+    <app-ops-modal [open]="addingWelcome" [title]="locale.t('ops.set.addWelcomeTitle')" [kicker]="locale.t('ops.set.addWelcomeKicker')" (closed)="addingWelcome = false">
       <div class="form-grid">
         <div class="field">
-          <label>الجمهور</label>
+          <label>{{ locale.t('ops.ui.audience') }}</label>
           <select class="input" [(ngModel)]="welcomeDraft.audience">
-            <option value="CUSTOMER">العميلة</option>
-            <option value="PROVIDER">الخبيرة</option>
-            <option value="ALL">الكل</option>
+            <option value="CUSTOMER">{{ locale.t('ops.type.customer') }}</option>
+            <option value="PROVIDER">{{ locale.t('ops.type.provider') }}</option>
+            <option value="ALL">{{ locale.t('ops.set.audience.all') }}</option>
           </select>
         </div>
         <div class="field">
-          <label>النوع</label>
+          <label>{{ locale.t('ops.ui.kind') }}</label>
           <select class="input" [(ngModel)]="welcomeDraft.kind">
-            <option value="WELCOME">ترحيب</option>
-            <option value="MOTIVATIONAL">تحفيز</option>
+            <option value="WELCOME">{{ locale.t('ops.set.kind.welcome') }}</option>
+            <option value="MOTIVATIONAL">{{ locale.t('ops.set.kind.motivational') }}</option>
           </select>
         </div>
         <div class="field full">
-          <label>النص</label>
+          <label>{{ locale.t('ops.ui.body') }}</label>
           <textarea class="input" rows="3" [(ngModel)]="welcomeDraft.bodyAr"></textarea>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createWelcome()">إضافة الرسالة</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createWelcome()">{{ locale.t('ops.set.addWelcomeSubmit') }}</button>
     </app-ops-modal>
 
     <div class="section-head">
       <div>
-        <h2>الحساب البنكي للمنصة</h2>
-        <p>إدارة بيانات الحساب البنكي التى تظهر للخبيرة عند سداد قيمة الاشتراك او تجديد الباقة</p>
+        <h2>{{ locale.t('ops.set.bankTitle') }}</h2>
+        <p>{{ locale.t('ops.set.bankSub') }}</p>
       </div>
       @if (canManage) {
-        <button class="btn primary" type="button" (click)="openAddBank()">+ إضافة حساب</button>
+        <button class="btn primary" type="button" (click)="openAddBank()">{{ locale.t('ops.set.addBank') }}</button>
       }
     </div>
     <div class="ops-table-wrap" style="margin-bottom:18px">
       <table class="ops-table">
         <thead>
           <tr>
-            <th>البنك</th>
-            <th>الآيبان</th>
-            <th>المستفيد</th>
-            <th>الحالة</th>
+            <th>{{ locale.t('ops.set.col.bank') }}</th>
+            <th>{{ locale.t('ops.set.col.iban') }}</th>
+            <th>{{ locale.t('ops.set.col.beneficiary') }}</th>
+            <th>{{ locale.t('ops.ui.status') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -261,7 +252,7 @@ function ibanError(value: string): string {
               <td><b>{{ item.bankName }}</b></td>
               <td dir="ltr">{{ item.iban }}</td>
               <td>{{ item.accountName }}</td>
-              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? 'ظاهر' : 'متوقف' }}</span></td>
+              <td><span class="status {{ item.isActive ? 'success' : 'error' }}">{{ item.isActive ? locale.t('ops.status.shownBank') : locale.t('ops.status.pausedBank') }}</span></td>
             </tr>
           }
         </tbody>
@@ -270,13 +261,13 @@ function ibanError(value: string): string {
     <app-ops-drawer
       [open]="!!selectedBank"
       [title]="selectedBank?.bankName || ''"
-      kicker="حساب بنكي"
+      [kicker]="locale.t('ops.set.bankKicker')"
       (closed)="selectedBank = null"
     >
       @if (selectedBank; as item) {
         <div class="form-grid">
           <div class="field">
-            <label>البنك</label>
+            <label>{{ locale.t('ops.set.col.bank') }}</label>
             <input
               class="input"
               [class.invalid]="!!editBankErrors.bankName"
@@ -287,11 +278,11 @@ function ibanError(value: string): string {
               autocomplete="off"
             />
             @if (editBankErrors.bankName) {
-              <p class="field-error">{{ editBankErrors.bankName }}</p>
+              <p class="field-error">{{ locale.t(editBankErrors.bankName) }}</p>
             }
           </div>
           <div class="field">
-            <label>اسم المستفيد</label>
+            <label>{{ locale.t('ops.set.beneficiaryName') }}</label>
             <input
               class="input"
               [class.invalid]="!!editBankErrors.accountName"
@@ -302,11 +293,11 @@ function ibanError(value: string): string {
               autocomplete="off"
             />
             @if (editBankErrors.accountName) {
-              <p class="field-error">{{ editBankErrors.accountName }}</p>
+              <p class="field-error">{{ locale.t(editBankErrors.accountName) }}</p>
             }
           </div>
           <div class="field full">
-            <label>الآيبان</label>
+            <label>{{ locale.t('ops.set.col.iban') }}</label>
             <input
               class="input"
               dir="ltr"
@@ -321,24 +312,24 @@ function ibanError(value: string): string {
               placeholder="SA0000000000000000000000"
             />
             @if (editBankErrors.iban) {
-              <p class="field-error">{{ editBankErrors.iban }}</p>
+              <p class="field-error">{{ locale.t(editBankErrors.iban) }}</p>
             }
           </div>
         </div>
         @if (canManage) {
           <div class="ops-drawer-actions">
-            <button class="btn primary" type="button" (click)="saveBank(item)">حفظ</button>
+            <button class="btn primary" type="button" (click)="saveBank(item)">{{ locale.t('ui.save') }}</button>
             <button class="btn ghost" type="button" (click)="toggleBank(item)">
-              {{ item.isActive ? 'إيقاف' : 'تفعيل' }}
+              {{ item.isActive ? locale.t('ops.ui.stop') : locale.t('ops.ui.enable') }}
             </button>
           </div>
         }
       }
     </app-ops-drawer>
-    <app-ops-modal [open]="addingBank" title="إضافة حساب بنكي" kicker="تحويل الاشتراك" (closed)="closeAddBank()">
+    <app-ops-modal [open]="addingBank" [title]="locale.t('ops.set.addBankTitle')" [kicker]="locale.t('ops.set.addBankKicker')" (closed)="closeAddBank()">
       <div class="form-grid">
         <div class="field">
-          <label>البنك</label>
+          <label>{{ locale.t('ops.set.col.bank') }}</label>
           <input
             class="input"
             [class.invalid]="!!bankDraftErrors.bankName"
@@ -349,11 +340,11 @@ function ibanError(value: string): string {
             autocomplete="off"
           />
           @if (bankDraftErrors.bankName) {
-            <p class="field-error">{{ bankDraftErrors.bankName }}</p>
+            <p class="field-error">{{ locale.t(bankDraftErrors.bankName) }}</p>
           }
         </div>
         <div class="field">
-          <label>اسم المستفيد</label>
+          <label>{{ locale.t('ops.set.beneficiaryName') }}</label>
           <input
             class="input"
             [class.invalid]="!!bankDraftErrors.accountName"
@@ -364,11 +355,11 @@ function ibanError(value: string): string {
             autocomplete="off"
           />
           @if (bankDraftErrors.accountName) {
-            <p class="field-error">{{ bankDraftErrors.accountName }}</p>
+            <p class="field-error">{{ locale.t(bankDraftErrors.accountName) }}</p>
           }
         </div>
         <div class="field full">
-          <label>الآيبان</label>
+          <label>{{ locale.t('ops.set.col.iban') }}</label>
           <input
             class="input"
             dir="ltr"
@@ -383,11 +374,11 @@ function ibanError(value: string): string {
             placeholder="SA0000000000000000000000"
           />
           @if (bankDraftErrors.iban) {
-            <p class="field-error">{{ bankDraftErrors.iban }}</p>
+            <p class="field-error">{{ locale.t(bankDraftErrors.iban) }}</p>
           }
         </div>
       </div>
-      <button class="btn primary" style="margin-top:8px;width:100%" type="button" (click)="createBank()">إضافة الحساب</button>
+      <button class="btn primary" style="margin-top:8px;width:100%" type="button" (click)="createBank()">{{ locale.t('ops.set.addBankSubmit') }}</button>
     </app-ops-modal>
   `,
 })
@@ -396,6 +387,7 @@ export class OpsSettingsComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
   private readonly toast = inject(ToastService);
+  readonly locale = inject(LocaleService);
 
   get canManage(): boolean {
     return this.session.hasAnyPermission('RAT-05', 'SETTINGS_MANAGE');
@@ -421,41 +413,41 @@ export class OpsSettingsComponent implements OnInit {
   readonly settingRows = SETTING_META;
 
   ngOnInit(): void {
-    this.shell.set('الإعدادات والرسائل', 'نصوص الترحيب وإعدادات التشغيل');
+    this.shell.set('ops.settings.title', 'ops.settings.sub');
     this.load();
   }
 
   audienceLabel(value: string): string {
     if (value === 'CUSTOMER') {
-      return 'العميلة';
+      return this.locale.t('ops.type.customer');
     }
     if (value === 'PROVIDER') {
-      return 'الخبيرة';
+      return this.locale.t('ops.type.provider');
     }
-    return 'الكل';
+    return this.locale.t('ops.set.audience.all');
   }
 
   kindLabel(value: string): string {
-    return value === 'MOTIVATIONAL' ? 'تحفيز' : 'ترحيب';
+    return value === 'MOTIVATIONAL' ? this.locale.t('ops.set.kind.motivational') : this.locale.t('ops.set.kind.welcome');
   }
 
   displayValue(item: (typeof SETTING_META)[number]): string {
     if (item.kind === 'idle') {
-      return `${this.idleAfter[item.key] ?? 90} ${unitLabel(this.idleUnit[item.key] ?? 'day')}`;
+      return `${this.idleAfter[item.key] ?? 90} ${this.locale.t(unitKey(this.idleUnit[item.key] ?? 'day'))}`;
     }
     return this.clip(this.values[item.key]);
   }
 
   saveSetting(item: (typeof SETTING_META)[number]): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     let value = this.values[item.key] ?? '';
     if (item.kind === 'idle') {
       const amount = Number(this.idleAfter[item.key]);
       if (!Number.isFinite(amount) || amount < 1) {
-        this.toast.show('أدخلي مدة أكبر من صفر');
+        this.toast.show(this.locale.t('ops.set.needIdle'));
         return;
       }
       const unit = this.idleUnit[item.key] ?? 'day';
@@ -464,68 +456,68 @@ export class OpsSettingsComponent implements OnInit {
     } else if (item.kind === 'number') {
       const amount = Number(value);
       if (!Number.isFinite(amount) || amount < 1) {
-        this.toast.show('أدخلي رقمًا أكبر من صفر');
+        this.toast.show(this.locale.t('ops.set.needNumber'));
         return;
       }
       value = String(Math.floor(amount));
       this.values[item.key] = value;
     }
     this.api.opsPatchSetting(item.key, value).subscribe({
-      next: () => this.toast.show('تم حفظ الإعداد'),
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الإعداد')),
+      next: () => this.toast.show(this.locale.t('ops.set.toast.saved')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.saveFail'))),
     });
   }
 
   saveWelcome(item: OpsWelcome): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     const bodyAr = item.bodyAr.trim();
     if (bodyAr.length < 4) {
-      this.toast.show('أدخلي نص الرسالة');
+      this.toast.show(this.locale.t('ops.set.needMessage'));
       return;
     }
     this.api.opsPatchWelcome(item.id, { bodyAr }).subscribe({
       next: (row) => {
         item.bodyAr = row.bodyAr;
-        this.toast.show('تم حفظ الرسالة');
+        this.toast.show(this.locale.t('ops.set.toast.welcomeSaved'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الرسالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.welcomeSaveFail'))),
     });
   }
 
   toggleWelcome(item: OpsWelcome): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.api.opsPatchWelcome(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         item.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'تم إظهار الرسالة' : 'تم إخفاء الرسالة');
+        this.toast.show(row.isActive ? this.locale.t('ops.set.toast.welcomeShown') : this.locale.t('ops.set.toast.welcomeHidden'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الرسالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.welcomeToggleFail'))),
     });
   }
 
   createWelcome(): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     if (this.welcomeDraft.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي نص الرسالة');
+      this.toast.show(this.locale.t('ops.set.needMessage'));
       return;
     }
     this.api.opsCreateWelcome(this.welcomeDraft).subscribe({
       next: () => {
-        this.toast.show('تمت إضافة الرسالة');
+        this.toast.show(this.locale.t('ops.set.toast.welcomeAdded'));
         this.welcomeDraft = { audience: 'CUSTOMER', kind: 'WELCOME', bodyAr: '' };
         this.addingWelcome = false;
         this.load();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الرسالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.welcomeAddFail'))),
     });
   }
 
@@ -536,7 +528,7 @@ export class OpsSettingsComponent implements OnInit {
 
   openAddBank(): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.bankDraft = { bankName: '', iban: '', accountName: '' };
@@ -618,7 +610,7 @@ export class OpsSettingsComponent implements OnInit {
 
   saveBank(item: OpsBankAccount): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     item.bankName = lettersOnly(item.bankName).trim();
@@ -630,7 +622,7 @@ export class OpsSettingsComponent implements OnInit {
       accountName: accountNameError(item.accountName),
     };
     if (this.editBankErrors.bankName || this.editBankErrors.iban || this.editBankErrors.accountName) {
-      this.toast.show('أدخلي اسم البنك والآيبان والمستفيد بالصيغة الصحيحة');
+      this.toast.show(this.locale.t('ops.set.needBank'));
       return;
     }
     this.api.opsPatchBank(item.id, {
@@ -638,28 +630,28 @@ export class OpsSettingsComponent implements OnInit {
       iban: item.iban,
       accountName: item.accountName,
     }).subscribe({
-      next: () => this.toast.show('تم حفظ الحساب البنكي'),
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حفظ الحساب البنكي')),
+      next: () => this.toast.show(this.locale.t('ops.set.toast.bankSaved')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.bankSaveFail'))),
     });
   }
 
   toggleBank(item: OpsBankAccount): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.api.opsPatchBank(item.id, { isActive: !item.isActive }).subscribe({
       next: (row) => {
         item.isActive = row.isActive;
-        this.toast.show(row.isActive ? 'الحساب ظاهر للخبيرات' : 'تم إيقاف الحساب');
+        this.toast.show(row.isActive ? this.locale.t('ops.set.toast.bankVisible') : this.locale.t('ops.set.toast.bankStopped'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحساب البنكي')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.bankToggleFail'))),
     });
   }
 
   createBank(): void {
     if (!this.canManage) {
-      this.toast.show('ليست لديكِ صلاحية هذا الإجراء');
+      this.toast.show(this.locale.t('ops.ui.noPerm'));
       return;
     }
     this.bankDraft.bankName = lettersOnly(this.bankDraft.bankName).trim();
@@ -671,16 +663,16 @@ export class OpsSettingsComponent implements OnInit {
       accountName: accountNameError(this.bankDraft.accountName),
     };
     if (this.bankDraftErrors.bankName || this.bankDraftErrors.iban || this.bankDraftErrors.accountName) {
-      this.toast.show('أدخلي اسم البنك والآيبان والمستفيد بالصيغة الصحيحة');
+      this.toast.show(this.locale.t('ops.set.needBank'));
       return;
     }
     this.api.opsCreateBank(this.bankDraft).subscribe({
       next: () => {
-        this.toast.show('تمت إضافة الحساب البنكي');
+        this.toast.show(this.locale.t('ops.set.toast.bankAdded'));
         this.closeAddBank();
         this.loadBanks();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إضافة الحساب البنكي')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.bankAddFail'))),
     });
   }
 
@@ -708,7 +700,7 @@ export class OpsSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الإعدادات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.loadFail')));
       },
     });
     this.api.opsWelcome().subscribe({
@@ -716,7 +708,7 @@ export class OpsSettingsComponent implements OnInit {
         this.welcome = rows;
         this.selectedWelcome = keepSelected(this.welcome, this.selectedWelcome);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الرسائل')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.welcomeLoadFail'))),
     });
     this.loadBanks();
   }
@@ -727,7 +719,7 @@ export class OpsSettingsComponent implements OnInit {
         this.banks = rows;
         this.selectedBank = keepSelected(this.banks, this.selectedBank);
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحميل الحساب البنكي')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.set.toast.bankLoadFail'))),
     });
   }
 }

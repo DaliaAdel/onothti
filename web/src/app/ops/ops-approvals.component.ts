@@ -7,6 +7,7 @@ import { mediaUrl } from '../core/media';
 import { InitialsPipe } from '../core/name-initials';
 import { apiMessage } from '../core/phone';
 import type { OpsManagedAccount, OpsMediaItem, OpsPendingProvider, OpsProfileChange, OpsRating } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -56,72 +57,72 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
     <div class="appr">
       <div class="appr-head">
         <div>
-          <h2>قائمة الاعتمادات</h2>
-          <p>مراجعة واعتماد الحسابات واسم العرض وصورة العرض والنبذة والتقييم والأعمال والإيصالات.</p>
+          <h2>{{ locale.t('ops.appr.title') }}</h2>
+          <p>{{ locale.t('ops.appr.sub') }}</p>
         </div>
-        <span class="appr-status pending">{{ pendingCount }} بانتظار الاعتماد</span>
+        <span class="appr-status pending">{{ locale.tf('ops.appr.pendingN', { n: pendingCount }) }}</span>
       </div>
 
       <div class="appr-summary">
-        <div class="appr-metric"><span>طلبات الاعتماد</span><b>{{ items.length }}</b></div>
-        <div class="appr-metric"><span>بانتظار الاعتماد</span><b>{{ pendingCount }}</b></div>
-        <div class="appr-metric"><span>تم اعتمادها</span><b>{{ approvedCount }}</b></div>
-        <div class="appr-metric"><span>حسابات مكتملة</span><b>{{ completeCount }}</b></div>
+        <div class="appr-metric"><span>{{ locale.t('ops.appr.requests') }}</span><b>{{ items.length }}</b></div>
+        <div class="appr-metric"><span>{{ locale.t('ops.appr.pending') }}</span><b>{{ pendingCount }}</b></div>
+        <div class="appr-metric"><span>{{ locale.t('ops.appr.approved') }}</span><b>{{ approvedCount }}</b></div>
+        <div class="appr-metric"><span>{{ locale.t('ops.appr.completeAccounts') }}</span><b>{{ completeCount }}</b></div>
       </div>
 
       <div class="appr-toolbar">
         <div class="appr-search">
           <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
-          <input [(ngModel)]="search" placeholder="بحث باسم العرض أو رقم الحساب" />
+          <input [(ngModel)]="search" [placeholder]="locale.t('ops.appr.searchPh')" />
         </div>
         <select class="appr-control" [(ngModel)]="roleFilter">
-          <option value="">جميع أنواع الحسابات</option>
-          <option value="PROVIDER">خبيرة</option>
-          <option value="CUSTOMER">عميلة</option>
+          <option value="">{{ locale.t('ops.appr.allTypes') }}</option>
+          <option value="PROVIDER">{{ locale.t('ops.type.provider') }}</option>
+          <option value="CUSTOMER">{{ locale.t('ops.type.customer') }}</option>
         </select>
         <select class="appr-control" [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilter()">
-          <option value="">جميع الحالات</option>
-          <option value="pending">بانتظار الاعتماد</option>
-          <option value="approved">تم الاعتماد</option>
-          <option value="rejected">مرفوض</option>
+          <option value="">{{ locale.t('ops.appr.allStatuses') }}</option>
+          <option value="pending">{{ locale.t('ops.appr.status.pending') }}</option>
+          <option value="approved">{{ locale.t('ops.appr.status.approved') }}</option>
+          <option value="rejected">{{ locale.t('ops.appr.status.rejected') }}</option>
         </select>
-        <button class="appr-clear" type="button" (click)="clearFilters()">إعادة ضبط</button>
+        <button class="appr-clear" type="button" (click)="clearFilters()">{{ locale.t('ops.appr.reset') }}</button>
       </div>
 
       <div class="appr-tabs">
         <button class="appr-tab" type="button" [class.active]="view === 'all'" (click)="setView('all')">
-          الكل <span class="count">{{ pendingCount }}</span>
+          {{ locale.t('ops.appr.tab.all') }} <span class="count">{{ pendingCount }}</span>
         </button>
         <button class="appr-tab" type="button" [class.active]="view === 'accounts'" (click)="setView('accounts')">
-          الحسابات <span class="count">{{ pendingGroupsCount }}</span>
+          {{ locale.t('ops.appr.tab.accounts') }} <span class="count">{{ pendingGroupsCount }}</span>
         </button>
         @for (tab of kindTabs; track tab.id) {
           @if (tab.visible) {
             <button class="appr-tab" type="button" [class.active]="view === tab.id" (click)="setView(tab.id)">
-              {{ tab.label }} <span class="count">{{ kindCount(tab.id) }}</span>
+              {{ locale.t(tab.label) }} <span class="count">{{ kindCount(tab.id) }}</span>
             </button>
           }
         }
       </div>
 
       @if (loading || (decidedLoading && (statusFilter === 'approved' || statusFilter === 'rejected'))) {
-        <p class="appr-loading">جاري التحميل...</p>
+        <p class="appr-loading">{{ locale.t('ui.loading') }}</p>
       } @else if (view === 'accounts' && !visibleGroups.length) {
-        <p class="appr-empty">لا توجد نتائج مطابقة للفلاتر الحالية.</p>
+        <p class="appr-empty">{{ locale.t('ops.appr.empty') }}</p>
       } @else if (view !== 'accounts' && !visibleItems.length) {
-        <p class="appr-empty">لا توجد نتائج مطابقة للفلاتر الحالية.</p>
+        <p class="appr-empty">{{ locale.t('ops.appr.empty') }}</p>
       } @else if (view === 'accounts') {
         <div class="appr-table-card">
           <table class="appr-table">
             <thead>
               <tr>
-                <th>الحساب</th>
-                <th>نوع الحساب</th>
-                <th>عناصر الاعتماد الخاصة بالحساب</th>
-                <th>المعتمد</th>
-                <th>بانتظار الاعتماد</th>
-                <th>الحالة العامة</th>
-                <th>الإجراء</th>
+                <th>{{ locale.t('ops.appr.col.account') }}</th>
+                <th>{{ locale.t('ops.appr.col.type') }}</th>
+                <th>{{ locale.t('ops.appr.col.items') }}</th>
+                <th>{{ locale.t('ops.appr.col.approved') }}</th>
+                <th>{{ locale.t('ops.appr.col.pending') }}</th>
+                <th>{{ locale.t('ops.appr.col.overall') }}</th>
+                <th>{{ locale.t('ops.appr.col.action') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -156,10 +157,10 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   <td><span class="appr-status pending">{{ pendingIn(group) }}</span></td>
                   <td>
                     <span class="appr-status" [class.approved]="isComplete(group)" [class.partial]="!isComplete(group)">
-                      {{ approvedIn(group) }} من {{ group.items.length }}
+                      {{ locale.tf('ops.appr.of', { a: approvedIn(group), b: group.items.length }) }}
                     </span>
                   </td>
-                  <td><button class="appr-btn ghost" type="button" (click)="openGroup(group, $event)">عرض</button></td>
+                  <td><button class="appr-btn ghost" type="button" (click)="openGroup(group, $event)">{{ locale.t('ui.view') }}</button></td>
                 </tr>
               }
             </tbody>
@@ -170,13 +171,13 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
           <table class="appr-table">
             <thead>
               <tr>
-                <th>الحساب</th>
-                <th>نوع الحساب</th>
-                <th>نوع الاعتماد</th>
-                <th>البيانات المقدمة</th>
-                <th>الحالة</th>
-                <th>التاريخ</th>
-                <th>الإجراء</th>
+                <th>{{ locale.t('ops.appr.col.account') }}</th>
+                <th>{{ locale.t('ops.appr.col.type') }}</th>
+                <th>{{ locale.t('ops.appr.col.kind') }}</th>
+                <th>{{ locale.t('ops.appr.col.submitted') }}</th>
+                <th>{{ locale.t('ops.appr.col.status') }}</th>
+                <th>{{ locale.t('ops.appr.col.date') }}</th>
+                <th>{{ locale.t('ops.appr.col.action') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -212,14 +213,14 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   </td>
                   <td class="appr-preview">
                     @if (item.kind === 'photo') {
-                      <span class="appr-mini">معاينة الصورة داخل الحساب</span>
+                      <span class="appr-mini">{{ locale.t('ops.appr.photoInside') }}</span>
                     } @else {
                       {{ clip(item.summary, 70) }}
                     }
                   </td>
                   <td><span class="appr-status {{ itemTone(item) }}">{{ statusLabel(item) }}</span></td>
                   <td>{{ opsDate(item.createdAt) }}</td>
-                  <td><button class="appr-btn ghost" type="button" (click)="openItem(item, $event)">عرض</button></td>
+                  <td><button class="appr-btn ghost" type="button" (click)="openItem(item, $event)">{{ locale.t('ui.view') }}</button></td>
                 </tr>
               }
             </tbody>
@@ -229,13 +230,13 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
     </div>
 
     <div class="appr-backdrop" [class.open]="!!selectedGroup" (click)="closeDrawer()">
-      <aside class="appr-drawer" role="dialog" aria-label="تفاصيل الحساب والاعتمادات" (click)="$event.stopPropagation()">
+      <aside class="appr-drawer" role="dialog" [attr.aria-label]="locale.t('ops.appr.drawerAria')" (click)="$event.stopPropagation()">
         <div class="appr-drawer-head">
           <div>
-            <small class="muted small">تفاصيل الحساب والاعتمادات</small>
+            <small class="muted small">{{ locale.t('ops.appr.drawerAria') }}</small>
             <h3>{{ drawerTitle }}</h3>
           </div>
-          <button class="appr-close" type="button" aria-label="إغلاق" (click)="closeDrawer()">×</button>
+          <button class="appr-close" type="button" [attr.aria-label]="locale.t('ui.close')" (click)="closeDrawer()">×</button>
         </div>
         @if (selectedGroup; as group) {
           <div class="appr-summary-row">
@@ -253,7 +254,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
             </div>
           </div>
           @if (!focusedKind) {
-            <p class="appr-hint">راجعي كل عنصر واعتمديه أو ارفضيه بصورة مستقلة.</p>
+            <p class="appr-hint">{{ locale.t('ops.appr.hint') }}</p>
           }
           @for (item of drawerItems; track item.id) {
             <section class="appr-card" [class.focus]="!focusedKind || focusedKind === item.kind">
@@ -263,64 +264,64 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
               </div>
               @if (item.provider) {
                 <div class="appr-value">
-                  حساب خبيرة بانتظار الاعتماد
-                  @if (item.provider.city?.nameAr; as city) {
-                    · {{ city }}
+                  {{ locale.t('ops.appr.providerPending') }}
+                  @if (item.provider.city; as city) {
+                    · {{ locale.localizedName(city) }}
                   }
-                  @if (item.provider.package?.nameAr; as pack) {
-                    · {{ pack }}
+                  @if (item.provider.package; as pack) {
+                    · {{ locale.localizedName(pack) }}
                   }
                   <div dir="ltr" style="margin-top:6px">{{ item.provider.mobile }}</div>
                 </div>
                 @if (accountFileLoading) {
-                  <p class="muted small">جاري تحميل الملف...</p>
+                  <p class="muted small">{{ locale.t('ops.appr.fileLoading') }}</p>
                 }
                 @if (accountFile) {
                   <div class="appr-value">
-                    {{ accountFile.bio || 'لا توجد نبذة بعد.' }}
+                    {{ accountFile.bio || locale.t('ops.appr.noBio') }}
                   </div>
                 }
                 @if (canAct(item)) {
                   <div class="appr-card-actions">
-                    <button class="appr-btn approve" type="button" (click)="reviewProvider(item, true)">اعتماد</button>
-                    <button class="appr-btn reject" type="button" (click)="reviewProvider(item, false)">رفض</button>
-                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
+                    <button class="appr-btn approve" type="button" (click)="reviewProvider(item, true)">{{ locale.t('ops.appr.approve') }}</button>
+                    <button class="appr-btn reject" type="button" (click)="reviewProvider(item, false)">{{ locale.t('ops.appr.reject') }}</button>
+                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">{{ locale.t('ops.appr.reopen') }}</button>
                   </div>
                 }
               }
               @if (item.change) {
                 <div class="appr-value" [class.appr-photo-value]="item.kind === 'photo' && item.previewUrl">
                   @if (item.kind === 'photo' && item.previewUrl) {
-                    <img class="appr-photo" [src]="item.previewUrl" alt="صورة العرض" (click)="openLightbox(item.previewUrl)" />
+                    <img class="appr-photo" [src]="item.previewUrl" [alt]="locale.t('ops.appr.photoAlt')" (click)="openLightbox(item.previewUrl)" />
                     <div class="appr-photo-copy">
                       <b>{{ item.summary }}</b>
-                      <p>اضغطي على الصورة لعرضها بالحجم الكامل</p>
+                      <p>{{ locale.t('ops.appr.openFull') }}</p>
                     </div>
                   } @else {
-                    <p class="muted small" style="margin:0 0 8px">القيمة الحالية: {{ item.change.oldValue || '—' }}</p>
+                    <p class="muted small" style="margin:0 0 8px">{{ locale.t('ops.appr.currentValue') }} {{ item.change.oldValue || '—' }}</p>
                     {{ item.change.newValue }}
                   }
                 </div>
                 @if (canAct(item)) {
                   <div class="appr-card-actions">
-                    <button class="appr-btn approve" type="button" (click)="reviewChange(item, true)">اعتماد</button>
-                    <button class="appr-btn reject" type="button" (click)="reviewChange(item, false)">رفض</button>
-                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
+                    <button class="appr-btn approve" type="button" (click)="reviewChange(item, true)">{{ locale.t('ops.appr.approve') }}</button>
+                    <button class="appr-btn reject" type="button" (click)="reviewChange(item, false)">{{ locale.t('ops.appr.reject') }}</button>
+                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">{{ locale.t('ops.appr.reopen') }}</button>
                   </div>
                 }
               }
               @if (item.rating) {
                 <div class="appr-value">
                   <div style="letter-spacing:2px;color:var(--appr-brown);font-size:18px;margin-bottom:6px">{{ stars(item.rating.stars) }}</div>
-                  {{ item.rating.note || 'بدون ملاحظة' }}
+                  {{ item.rating.note || locale.t('ops.appr.noNote') }}
                   <p class="muted small" style="margin:8px 0 0">{{ item.rating.customer.displayName }} → {{ item.rating.provider.displayName }}</p>
                 </div>
                 @if (canAct(item)) {
-                  <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="ratingNotes[item.rating.id]"></textarea>
+                  <textarea class="input" rows="2" [placeholder]="locale.t('ops.appr.notePh')" [(ngModel)]="ratingNotes[item.rating.id]"></textarea>
                   <div class="appr-card-actions" style="margin-top:10px">
-                    <button class="appr-btn approve" type="button" (click)="reviewRating(item, true)">اعتماد</button>
-                    <button class="appr-btn reject" type="button" (click)="reviewRating(item, false)">رفض</button>
-                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
+                    <button class="appr-btn approve" type="button" (click)="reviewRating(item, true)">{{ locale.t('ops.appr.approve') }}</button>
+                    <button class="appr-btn reject" type="button" (click)="reviewRating(item, false)">{{ locale.t('ops.appr.reject') }}</button>
+                    <button class="appr-btn ghost" type="button" (click)="reopen(item)">{{ locale.t('ops.appr.reopen') }}</button>
                   </div>
                 }
               }
@@ -329,12 +330,12 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   @if (item.isVideo && item.previewUrl) {
                     <video [src]="item.previewUrl" controls style="width:100%;border-radius:12px"></video>
                   } @else if (item.isPdf && item.previewUrl) {
-                    <a class="appr-btn ghost" [href]="item.previewUrl" target="_blank" rel="noopener">فتح ملف الإيصال</a>
+                    <a class="appr-btn ghost" [href]="item.previewUrl" target="_blank" rel="noopener">{{ locale.t('ops.appr.openReceipt') }}</a>
                   } @else if (item.previewUrl) {
-                    <img class="appr-photo" [src]="item.previewUrl" alt="معاينة" (click)="openLightbox(item.previewUrl)" />
+                    <img class="appr-photo" [src]="item.previewUrl" [alt]="locale.t('ops.appr.preview')" (click)="openLightbox(item.previewUrl)" />
                     <div class="appr-photo-copy">
                       <b>{{ item.summary }}</b>
-                      <p>اضغطي على الصورة لعرضها بالحجم الكامل</p>
+                      <p>{{ locale.t('ops.appr.openFull') }}</p>
                     </div>
                   } @else {
                     {{ item.media.text || item.summary }}
@@ -343,32 +344,32 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                 @if (item.media.proofs.length && canActivateReceipt()) {
                   <div class="appr-dates">
                     <div class="field">
-                      <label>تاريخ التفعيل</label>
+                      <label>{{ locale.t('ops.appr.startDate') }}</label>
                       <input class="input" type="date" [(ngModel)]="dates[item.media.id].startAt" />
                     </div>
                     <div class="field">
-                      <label>تاريخ الانتهاء</label>
+                      <label>{{ locale.t('ops.appr.endDate') }}</label>
                       <input class="input" type="date" [(ngModel)]="dates[item.media.id].endAt" />
                     </div>
                   </div>
                 }
                 @if (canAct(item) || canEscalate(item.media) || canRequestClearer()) {
-                  <textarea class="input" rows="2" placeholder="ملاحظة اختيارية" [(ngModel)]="notes[item.media.id]"></textarea>
+                  <textarea class="input" rows="2" [placeholder]="locale.t('ops.appr.notePh')" [(ngModel)]="notes[item.media.id]"></textarea>
                   <div class="appr-card-actions" style="margin-top:10px">
                     @if (canEscalate(item.media)) {
-                      <button class="appr-btn finance" type="button" (click)="escalate(item)">تحويل للمالية</button>
+                      <button class="appr-btn finance" type="button" (click)="escalate(item)">{{ locale.t('ops.appr.escalate') }}</button>
                     }
                     @if (canApproveMedia(item.media) && canDecide(item)) {
-                      <button class="appr-btn approve" type="button" (click)="reviewMedia(item, true)">اعتماد</button>
+                      <button class="appr-btn approve" type="button" (click)="reviewMedia(item, true)">{{ locale.t('ops.appr.approve') }}</button>
                     }
                     @if (canRejectMedia(item.media) && canDecide(item)) {
-                      <button class="appr-btn reject" type="button" (click)="reviewMedia(item, false)">رفض</button>
+                      <button class="appr-btn reject" type="button" (click)="reviewMedia(item, false)">{{ locale.t('ops.appr.reject') }}</button>
                     }
                     @if (canAct(item)) {
-                      <button class="appr-btn ghost" type="button" (click)="reopen(item)">إعادة للمراجعة</button>
+                      <button class="appr-btn ghost" type="button" (click)="reopen(item)">{{ locale.t('ops.appr.reopen') }}</button>
                     }
                     @if (item.media.purpose === 'RECEIPT' && canRequestClearer() && itemTone(item) === 'pending') {
-                      <button class="appr-btn ghost" type="button" (click)="clearer(item)">طلب صورة أوضح</button>
+                      <button class="appr-btn ghost" type="button" (click)="clearer(item)">{{ locale.t('ops.appr.clearer') }}</button>
                     }
                   </div>
                 }
@@ -377,7 +378,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
           }
           @if (!focusedKind) {
             <div class="appr-history">
-              <h5>سجل الاعتمادات</h5>
+              <h5>{{ locale.t('ops.appr.history') }}</h5>
               @for (item of historyItems; track item.id) {
                 <div class="appr-history-item">
                   <i></i>
@@ -387,12 +388,12 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
                   </div>
                 </div>
               } @empty {
-                <small class="muted small">{{ decidedLoading ? 'جاري تحميل السجل...' : 'لا توجد إجراءات سابقة.' }}</small>
+                <small class="muted small">{{ decidedLoading ? locale.t('ops.appr.historyLoading') : locale.t('ops.appr.noHistory') }}</small>
               }
             </div>
           }
           <div class="appr-drawer-foot">
-            <button class="appr-btn ghost" type="button" (click)="closeDrawer()">إغلاق</button>
+            <button class="appr-btn ghost" type="button" (click)="closeDrawer()">{{ locale.t('ui.close') }}</button>
           </div>
         }
       </aside>
@@ -400,7 +401,7 @@ type KindChip = { kind: ApprovalKind; tone: Tone; label: string };
 
     <div class="appr-lightbox" [class.open]="!!lightboxUrl" (click)="lightboxUrl = null">
       @if (lightboxUrl) {
-        <img [src]="lightboxUrl" alt="صورة العرض بالحجم الكامل" (click)="$event.stopPropagation()" />
+        <img [src]="lightboxUrl" [alt]="locale.t('ops.appr.lightboxAlt')" (click)="$event.stopPropagation()" />
       }
     </div>
   `,
@@ -412,6 +413,7 @@ export class OpsApprovalsComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  readonly locale = inject(LocaleService);
 
   readonly opsDate = opsDate;
   readonly clip = clip;
@@ -532,13 +534,13 @@ export class OpsApprovalsComponent implements OnInit {
 
   get drawerTitle(): string {
     if (this.focusedKind) {
-      return `مراجعة ${this.kindLabel(this.focusedKind)}`;
+      return this.locale.tf('ops.appr.reviewKind', { name: this.kindLabel(this.focusedKind) });
     }
-    return 'اعتمادات الحساب';
+    return this.locale.t('ops.appr.accountApprovals');
   }
 
   ngOnInit(): void {
-    this.shell.set('قائمة الاعتمادات', 'الحسابات والملف والأعمال والإيصالات والتقييم');
+    this.shell.set('ops.approvals.title', 'ops.approvals.sub');
     this.refreshTabs();
     this.route.queryParamMap.subscribe((params) => {
       this.view = this.mapQuery(params.get('kind'), params.get('purpose'));
@@ -595,22 +597,16 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   kindLabel(kind: ApprovalKind): string {
-    const labels: Record<ApprovalKind, string> = {
-      account: 'الحساب',
-      name: 'اسم العرض',
-      photo: 'صورة العرض',
-      bio: 'النبذة',
-      rating: 'التقييم',
-      portfolio: 'الأعمال',
-      receipt: 'الإيصال',
-    };
-    return labels[kind];
+    return this.locale.t(`ops.appr.kind.${kind}`);
   }
 
   kindIcon(kind: ApprovalKind): string {
+    if (kind === 'account' || kind === 'name') {
+      return this.locale.t(`ops.appr.icon.${kind}`);
+    }
     const icons: Record<ApprovalKind, string> = {
-      account: 'ح',
-      name: 'أ',
+      account: 'A',
+      name: 'N',
       photo: '▧',
       bio: '≡',
       rating: '★',
@@ -622,12 +618,12 @@ export class OpsApprovalsComponent implements OnInit {
 
   accountLabel(type?: string): string {
     if (type === 'CUSTOMER') {
-      return 'عميلة';
+      return this.locale.t('ops.type.customer');
     }
     if (type === 'PROVIDER') {
-      return 'خبيرة';
+      return this.locale.t('ops.type.provider');
     }
-    return 'حساب';
+    return this.locale.t('ops.appr.type.account');
   }
 
   stars(count: number): string {
@@ -650,22 +646,16 @@ export class OpsApprovalsComponent implements OnInit {
   }
 
   toneLabel(tone: Tone): string {
-    if (tone === 'approved') {
-      return 'تم الاعتماد';
-    }
-    if (tone === 'rejected') {
-      return 'مرفوض';
-    }
-    return 'بانتظار الاعتماد';
+    return this.locale.t(`ops.appr.status.${tone}`);
   }
 
   statusLabel(item: ApprovalItem): string {
     const opsStatus = item.media?.proofs[0]?.opsStatus;
     if (opsStatus === 'ESCALATED') {
-      return 'محوّل للمالية';
+      return this.locale.t('ops.appr.escalated');
     }
     if (item.media?.status === 'NEED_CLEARER') {
-      return 'صورة أوضح';
+      return this.locale.t('ops.appr.clearerStatus');
     }
     return this.toneLabel(this.itemTone(item));
   }
@@ -846,10 +836,10 @@ export class OpsApprovalsComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show(approve ? 'تم الاعتماد' : 'تم الرفض');
+          this.toast.show(this.locale.t(approve ? 'ops.appr.toast.ok' : 'ops.appr.toast.rejected'));
           this.afterReview();
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر تنفيذ المراجعة')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.fail'))),
       });
   }
 
@@ -860,10 +850,10 @@ export class OpsApprovalsComponent implements OnInit {
     }
     this.api.opsEscalateReceipt(file.id).subscribe({
       next: (row) => {
-        this.toast.show('تم تحويل الإيصال للمالية');
+        this.toast.show(this.locale.t('ops.appr.toast.finance'));
         this.replaceItem(this.fromFile(row));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تحويل الإيصال')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.financeFail'))),
     });
   }
 
@@ -874,10 +864,10 @@ export class OpsApprovalsComponent implements OnInit {
     }
     this.api.opsReviewMedia(file.id, { requestClearer: true, note: this.notes[file.id] }).subscribe({
       next: () => {
-        this.toast.show('تم طلب صورة أوضح');
+        this.toast.show(this.locale.t('ops.appr.toast.clearer'));
         this.afterReview();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الطلب')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.clearerFail'))),
     });
   }
 
@@ -888,10 +878,10 @@ export class OpsApprovalsComponent implements OnInit {
     }
     this.api.opsReviewRating(rating.id, approve, this.ratingNotes[rating.id]).subscribe({
       next: () => {
-        this.toast.show(approve ? 'تم اعتماد التقييم' : 'تم رفض التقييم');
+        this.toast.show(this.locale.t(approve ? 'ops.appr.toast.ratingOk' : 'ops.appr.toast.ratingNo'));
         this.afterReview();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر مراجعة التقييم')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.ratingFail'))),
     });
   }
 
@@ -902,10 +892,10 @@ export class OpsApprovalsComponent implements OnInit {
     }
     this.api.opsReviewChange(change.id, approve).subscribe({
       next: () => {
-        this.toast.show(approve ? 'تم اعتماد التعديل' : 'تم رفض التعديل');
+        this.toast.show(this.locale.t(approve ? 'ops.appr.toast.changeOk' : 'ops.appr.toast.changeNo'));
         this.afterReview();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر مراجعة التعديل')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.changeFail'))),
     });
   }
 
@@ -916,20 +906,20 @@ export class OpsApprovalsComponent implements OnInit {
     }
     this.api.opsReviewProvider(provider.id, approve).subscribe({
       next: () => {
-        this.toast.show(approve ? 'تم اعتماد الحساب' : 'تم إيقاف الحساب');
+        this.toast.show(this.locale.t(approve ? 'ops.appr.toast.accountOk' : 'ops.appr.toast.accountStop'));
         this.afterReview();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تنفيذ القرار')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.accountFail'))),
     });
   }
 
   reopen(item: ApprovalItem): void {
     const done = {
       next: () => {
-        this.toast.show('أُعيد للمراجعة');
+        this.toast.show(this.locale.t('ops.appr.toast.reopen'));
         this.afterReview();
       },
-      error: (err: unknown) => this.toast.show(apiMessage(err, 'تعذر إعادة العنصر للمراجعة')),
+      error: (err: unknown) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.reopenFail'))),
     };
     if (item.provider) {
       this.api.opsReviewProvider(item.provider.id, false, undefined, true).subscribe(done);
@@ -950,12 +940,12 @@ export class OpsApprovalsComponent implements OnInit {
 
   private refreshTabs(): void {
     this.kindTabs = [
-      { id: 'name', label: 'الاسم', visible: this.canSeeNames },
-      { id: 'photo', label: 'الصورة', visible: this.canSeePhotos },
-      { id: 'bio', label: 'النبذة', visible: this.canSeeBios },
-      { id: 'rating', label: 'التقييم', visible: this.canSeeRatings },
-      { id: 'portfolio', label: 'أعمال', visible: this.canSeePortfolio },
-      { id: 'receipt', label: 'إيصالات', visible: this.canSeeReceipts },
+      { id: 'name', label: 'ops.appr.tab.name', visible: this.canSeeNames },
+      { id: 'photo', label: 'ops.appr.tab.photo', visible: this.canSeePhotos },
+      { id: 'bio', label: 'ops.appr.tab.bio', visible: this.canSeeBios },
+      { id: 'rating', label: 'ops.appr.tab.rating', visible: this.canSeeRatings },
+      { id: 'portfolio', label: 'ops.appr.tab.portfolio', visible: this.canSeePortfolio },
+      { id: 'receipt', label: 'ops.appr.tab.receipt', visible: this.canSeeReceipts },
     ];
   }
 
@@ -1058,7 +1048,7 @@ export class OpsApprovalsComponent implements OnInit {
         this.loadDecided();
       },
       error: (err) => {
-        this.toast.show(apiMessage(err, 'تعذر تحميل الاعتمادات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.loadFail')));
       },
     });
   }
@@ -1210,7 +1200,9 @@ export class OpsApprovalsComponent implements OnInit {
       accountName: row.displayName,
       accountCode: row.accountCode,
       accountType: 'PROVIDER',
-      summary: row.city?.nameAr ? `حساب خبيرة · ${row.city.nameAr}` : 'حساب خبيرة بانتظار الاعتماد',
+      summary: row.city
+        ? this.locale.tf('ops.appr.summary.providerCity', { city: this.locale.localizedName(row.city) })
+        : this.locale.t('ops.appr.summary.provider'),
       provider: row,
     };
   }
@@ -1228,12 +1220,13 @@ export class OpsApprovalsComponent implements OnInit {
       accountType: file.owner.accountType,
       summary:
         kind === 'receipt' && proof
-          ? `إيصال ${proof.package?.nameAr || ''} · ${proof.amount} ر.س`
+          ? this.locale.tf('ops.appr.summary.receipt', {
+              name: this.locale.localizedName(proof.package),
+              amount: proof.amount,
+            })
           : kind === 'portfolio'
-            ? file.kind === 'VIDEO'
-              ? 'فيديو أعمال'
-              : 'صورة أعمال'
-            : 'صورة الحساب بانتظار الاعتماد',
+            ? this.locale.t(file.kind === 'VIDEO' ? 'ops.appr.summary.video' : 'ops.appr.summary.photo')
+            : this.locale.t('ops.appr.summary.avatar'),
       previewUrl: mediaUrl(file.url) || undefined,
       isVideo: file.kind === 'VIDEO',
       isPdf: file.kind === 'PDF' || (file.mime || '').toLowerCase().includes('pdf'),
@@ -1267,7 +1260,9 @@ export class OpsApprovalsComponent implements OnInit {
       accountName: row.customer.displayName,
       accountCode: row.customer.accountCode,
       accountType: row.customer.accountType || 'CUSTOMER',
-      summary: row.note || `تقييم ${row.stars} نجوم على حساب ${row.provider.displayName}`,
+      summary:
+        row.note ||
+        this.locale.tf('ops.appr.summary.rating', { stars: row.stars, name: row.provider.displayName }),
       rating: row,
     };
   }

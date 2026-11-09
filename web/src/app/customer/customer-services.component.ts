@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { FALLBACK_SERVICES, serviceIcon, servicePhoto, type CatalogRegion, type CatalogService } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { FavoriteBtnComponent } from '../shared/favorite-btn.component';
@@ -15,23 +16,23 @@ import { IconComponent } from '../shared/icon.component';
     <div class="search-row">
       <label class="searchbox">
         <app-icon name="search" />
-        <input [(ngModel)]="query" placeholder="ابحثي عن خدمة..." aria-label="البحث عن خدمة" />
+        <input [(ngModel)]="query" [placeholder]="locale.t('c.browse.searchPh')" [attr.aria-label]="locale.t('c.browse.searchAria')" />
       </label>
-      <select class="select" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()" aria-label="المنطقة">
-        <option value="">كل المناطق</option>
+      <select class="select" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()" [attr.aria-label]="locale.t('c.browse.regionAria')">
+        <option value="">{{ locale.t('c.allRegions') }}</option>
         @for (region of regions; track region.id) {
-          <option [value]="region.id">{{ region.nameAr }}</option>
+          <option [value]="region.id">{{ locale.localizedName(region) }}</option>
         }
       </select>
-      <select class="select" [(ngModel)]="cityId" [disabled]="!regionId" aria-label="المدينة">
-        <option value="">كل المدن</option>
+      <select class="select" [(ngModel)]="cityId" [disabled]="!regionId" [attr.aria-label]="locale.t('c.browse.cityAria')">
+        <option value="">{{ locale.t('c.allCities') }}</option>
         @for (city of cities; track city.id) {
-          <option [value]="city.id">{{ city.nameAr }}</option>
+          <option [value]="city.id">{{ locale.localizedName(city) }}</option>
         }
       </select>
     </div>
     @if (filtered.length === 0) {
-      <p class="page-empty">لا توجد نتائج مطابقة.</p>
+      <p class="page-empty">{{ locale.t('ui.empty') }}</p>
     } @else {
       <div class="grid four">
         @for (service of filtered; track service.id) {
@@ -43,7 +44,7 @@ import { IconComponent } from '../shared/icon.component';
                 <img class="service-mini-icon" [src]="iconOf(service)" alt="" loading="lazy" decoding="async" />
               </div>
               <div class="service-body">
-                <h3>{{ service.nameAr }}</h3>
+                <h3>{{ locale.localizedName(service) }}</h3>
                 <p>{{ serviceDesc(service) }}</p>
                 <span class="arrow"><app-icon name="chev" /></span>
               </div>
@@ -59,6 +60,7 @@ export class CustomerServicesComponent implements OnInit {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
 
   query = '';
   regionId = '';
@@ -78,7 +80,7 @@ export class CustomerServicesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('تصفّح الخدمات', 'اختاري الخدمة والمنطقة والمدينة للوصول إلى النتائج المناسبة');
+    this.shell.set('c.browse.title', 'c.browse.sub');
     this.cityId = this.session.user()?.city?.id ?? '';
     this.api.regions().subscribe({
       next: (regions) => {
@@ -127,6 +129,9 @@ export class CustomerServicesComponent implements OnInit {
 
   serviceDesc(service: CatalogService): string {
     const fallback = FALLBACK_SERVICES.find((item) => item.code === service.code || item.nameAr === service.nameAr);
-    return fallback?.desc ?? 'اكتشفي الخبيرات لهذه الخدمة';
+    if (this.locale.lang() === 'en') {
+      return fallback?.descEn ?? this.locale.t('c.serviceFallback');
+    }
+    return fallback?.desc ?? this.locale.t('c.serviceFallback');
   }
 }

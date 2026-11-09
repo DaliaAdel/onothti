@@ -1,4 +1,5 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, inject } from '@angular/core';
+import { LocaleService } from '../core/locale.service';
 
 @Component({
   selector: 'app-ops-modal',
@@ -10,7 +11,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
       (click)="onLayerClick()"
     >
       <div class="ops-modal-card" role="dialog" aria-modal="true" [attr.aria-label]="title" (click)="$event.stopPropagation()">
-        <button class="ops-modal-close" type="button" aria-label="إغلاق" (click)="closed.emit()">×</button>
+        <button class="ops-modal-close" type="button" [attr.aria-label]="locale.t('ui.close')" (click)="closed.emit()">×</button>
         @if (kicker) {
           <span class="ops-modal-kicker">{{ kicker }}</span>
         }
@@ -23,6 +24,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
   `,
 })
 export class OpsModalComponent {
+  readonly locale = inject(LocaleService);
   @Input() open = false;
   @Input() title = '';
   @Input() kicker = '';

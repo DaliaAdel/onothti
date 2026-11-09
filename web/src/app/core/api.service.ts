@@ -423,10 +423,13 @@ export class ApiService {
   }
 
   legalPage(kind: 'TERMS' | 'POLICIES' | 'PRIVACY' | 'OTHER', audience: 'CUSTOMER' | 'PROVIDER' | 'STAFF') {
-    return this.http.get<{ titleAr?: string; bodyAr?: string; contentAr?: string }>(
-      `${this.base}/legal/page`,
-      { params: { kind, audience } },
-    );
+    return this.http.get<{
+      titleAr?: string;
+      titleEn?: string;
+      bodyAr?: string;
+      bodyEn?: string;
+      contentAr?: string;
+    }>(`${this.base}/legal/page`, { params: { kind, audience } });
   }
 
   opsDashboard() {

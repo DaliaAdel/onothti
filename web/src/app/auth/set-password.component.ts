@@ -15,10 +15,10 @@ import { PasswordInputComponent } from '../shared/password-input.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <a class="auth-back" routerLink="/otp" [queryParams]="{ purpose: 'LOGIN' }">← رجوع</a>
-        <span class="auth-kicker">حساب التشغيل الجديد</span>
-        <h2>عين كلمة المرور</h2>
-        <p class="muted">بعد تأكيد رقم <b dir="ltr">{{ phoneLabel }}</b> اختاري كلمة مرور جديدة لدخول لوحة  المعلومات في المرات القادمة.</p>
+        <a class="auth-back" routerLink="/otp" [queryParams]="{ purpose: 'LOGIN' }">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.set.kicker') }}</span>
+        <h2>{{ locale.t('auth.set.title') }}</h2>
+        <p class="muted">{{ locale.tf('auth.set.sub', { phone: phoneLabel }) }}</p>
         <div class="field">
           <label>{{ locale.t('auth.password') }}</label>
           <app-password-input
@@ -40,7 +40,7 @@ import { PasswordInputComponent } from '../shared/password-input.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">حفظ ودخول اللوحة</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.set.submit') }}</button>
       </form>
     </app-auth-layout>
   `,

@@ -3938,3 +3938,27 @@ textarea[dir="ltr"],
     transform: none
   }
 }
+
+.landing-page>.site-header .lang-switch{
+  padding:3px;
+  background:var(--soft,#fbf0ea);
+  flex:none
+}
+.landing-page>.site-header .lang-switch button{
+  min-height:30px;
+  padding:0 9px;
+  font-size:10px;
+  font-weight:800;
+  background:transparent;
+  border:0;
+  color:var(--muted);
+  border-radius:9px
+}
+.landing-page>.site-header .lang-switch button.active{
+  background:#fff;
+  color:var(--dark,#5f3120)
+}
+html[dir="ltr"] .landing-page .browser-body{direction:ltr}
+html[dir="ltr"] .landing-page footer a,
+html[dir="ltr"] .landing-page footer button{text-align:left}
+html[dir="ltr"] .landing-page .featured-action{text-align:left}

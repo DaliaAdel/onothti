@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LocaleService } from '../core/locale.service';
 import type { CatalogRegion, ProviderCard } from '../core/models';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
@@ -16,31 +17,31 @@ import { IconComponent } from '../shared/icon.component';
     <form class="search-row" (ngSubmit)="apply()">
       <label class="searchbox">
         <app-icon name="search" />
-        <input [(ngModel)]="query" name="q" placeholder="ابحثي باسم الخبيرة..." />
+        <input [(ngModel)]="query" name="q" [placeholder]="locale.t('c.experts.searchPh')" />
       </label>
       <select class="select" name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-        <option value="">كل المناطق</option>
+        <option value="">{{ locale.t('c.allRegions') }}</option>
         @for (region of regions; track region.id) {
-          <option [value]="region.id">{{ region.nameAr }}</option>
+          <option [value]="region.id">{{ locale.localizedName(region) }}</option>
         }
       </select>
       <select class="select" name="city" [(ngModel)]="cityId" [disabled]="!regionId">
-        <option value="">كل المدن</option>
+        <option value="">{{ locale.t('c.allCities') }}</option>
         @for (city of cities; track city.id) {
-          <option [value]="city.id">{{ city.nameAr }}</option>
+          <option [value]="city.id">{{ locale.localizedName(city) }}</option>
         }
       </select>
-      <button class="btn primary" type="submit">بحث</button>
+      <button class="btn primary" type="submit">{{ locale.t('c.search') }}</button>
     </form>
     @if (!cityId && !regionId) {
       <article class="card coming-card">
-        <h2>اختاري المنطقة أو المدينة</h2>
-        <p>نتائج البحث تعتمد على الموقع. حددي المنطقة ثم المدينة إن رغبتِ.</p>
+        <h2>{{ locale.t('c.experts.pickTitle') }}</h2>
+        <p>{{ locale.t('c.experts.pickText') }}</p>
       </article>
     } @else if (loading) {
-      <p class="loading">جاري البحث عن الخبيرات...</p>
+      <p class="loading">{{ locale.t('c.experts.searching') }}</p>
     } @else if (providers.length === 0) {
-      <p class="page-empty">لا توجد نتائج مطابقة في هذا النطاق حاليًا.</p>
+      <p class="page-empty">{{ locale.t('c.experts.empty') }}</p>
     } @else {
       <div class="grid two">
         @for (provider of providers; track provider.id) {
@@ -48,12 +49,12 @@ import { IconComponent } from '../shared/icon.component';
             <div class="provider-photo">{{ provider.displayName | initials }}</div>
             <div>
               <h3>{{ provider.displayName }}</h3>
-              <p>{{ serviceLine(provider) }} · {{ provider.city?.nameAr || cityName }}</p>
-              <div class="rating">★ {{ provider.ratingAvg ?? '—' }}@if (provider.ratingCount) { · {{ provider.ratingCount }} تقييمًا }</div>
+              <p>{{ serviceLine(provider) }} · {{ locale.localizedName(provider.city, cityName) }}</p>
+              <div class="rating">★ {{ provider.ratingAvg ?? '—' }}@if (provider.ratingCount) { · {{ provider.ratingCount }} {{ locale.t('c.ratingsCount') }} }</div>
             </div>
             <div class="provider-actions">
               <app-favorite-btn targetType="PROVIDER" [targetId]="provider.id" />
-              <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">عرض الملف</a>
+              <a class="btn ghost" [routerLink]="['/c/providers', provider.id]">{{ locale.t('c.view') }}</a>
             </div>
           </article>
         }
@@ -67,6 +68,7 @@ export class ProviderListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
 
   query = '';
   regionId = '';
@@ -82,7 +84,7 @@ export class ProviderListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.shell.set('الخبيرات', 'نتائج وفق البحث والمنطقة والمدينة');
+    this.shell.set('c.experts.title', 'c.experts.sub');
     this.api.regions().subscribe({
       next: (regions) => {
         this.regions = regions;
@@ -94,7 +96,7 @@ export class ProviderListComponent implements OnInit {
             params.get('regionId') ||
             regions.find((region) => region.cities.some((city) => city.id === this.cityId))?.id ||
             '';
-          this.cityName = this.cities.find((city) => city.id === this.cityId)?.nameAr ?? '';
+          this.cityName = this.locale.localizedName(this.cities.find((city) => city.id === this.cityId), this.locale.t('c.country'));
           this.search();
         });
       },
@@ -120,7 +122,7 @@ export class ProviderListComponent implements OnInit {
   }
 
   serviceLine(provider: ProviderCard): string {
-    return provider.services?.[0]?.nameAr || 'خدمات تجميل';
+    return this.locale.localizedName(provider.services?.[0], this.locale.t('c.beauty'));
   }
 
   private search(): void {

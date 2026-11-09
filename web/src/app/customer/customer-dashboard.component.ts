@@ -24,35 +24,35 @@ import { IconComponent } from '../shared/icon.component';
     <section class="home-search card">
       <div>
         <span class="eyebrow">{{ locale.t('c.hero.eyebrow') }}</span>
-        <h2>مرحباً{{ name ? '، ' + name : '' }}</h2>
-        <p>ابحثي بالخدمة والمنطقة والمدينة للوصول إلى الخبيرات القريبات منكِ.</p>
+        <h2>{{ locale.t('c.hello') }}{{ name ? (locale.lang() === 'en' ? ', ' : '، ') + name : '' }}</h2>
+        <p>{{ locale.t('c.searchText') }}</p>
       </div>
       <form class="search-row home-search-row" (ngSubmit)="search()">
         <label class="searchbox">
           <app-icon name="search" />
-          <input [(ngModel)]="query" name="q" placeholder="ابحثي عن خبيرة أو خدمة..." />
+          <input [(ngModel)]="query" name="q" [placeholder]="locale.t('c.searchPlaceholder')" />
         </label>
         <select class="select" name="region" [(ngModel)]="regionId" (ngModelChange)="onRegionChange()">
-          <option value="">كل المناطق</option>
+          <option value="">{{ locale.t('c.allRegions') }}</option>
           @for (region of regions; track region.id) {
             <option [value]="region.id">{{ locale.localizedName(region) }}</option>
           }
         </select>
         <select class="select" name="city" [(ngModel)]="cityId" [disabled]="!regionId">
-          <option value="">كل المدن</option>
+          <option value="">{{ locale.t('c.allCities') }}</option>
           @for (city of cities; track city.id) {
             <option [value]="city.id">{{ locale.localizedName(city) }}</option>
           }
         </select>
-        <button class="btn primary" type="submit">بحث</button>
+        <button class="btn primary" type="submit">{{ locale.t('c.search') }}</button>
       </form>
     </section>
 
     <div class="home-metrics">
-      <div><b>+1,200</b><span>خبيرة نشطة</span></div>
-      <div><b>+60</b><span>خدمة فرعية</span></div>
-      <div><b>15</b><span>مدينة مغطاة</span></div>
-      <div><b>4.9</b><span>متوسط التقييمات</span></div>
+      <div><b>+1,200</b><span>{{ locale.t('c.trust.experts') }}</span></div>
+      <div><b>+60</b><span>{{ locale.t('c.trust.subs') }}</span></div>
+      <div><b>15</b><span>{{ locale.t('c.trust.cities') }}</span></div>
+      <div><b>4.9</b><span>{{ locale.t('c.trust.rating') }}</span></div>
     </div>
 
     <div class="section-head">
@@ -95,7 +95,7 @@ import { IconComponent } from '../shared/icon.component';
             <div>
               <h3>{{ provider.displayName }}</h3>
               <p>{{ serviceLine(provider) }} · {{ locale.localizedName(provider.city, locale.t('c.country')) }}</p>
-              <div class="rating">★ {{ provider.ratingAvg ?? '—' }}@if (provider.ratingCount) { · {{ provider.ratingCount }} تقييمًا }</div>
+              <div class="rating">★ {{ provider.ratingAvg ?? '—' }}@if (provider.ratingCount) { · {{ provider.ratingCount }} {{ locale.t('c.ratingsCount') }} }</div>
             </div>
             <div class="provider-actions">
               <app-favorite-btn targetType="PROVIDER" [targetId]="provider.id" />
@@ -108,15 +108,15 @@ import { IconComponent } from '../shared/icon.component';
 
     <div class="section-head">
       <div>
-        <h2>اختصارات سريعة</h2>
-        <p>وصلي لما تحتاجينه بخطوة واحدة</p>
+        <h2>{{ locale.t('c.shortcuts.title') }}</h2>
+        <p>{{ locale.t('c.shortcuts.sub') }}</p>
       </div>
     </div>
     <div class="grid four home-shortcuts">
-      <a class="card hover" routerLink="/c/favorites"><span class="shortcut-icon"><app-icon name="heart" /></span><b>المفضلة</b><span>الخبيرات والخدمات المحفوظة</span></a>
-      <a class="card hover" routerLink="/c/requests"><span class="shortcut-icon"><app-icon name="support" /></span><b>طلباتي</b><span>متابعة التذاكر والبلاغات</span></a>
-      <a class="card hover" routerLink="/c/notifications"><span class="shortcut-icon"><app-icon name="bell" /></span><b>الإشعارات</b><span>تنبيهات الحساب والتقييمات</span></a>
-      <a class="card hover" routerLink="/c/account"><span class="shortcut-icon"><app-icon name="profile" /></span><b>حسابي</b><span>تحديث الاسم والمدينة</span></a>
+      <a class="card hover" routerLink="/c/favorites"><span class="shortcut-icon"><app-icon name="heart" /></span><b>{{ locale.t('c.shortcuts.fav') }}</b><span>{{ locale.t('c.shortcuts.favText') }}</span></a>
+      <a class="card hover" routerLink="/c/requests"><span class="shortcut-icon"><app-icon name="support" /></span><b>{{ locale.t('c.shortcuts.requests') }}</b><span>{{ locale.t('c.shortcuts.requestsText') }}</span></a>
+      <a class="card hover" routerLink="/c/notifications"><span class="shortcut-icon"><app-icon name="bell" /></span><b>{{ locale.t('c.shortcuts.notify') }}</b><span>{{ locale.t('c.shortcuts.notifyText') }}</span></a>
+      <a class="card hover" routerLink="/c/account"><span class="shortcut-icon"><app-icon name="profile" /></span><b>{{ locale.t('c.shortcuts.account') }}</b><span>{{ locale.t('c.shortcuts.accountText') }}</span></a>
     </div>
   `,
 })
@@ -130,7 +130,7 @@ export class CustomerDashboardComponent implements OnInit {
   constructor() {
     effect(() => {
       this.locale.lang();
-      this.shell.set(this.locale.t('c.dash.title'), this.locale.t('c.dash.subtitle'));
+      this.shell.set('c.dash.title', 'c.dash.subtitle');
     });
   }
 

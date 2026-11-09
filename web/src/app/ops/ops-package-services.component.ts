@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import { servicePhoto, type CatalogPackage, type CatalogService, type OpsCampaign } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -16,23 +17,23 @@ import { PositiveIntDirective } from './positive-int.directive';
   imports: [FormsModule, RouterLink, PositiveIntDirective, LocaleDateDirective],
   template: `
     @if (loading) {
-      <p class="loading">جاري التحميل...</p>
+      <p class="loading">{{ locale.t('ui.loading') }}</p>
     } @else if (!pkg) {
-      <p class="muted">الباقة غير موجودة</p>
+      <p class="muted">{{ locale.t('ops.pkg.missing') }}</p>
     } @else {
       <div class="section-head">
         <div>
-          <a class="text-link back" routerLink="/ops/packages">→ رجوع للباقات</a>
-          <h2>{{ pkg.nameAr }}</h2>
-          <p>{{ pkg.durationMonths }} شهر</p>
+          <a class="text-link back" routerLink="/ops/packages">{{ locale.t('ops.pkg.back') }}</a>
+          <h2>{{ locale.localizedName(pkg) }}</h2>
+          <p>{{ locale.tf('p.pkg.months', { n: pkg.durationMonths ?? 0 }) }}</p>
         </div>
         <div class="ops-drawer-actions" style="margin:0">
           @if (canSavePackage) {
-            <button class="btn primary" type="button" [disabled]="saving" (click)="save()">حفظ الباقة</button>
+            <button class="btn primary" type="button" [disabled]="saving" (click)="save()">{{ locale.t('ops.pkg.save') }}</button>
           }
           @if (canEditFeatures) {
             <button class="btn ghost" type="button" [disabled]="saving" (click)="toggle()">
-              {{ pkg.isActive ? 'إيقاف الظهور' : 'تفعيل الباقة' }}
+              {{ pkg.isActive ? locale.t('ops.pkg.hide') : locale.t('ops.pkg.show') }}
             </button>
           }
         </div>
@@ -40,43 +41,43 @@ import { PositiveIntDirective } from './positive-int.directive';
 
       <div class="form-grid" style="margin-bottom:22px">
         <div class="field">
-          <label>الاسم</label>
+          <label>{{ locale.t('ops.ui.name') }}</label>
           <input class="input" [(ngModel)]="pkg.nameAr" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>المدة بالشهور</label>
+          <label>{{ locale.t('ops.pkg.durationMonths') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.durationMonths" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>السعر قبل الخصم</label>
+          <label>{{ locale.t('ops.pkg.priceBefore') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.priceBefore" [readOnly]="!canEditPrices" />
         </div>
         <div class="field">
-          <label>الخصم %</label>
+          <label>{{ locale.t('ops.pkg.discountPct') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.discountPercent" [readOnly]="!canEditPrices" />
         </div>
         <div class="field">
-          <label>السعر بعد الخصم</label>
+          <label>{{ locale.t('ops.pkg.priceAfter') }}</label>
           <input class="input" [value]="afterOf(pkg.priceBefore, pkg.discountPercent)" readonly />
         </div>
         <div class="field">
-          <label>ترتيب الظهور</label>
+          <label>{{ locale.t('ops.pkg.rank') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.rank" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>عدد الخدمات</label>
+          <label>{{ locale.t('ops.pkg.maxServices') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxServices" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>عدد الصور</label>
+          <label>{{ locale.t('ops.pkg.maxPhotos') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxPhotos" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>عدد الفيديو</label>
+          <label>{{ locale.t('ops.pkg.maxVideos') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxVideos" [readOnly]="!canEditFeatures" />
         </div>
         <div class="field">
-          <label>عدد الألبومات</label>
+          <label>{{ locale.t('ops.pkg.maxAlbums') }}</label>
           <input class="input" inputmode="numeric" positiveInt [(ngModel)]="pkg.maxAlbums" [readOnly]="!canEditFeatures" />
         </div>
       </div>
@@ -84,22 +85,22 @@ import { PositiveIntDirective } from './positive-int.directive';
       @if (pkg.isPromotional) {
         <div class="form-grid" style="margin-bottom:22px">
           <div class="field">
-            <label>البداية</label>
+            <label>{{ locale.t('ops.pkg.start') }}</label>
             <input class="input" type="date" [(ngModel)]="campaignDraft.startDate" [readOnly]="!canCampaign" />
           </div>
           <div class="field">
-            <label>النهاية</label>
+            <label>{{ locale.t('ops.pkg.end') }}</label>
             <input class="input" type="date" [(ngModel)]="campaignDraft.endDate" [readOnly]="!canCampaign" />
           </div>
           <div class="field">
-            <label>مدة التنشيط بالأيام</label>
+            <label>{{ locale.t('ops.pkg.benefitDays') }}</label>
             <input class="input" inputmode="numeric" positiveInt [(ngModel)]="campaignDraft.benefitDays" [readOnly]="!canCampaign" />
           </div>
           <label class="ops-check" [class.on]="campaignDraft.clipToEndDate">
             <input type="checkbox" name="editClipToEndDate" [(ngModel)]="campaignDraft.clipToEndDate" [disabled]="!canCampaign" />
             <span class="ops-check-copy">
-              <b>مرتبط بتاريخ نهاية الحملة</b>
-              <small>لو الخبيرة فعّلت في نص المدة، تاخد الأيام المتبقية حتى تاريخ النهاية فقط.</small>
+              <b>{{ locale.t('ops.pkg.clipTitle') }}</b>
+              <small>{{ locale.t('ops.pkg.clipHint') }}</small>
             </span>
           </label>
         </div>
@@ -107,18 +108,18 @@ import { PositiveIntDirective } from './positive-int.directive';
 
       <div class="section-head">
         <div>
-          <h2>خدمات الباقة</h2>
-          <p>{{ canEditFeatures ? 'عدددي الخدمات الرئيسية المتاحة لخبيرات هذه الباقة' : 'الخدمات الرئيسية المتاحة لخبيرات هذه الباقة' }}</p>
+          <h2>{{ locale.t('ops.pkg.servicesTitle') }}</h2>
+          <p>{{ canEditFeatures ? locale.t('ops.pkg.servicesEdit') : locale.t('ops.pkg.servicesView') }}</p>
         </div>
       </div>
       <div class="pkg-services-page">
         <div class="pkg-services-box">
           <div class="pkg-services-toolbar">
-            <span><b>{{ pickedCount() }}</b> من {{ services.length }} خدمة</span>
+            <span>{{ locale.tf('ops.pkg.pickedOf', { a: pickedCount(), b: services.length }) }}</span>
             @if (canEditFeatures) {
               <div class="pkg-services-links">
-                <button class="text-link" type="button" (click)="setAll(true)">تعدديد الكل</button>
-                <button class="text-link" type="button" (click)="setAll(false)">مسح</button>
+                <button class="text-link" type="button" (click)="setAll(true)">{{ locale.t('ops.pkg.selectAll') }}</button>
+                <button class="text-link" type="button" (click)="setAll(false)">{{ locale.t('ops.pkg.clearAll') }}</button>
               </div>
             }
           </div>
@@ -127,7 +128,7 @@ import { PositiveIntDirective } from './positive-int.directive';
               <label class="pkg-service" [class.on]="pick[service.id]">
                 <input type="checkbox" [name]="'svc-' + service.id" [(ngModel)]="pick[service.id]" [disabled]="!canEditFeatures" />
                 <img [src]="photoOf(service)" alt="" />
-                <span>{{ service.nameAr }}</span>
+                <span>{{ locale.localizedName(service) }}</span>
                 <i>✓</i>
               </label>
             }
@@ -143,6 +144,7 @@ export class OpsPackageServicesComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly session = inject(SessionService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
 
   get canEditFeatures(): boolean {
@@ -170,7 +172,7 @@ export class OpsPackageServicesComponent implements OnInit {
   saving = false;
 
   ngOnInit(): void {
-    this.shell.set('الباقة', 'تعديل الباقة وخدماتها');
+    this.shell.set('ops.pkg.title', 'ops.pkg.sub');
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     forkJoin({
       packages: this.api.opsPackages(),
@@ -182,7 +184,7 @@ export class OpsPackageServicesComponent implements OnInit {
         this.pkg = packages.find((item) => item.id === id) ?? null;
         if (!this.pkg) {
           this.loading = false;
-          this.toast.show('الباقة غير موجودة');
+          this.toast.show(this.locale.t('ops.pkg.missing'));
           void this.router.navigate(['/ops/packages']);
           return;
         }
@@ -195,7 +197,7 @@ export class OpsPackageServicesComponent implements OnInit {
               clipToEndDate: Boolean(this.campaign.clipToEndDate),
             }
           : this.emptyCampaign();
-        this.shell.set(this.pkg.nameAr, `${this.pkg.durationMonths} شهر`);
+        this.shell.set(this.locale.localizedName(this.pkg), this.locale.tf('p.pkg.months', { n: this.pkg.durationMonths ?? 0 }));
         const selected = new Set(this.pkg.serviceIds ?? []);
         this.pick = {};
         for (const service of services) {
@@ -205,7 +207,7 @@ export class OpsPackageServicesComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الباقة'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.loadOneFail')));
       },
     });
   }
@@ -243,14 +245,14 @@ export class OpsPackageServicesComponent implements OnInit {
       return;
     }
     if (!this.canSavePackage) {
-      this.toast.show('ليست لديكِ صلاحية تعديل الباقة');
+      this.toast.show(this.locale.t('ops.pkg.noEditPerm'));
       return;
     }
     const durationMonths = Number(this.pkg.durationMonths);
     const priceBefore = Number(this.pkg.priceBefore ?? this.pkg.price);
     const rank = Number(this.pkg.rank);
     if (!durationMonths || durationMonths <= 0 || !priceBefore || priceBefore <= 0 || !rank || rank <= 0) {
-      this.toast.show('المدة والسعر والترتيب أرقام أكبر من صفر');
+      this.toast.show(this.locale.t('ops.pkg.needNumbers'));
       return;
     }
     this.saving = true;
@@ -275,23 +277,23 @@ export class OpsPackageServicesComponent implements OnInit {
         return;
       }
       this.saving = false;
-      this.toast.show('ليست لديكِ صلاحية تعديل الباقة');
+      this.toast.show(this.locale.t('ops.pkg.noEditPerm'));
       return;
     }
     this.api.opsPatchPackage(this.pkg.id, body).subscribe({
       next: (row) => {
         this.pkg = row;
-        this.shell.set(row.nameAr, `${row.durationMonths} شهر`);
+        this.shell.set(this.locale.localizedName(row), this.locale.tf('p.pkg.months', { n: row.durationMonths ?? 0 }));
         if (row.isPromotional && this.canCampaign) {
           this.saveCampaign(row);
           return;
         }
         this.saving = false;
-        this.toast.show('تم حفظ الباقة');
+        this.toast.show(this.locale.t('ops.pkg.toast.saved'));
       },
       error: (err) => {
         this.saving = false;
-        this.toast.show(apiMessage(err, 'تعذر حفظ الباقة'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.saveFail')));
       },
     });
   }
@@ -301,7 +303,7 @@ export class OpsPackageServicesComponent implements OnInit {
       return;
     }
     if (!this.canEditFeatures) {
-      this.toast.show('ليست لديكِ صلاحية إيقاف أو إظهار الباقة');
+      this.toast.show(this.locale.t('ops.pkg.noTogglePerm'));
       return;
     }
     this.api.opsPatchPackage(this.pkg.id, { isActive: !this.pkg.isActive }).subscribe({
@@ -309,32 +311,32 @@ export class OpsPackageServicesComponent implements OnInit {
         if (this.pkg) {
           this.pkg.isActive = row.isActive;
         }
-        this.toast.show(row.isActive ? 'الباقة ظاهرة للخبيرات' : 'تم إيقاف الباقة');
+        this.toast.show(row.isActive ? this.locale.t('ops.pkg.toast.visible') : this.locale.t('ops.pkg.toast.stopped'));
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تغيير الحالة')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.ui.statusFail'))),
     });
   }
 
   private saveCampaign(pkg: CatalogPackage): void {
     if (!this.canCampaign) {
       this.saving = false;
-      this.toast.show('تم حفظ الباقة');
+      this.toast.show(this.locale.t('ops.pkg.toast.saved'));
       return;
     }
     const benefitDays = Number(this.campaignDraft.benefitDays);
     if (!benefitDays || benefitDays <= 0) {
       this.saving = false;
-      this.toast.show('مدة التنشيط رقم أكبر من صفر');
+      this.toast.show(this.locale.t('ops.pkg.needBenefit'));
       return;
     }
     if (!this.campaignDraft.startDate || !this.campaignDraft.endDate) {
       this.saving = false;
-      this.toast.show('حددي بداية ونهاية الحملة');
+      this.toast.show(this.locale.t('ops.pkg.needDates'));
       return;
     }
     if (this.campaignDraft.endDate < this.campaignDraft.startDate) {
       this.saving = false;
-      this.toast.show('تاريخ النهاية قبل البداية');
+      this.toast.show(this.locale.t('ops.pkg.endBeforeStart'));
       return;
     }
     const body = {
@@ -352,11 +354,11 @@ export class OpsPackageServicesComponent implements OnInit {
       next: (row) => {
         this.campaign = row;
         this.saving = false;
-        this.toast.show('تم حفظ الباقة');
+        this.toast.show(this.locale.t('ops.pkg.toast.saved'));
       },
       error: (err) => {
         this.saving = false;
-        this.toast.show(apiMessage(err, 'تم حفظ الباقة وتعذر حفظ الحملة'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.pkg.toast.campaignFail')));
       },
     });
   }

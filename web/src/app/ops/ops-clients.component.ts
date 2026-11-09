@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiMessage, isSaudiMobile, toMobile } from '../core/phone';
 import type { CatalogPackage, OpsBannedPhone, OpsManagedAccount } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
@@ -19,60 +20,56 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2>حسابات عملاء المنصة</h2>
-          <p>اختر حسابًا لعرض تفاصيله وإدارته.</p>
+          <h2>{{ locale.t('ops.clients.title') }}</h2>
+          <p>{{ locale.t('ops.client.intro') }}</p>
         </div>
       </div>
 
       <div class="filters">
-        <button class="chip" type="button" [class.active]="accountType === ''" (click)="setType('')">الكل</button>
-        <button class="chip" type="button" [class.active]="accountType === 'PROVIDER'" (click)="setType('PROVIDER')">
-          الخبيرات
-        </button>
-        <button class="chip" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="setType('CUSTOMER')">
-          العميلات
-        </button>
+        <button class="chip" type="button" [class.active]="accountType === ''" (click)="setType('')">{{ locale.t('ops.ui.all') }}</button>
+        <button class="chip" type="button" [class.active]="accountType === 'PROVIDER'" (click)="setType('PROVIDER')">{{ locale.t('ops.client.providers') }}</button>
+        <button class="chip" type="button" [class.active]="accountType === 'CUSTOMER'" (click)="setType('CUSTOMER')">{{ locale.t('ops.client.customers') }}</button>
       </div>
 
       <article class="card form-card" style="margin-bottom:18px">
         <div class="form-grid">
           <div class="field">
-            <label>بحث</label>
-            <input class="input" [(ngModel)]="q" placeholder="الاسم أو الجوال أو الرمز" (keyup.enter)="search()" />
+            <label>{{ locale.t('ui.search') }}</label>
+            <input class="input" [(ngModel)]="q" [placeholder]="locale.t('ops.client.searchPh')" (keyup.enter)="search()" />
           </div>
           <div class="field">
-            <label>الحالة</label>
+            <label>{{ locale.t('ops.ui.status') }}</label>
             <select class="input" [(ngModel)]="status" (ngModelChange)="search()">
-              <option value="">الكل</option>
-              <option value="ACTIVE">نشط</option>
-              <option value="INACTIVE">غير نشط</option>
-              <option value="RESTRICTED">مقيّد</option>
-              <option value="SUSPENDED">معطل</option>
-              <option value="CANCELLED">محذوف</option>
+              <option value="">{{ locale.t('ops.ui.all') }}</option>
+              <option value="ACTIVE">{{ locale.t('ops.status.ACTIVE') }}</option>
+              <option value="INACTIVE">{{ locale.t('ops.status.INACTIVE') }}</option>
+              <option value="RESTRICTED">{{ locale.t('ops.status.RESTRICTED') }}</option>
+              <option value="SUSPENDED">{{ locale.t('ops.status.disabled') }}</option>
+              <option value="CANCELLED">{{ locale.t('ops.status.DELETED') }}</option>
             </select>
           </div>
         </div>
-        <button class="btn primary" style="margin-top:14px" type="button" (click)="search()">بحث</button>
+        <button class="btn primary" style="margin-top:14px" type="button" (click)="search()">{{ locale.t('ui.search') }}</button>
       </article>
 
       @if (loading) {
-        <p class="loading">جاري التحميل...</p>
+        <p class="loading">{{ locale.t('ui.loading') }}</p>
       } @else if (!accounts.length) {
-        <p class="page-empty">لا توجد حسابات مطابقة.</p>
+        <p class="page-empty">{{ locale.t('ops.client.empty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الاسم</th>
-                <th>النوع</th>
-                <th>الرمز</th>
-                <th>الجوال</th>
-                <th>المدينة</th>
-                <th>الباقة</th>
-                <th>الأيام المتبقية</th>
-                <th>الحالة</th>
-                <th>التاريخ</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.kind') }}</th>
+                <th>{{ locale.t('ops.ui.code') }}</th>
+                <th>{{ locale.t('ops.ui.mobile') }}</th>
+                <th>{{ locale.t('ops.ui.city') }}</th>
+                <th>{{ locale.t('ops.ui.package') }}</th>
+                <th>{{ locale.t('ops.client.col.days') }}</th>
+                <th>{{ locale.t('ops.ui.status') }}</th>
+                <th>{{ locale.t('ops.ui.date') }}</th>
                 @if (showNotifyColumn) {
                   <th>{{ notifyColumnLabel }}</th>
                 }
@@ -85,10 +82,10 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                   <td>{{ typeAr(item.accountType) }}</td>
                   <td>{{ item.accountCode }}</td>
                   <td dir="ltr">{{ item.mobile }}</td>
-                  <td>{{ item.customerProfile?.city?.nameAr || item.providerProfile?.city?.nameAr || '—' }}</td>
+                  <td>{{ locale.localizedName(item.customerProfile?.city || item.providerProfile?.city, '—') }}</td>
                   <td>
                     @if (item.accountType === 'PROVIDER') {
-                      {{ item.package?.nameAr || 'بدون باقة' }}
+                      {{ locale.localizedName(item.package, locale.t('ops.client.noPackage')) }}
                     } @else {
                       —
                     }
@@ -97,7 +94,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
                     @if (item.accountType === 'PROVIDER') {
                       {{ remainingDaysLabel(item) }}
                       @if (item.subscriptionEndAt) {
-                        <div class="muted small">حتى {{ opsDate(item.subscriptionEndAt) }}</div>
+                        <div class="muted small">{{ locale.tf('ops.client.until', { date: opsDate(item.subscriptionEndAt) }) }}</div>
                       }
                     } @else {
                       —
@@ -124,22 +121,22 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
       @if (canBan) {
         <div class="section-head">
           <div>
-            <h2>أرقام محظورة</h2>
-            <p>الرقم المحظور لا يستطيع إنشاء حساب عميلة أو خبيرة أو الدخول.</p>
+            <h2>{{ locale.t('ops.client.bannedTitle') }}</h2>
+            <p>{{ locale.t('ops.client.bannedSub') }}</p>
           </div>
-          <button class="btn primary" type="button" (click)="openBan()">+ حظر رقم</button>
+          <button class="btn primary" type="button" (click)="openBan()">{{ locale.t('ops.client.banAdd') }}</button>
         </div>
         @if (!banned.length) {
-          <p class="page-empty">لا توجد أرقام محظورة.</p>
+          <p class="page-empty">{{ locale.t('ops.client.bannedEmpty') }}</p>
         } @else {
           <div class="ops-table-wrap">
             <table class="ops-table">
               <thead>
                 <tr>
-                  <th>الجوال</th>
-                  <th>السبب</th>
-                  <th>بواسطة</th>
-                  <th>التاريخ</th>
+                  <th>{{ locale.t('ops.ui.mobile') }}</th>
+                  <th>{{ locale.t('ops.ui.reason') }}</th>
+                  <th>{{ locale.t('ops.client.col.by') }}</th>
+                  <th>{{ locale.t('ops.ui.date') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,21 +156,21 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeAccount()">→ رجوع للحسابات</button>
+          <button class="text-link back" type="button" (click)="closeAccount()">{{ locale.t('ops.client.back') }}</button>
           <h2>{{ selected.displayName }}</h2>
           <p>{{ typeAr(selected.accountType) }} · {{ selected.accountCode }}</p>
         </div>
       </div>
 
       @if (detailLoading) {
-        <p class="loading">جاري تحميل الملف...</p>
+        <p class="loading">{{ locale.t('ops.client.loadingFile') }}</p>
       }
       <app-ops-account-file [account]="selected" />
 
       @if (hasAccountsAction() || canNotify(selected)) {
         <div class="ops-drawer-actions" style="margin-top:16px">
           @if (hasAccountsAction()) {
-            <button class="btn primary" type="button" (click)="openAction(selected)">إجراء الحساب</button>
+            <button class="btn primary" type="button" (click)="openAction(selected)">{{ locale.t('ops.client.action') }}</button>
           }
           @if (canNotify(selected)) {
             <button class="btn ghost" type="button" (click)="openNotify(selected)">{{ notifyLabel(selected) }}</button>
@@ -184,7 +181,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 
     <app-ops-modal
       [open]="!!notifyTarget"
-      [title]="notifyTarget ? notifyLabel(notifyTarget) : 'إشعار فردي'"
+      [title]="notifyTarget ? notifyLabel(notifyTarget) : locale.t('ops.client.notify')"
       [kicker]="notifyTarget ? notifyTarget.displayName : ''"
       (closed)="notifyTarget = null"
     >
@@ -192,20 +189,20 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
         <p class="muted small">{{ notifyTarget.accountCode }} · <span dir="ltr">{{ notifyTarget.mobile }}</span></p>
       }
       <div class="field">
-        <label>العنوان</label>
+        <label>{{ locale.t('ops.ui.title') }}</label>
         <input class="input" [(ngModel)]="notifyDraft.titleAr" />
       </div>
       <div class="field">
-        <label>النص</label>
+        <label>{{ locale.t('ops.ui.body') }}</label>
         <textarea class="input" rows="3" [(ngModel)]="notifyDraft.bodyAr"></textarea>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendNotify()">إرسال الإشعار</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="sendNotify()">{{ locale.t('ops.client.sendNotify') }}</button>
     </app-ops-modal>
 
-    <app-ops-modal [open]="addingBan" title="حظر رقم جوال" kicker="حسابات العميلة والخبيرة" (closed)="closeBan()">
+    <app-ops-modal [open]="addingBan" [title]="locale.t('ops.client.banTitle')" [kicker]="locale.t('ops.client.banKicker')" (closed)="closeBan()">
       <div class="form-grid">
         <div class="field">
-          <label>الجوال</label>
+          <label>{{ locale.t('ops.ui.mobile') }}</label>
           <input
             class="input"
             dir="ltr"
@@ -225,53 +222,53 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
           }
         </div>
         <div class="field">
-          <label>السبب</label>
+          <label>{{ locale.t('ops.ui.reason') }}</label>
           <input class="input" [(ngModel)]="banDraft.reason" />
         </div>
       </div>
-      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="ban()">حظر الرقم</button>
+      <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="ban()">{{ locale.t('ops.client.banSubmit') }}</button>
     </app-ops-modal>
     <app-ops-drawer
       [open]="!!selectedBan"
       [title]="selectedBan?.mobile || ''"
-      kicker="رقم محظور"
+      [kicker]="locale.t('ops.client.bannedKicker')"
       (closed)="selectedBan = null"
     >
       @if (selectedBan; as item) {
         <p class="muted small">{{ item.reason }}</p>
         <p class="muted small">{{ opsDate(item.createdAt) }} · {{ item.createdBy?.displayName || '' }}</p>
         <div class="ops-drawer-actions">
-          <button class="btn ghost" type="button" (click)="unban(item.mobile)">رفع الحظر</button>
+          <button class="btn ghost" type="button" (click)="unban(item.mobile)">{{ locale.t('ops.client.unban') }}</button>
         </div>
       }
     </app-ops-drawer>
 
     <app-ops-modal
       [open]="actionOpen"
-      title="إجراء الحساب"
+      [title]="locale.t('ops.client.action')"
       [kicker]="selected ? selected.displayName : ''"
       (closed)="closeAction()"
     >
       @if (selected) {
-        <p class="muted small">تغيير الحالة أو الباقة فقط. بيانات الملف غير قابلة للتعديل من هنا.</p>
+        <p class="muted small">{{ locale.t('ops.client.actionHint') }}</p>
         <div class="form-grid">
           @if (statusOptions().length) {
             <div class="field">
-              <label>الحالة</label>
+              <label>{{ locale.t('ops.ui.status') }}</label>
               <select class="input" [(ngModel)]="nextStatus[selected.id]">
                 @for (option of statusOptions(); track option.value) {
-                  <option [value]="option.value">{{ option.label }}</option>
+                  <option [value]="option.value">{{ locale.t(option.label) }}</option>
                 }
               </select>
             </div>
           }
           @if (selected.accountType === 'PROVIDER' && canChangePackage()) {
             <div class="field">
-              <label>باقة الخبيرة</label>
+              <label>{{ locale.t('ops.client.providerPkg') }}</label>
               <select class="input" [(ngModel)]="nextPackage[selected.id]">
-                <option value="">بدون تغيير</option>
+                <option value="">{{ locale.t('ops.client.noChange') }}</option>
                 @for (pkg of packages; track pkg.id) {
-                  <option [value]="pkg.id">{{ pkg.nameAr }}</option>
+                  <option [value]="pkg.id">{{ locale.localizedName(pkg) }}</option>
                 }
               </select>
             </div>
@@ -279,15 +276,15 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
         </div>
         @if (selected.accountType === 'PROVIDER' && selected.package) {
           <p class="muted small">
-            الحالية: {{ selected.package.nameAr }}@if (selected.subscriptionEndAt) { · حتى {{ opsDate(selected.subscriptionEndAt) }} }
+            {{ locale.tf('ops.client.current', { name: locale.localizedName(selected.package) }) }}@if (selected.subscriptionEndAt) { · {{ locale.tf('ops.client.until', { date: opsDate(selected.subscriptionEndAt) }) }} }
           </p>
         }
         <div class="field" style="margin-top:14px">
-          <label>سبب التعديل</label>
-          <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" placeholder="السبب مطلوب ويُحفظ في سجل الأحداث"></textarea>
+          <label>{{ locale.t('ops.client.reason') }}</label>
+          <textarea class="input" rows="3" [(ngModel)]="reasons[selected.id]" [placeholder]="locale.t('ops.client.reasonPh')"></textarea>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="applyAccount(selected)">
-          حفظ الإجراء
+          {{ locale.t('ops.client.saveAction') }}
         </button>
       }
     </app-ops-modal>
@@ -296,6 +293,7 @@ import { keepSelected, newestFirst, opsDate, statusTone } from './ops-ui';
 export class OpsClientsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(SessionService);
@@ -324,7 +322,7 @@ export class OpsClientsComponent implements OnInit {
   banDraft = { mobile: '', reason: '' };
 
   ngOnInit(): void {
-    this.shell.set('حسابات عملاء المنصة', 'الخبيرات والعميلات المسجّلات في المنصة');
+    this.shell.set('ops.clients.title', 'ops.clients.sub');
     if (this.canBan) {
       this.loadBanned();
     }
@@ -356,12 +354,12 @@ export class OpsClientsComponent implements OnInit {
   closeAccount(): void {
     this.actionOpen = false;
     this.selected = null;
-    this.shell.set('حسابات عملاء المنصة', 'الخبيرات والعميلات المسجّلات في المنصة');
+    this.shell.set('ops.clients.title', 'ops.clients.sub');
   }
 
   openAction(item: OpsManagedAccount): void {
     if (!this.hasAccountsAction()) {
-      this.toast.show('ليست لديكِ صلاحية إجراء الحساب');
+      this.toast.show(this.locale.t('ops.client.noActionPerm'));
       return;
     }
     this.nextStatus[item.id] ??= item.status === 'PENDING_APPROVAL' ? 'ACTIVE' : item.status;
@@ -398,7 +396,7 @@ export class OpsClientsComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.toast.show(apiMessage(err, 'تعذر تحميل الحسابات'));
+          this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.loadFail')));
         },
       });
   }
@@ -411,12 +409,12 @@ export class OpsClientsComponent implements OnInit {
     const provider = this.session.hasPermission('NOT-01');
     const customer = this.session.hasPermission('NOT-01');
     if (provider && !customer) {
-      return 'إشعار فردى للخبيرة';
+      return this.locale.t('ops.client.notifyProvider');
     }
     if (customer && !provider) {
-      return 'إشعار فردى للعميلة';
+      return this.locale.t('ops.client.notifyCustomer');
     }
-    return 'إشعار فردي';
+    return this.locale.t('ops.client.notify');
   }
 
   canNotify(item: OpsManagedAccount): boolean {
@@ -430,7 +428,7 @@ export class OpsClientsComponent implements OnInit {
   }
 
   notifyLabel(item: OpsManagedAccount): string {
-    return item.accountType === 'PROVIDER' ? 'إشعار فردى للخبيرة' : 'إشعار فردى للعميلة';
+    return item.accountType === 'PROVIDER' ? this.locale.t('ops.client.notifyProvider') : this.locale.t('ops.client.notifyCustomer');
   }
 
   onNotifyClick(event: Event, item: OpsManagedAccount): void {
@@ -442,8 +440,8 @@ export class OpsClientsComponent implements OnInit {
     if (!this.canNotify(item)) {
       this.toast.show(
         item.accountType === 'PROVIDER'
-          ? 'ليست لديكِ صلاحية إشعار فردي للخبيرة'
-          : 'ليست لديكِ صلاحية إشعار فردي للعميلة',
+          ? this.locale.t('ops.client.noNotifyProvider')
+          : this.locale.t('ops.client.noNotifyCustomer'),
       );
       return;
     }
@@ -457,16 +455,16 @@ export class OpsClientsComponent implements OnInit {
       return;
     }
     if (this.notifyDraft.titleAr.trim().length < 2 || this.notifyDraft.bodyAr.trim().length < 4) {
-      this.toast.show('أدخلي عنوان الإشعار ونصه');
+      this.toast.show(this.locale.t('ops.client.needNotify'));
       return;
     }
     this.api.opsNotifyAccount(item.id, this.notifyDraft).subscribe({
       next: () => {
-        this.toast.show(`تم إرسال الإشعار إلى ${item.displayName}`);
+        this.toast.show(this.locale.tf('ops.client.toast.notifySent', { name: item.displayName }));
         this.notifyTarget = null;
         this.notifyDraft = { titleAr: '', bodyAr: '' };
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر إرسال الإشعار')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.notifyFail'))),
     });
   }
 
@@ -477,13 +475,13 @@ export class OpsClientsComponent implements OnInit {
   get banMobileError(): string {
     const mobile = toMobile(this.banDraft.mobile);
     if (!mobile) {
-      return this.banMobileTouched ? 'أدخلي رقم الجوال' : '';
+      return this.banMobileTouched ? this.locale.t('ops.ui.needMobile') : '';
     }
     if (isSaudiMobile(mobile)) {
       return '';
     }
     if (this.banMobileTouched || mobile.length >= 10 || !mobile.startsWith('05')) {
-      return 'أدخلي جوالًا سعوديًا من 10 أرقام يبدأ بـ 05';
+      return this.locale.t('ops.ui.needSaudiMobile');
     }
     return '';
   }
@@ -524,27 +522,27 @@ export class OpsClientsComponent implements OnInit {
       return;
     }
     if (this.banDraft.reason.trim().length < 4) {
-      this.toast.show('أدخلي سبب الحظر');
+      this.toast.show(this.locale.t('ops.client.needBanReason'));
       return;
     }
     this.api.opsBanPhone({ mobile, reason: this.banDraft.reason }).subscribe({
       next: () => {
-        this.toast.show('تم حظر الرقم');
+        this.toast.show(this.locale.t('ops.client.toast.banned'));
         this.closeBan();
         this.loadBanned();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر حظر الرقم')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.banFail'))),
     });
   }
 
   unban(mobile: string): void {
     this.api.opsUnbanPhone(mobile).subscribe({
       next: () => {
-        this.toast.show('تم رفع الحظر');
+        this.toast.show(this.locale.t('ops.client.toast.unbanned'));
         this.selectedBan = null;
         this.loadBanned();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر رفع الحظر')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.unbanFail'))),
     });
   }
 
@@ -560,32 +558,32 @@ export class OpsClientsComponent implements OnInit {
     const options: { value: string; label: string }[] = [];
     if (this.session.hasPermission('USR-01')) {
       options.push(
-        { value: 'INACTIVE', label: 'غير نشط' },
-        { value: 'ACTIVE', label: 'نشط' },
-        { value: 'SUSPENDED', label: 'معطل' },
-        { value: 'CANCELLED', label: 'رقم محذوف' },
+        { value: 'INACTIVE', label: 'ops.status.INACTIVE' },
+        { value: 'ACTIVE', label: 'ops.status.ACTIVE' },
+        { value: 'SUSPENDED', label: 'ops.status.disabled' },
+        { value: 'CANCELLED', label: 'ops.status.cancelledDeleted' },
       );
     }
     if (this.session.hasPermission('USR-05')) {
       options.push(
-        { value: 'RESTRICTED', label: 'مقيّد' },
-        { value: 'UNRESTRICTED', label: 'غير مقيّد' },
+        { value: 'RESTRICTED', label: 'ops.status.RESTRICTED' },
+        { value: 'UNRESTRICTED', label: 'ops.status.UNRESTRICTED' },
       );
     }
     if (this.session.hasPermission('USR-06')) {
-      options.push({ value: 'DELETED', label: 'محذوف' });
+      options.push({ value: 'DELETED', label: 'ops.status.DELETED' });
     }
     return options;
   }
 
   applyAccount(item: OpsManagedAccount): void {
     if (!this.hasAccountsAction()) {
-      this.toast.show('ليست لديكِ صلاحية إجراء الحساب');
+      this.toast.show(this.locale.t('ops.client.noActionPerm'));
       return;
     }
     const reason = (this.reasons[item.id] || '').trim();
     if (reason.length < 4) {
-      this.toast.show('أدخلي سبب التعديل (4 أحرف على الأقل). يُحفظ في سجل الأحداث');
+      this.toast.show(this.locale.t('ops.client.needReason'));
       return;
     }
     const status = this.nextStatus[item.id];
@@ -593,7 +591,7 @@ export class OpsClientsComponent implements OnInit {
     const statusChanged = Boolean(status && status !== item.status);
     const packageChanged = Boolean(packageId && packageId !== (item.package?.id || ''));
     if (!statusChanged && !packageChanged) {
-      this.toast.show('لا يوجد تغيير للحفظ');
+      this.toast.show(this.locale.t('ops.client.noDiff'));
       return;
     }
     this.api
@@ -607,9 +605,9 @@ export class OpsClientsComponent implements OnInit {
           this.selected = row;
           this.nextPackage[row.id] = row.package?.id ?? '';
           this.actionOpen = false;
-          this.toast.show('تم حفظ إجراء الحساب');
+          this.toast.show(this.locale.t('ops.client.toast.saved'));
         },
-        error: (err) => this.toast.show(apiMessage(err, 'تعذر تحديث الحساب')),
+        error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.patchFail'))),
       });
   }
 
@@ -623,26 +621,25 @@ export class OpsClientsComponent implements OnInit {
     }
     const days = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
     if (days === 0) {
-      return 'منتهية';
+      return this.locale.t('ops.client.expired');
     }
-    return `${days} يوم`;
+    return this.locale.tf('ops.ui.nDays', { n: days });
   }
 
   typeAr(type: string): string {
-    return type === 'PROVIDER' ? 'خبيرة' : 'عميلة';
+    if (type === 'PROVIDER') {
+      return this.locale.t('ops.type.provider');
+    }
+    if (type === 'STAFF') {
+      return this.locale.t('ops.type.staff');
+    }
+    return this.locale.t('ops.type.customer');
   }
 
   statusAr(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'نشط',
-      INACTIVE: 'غير نشط',
-      PENDING_APPROVAL: 'بانتظار الاعتماد',
-      RESTRICTED: 'مقيّد',
-      SUSPENDED: 'موقوف',
-      CANCELLED: 'ملغى',
-      DELETED: 'محذوف',
-    };
-    return labels[status] ?? status;
+    const key = `ops.status.${status}`;
+    const label = this.locale.t(key);
+    return label === key ? status : label;
   }
 
   private loadBanned(): void {
@@ -667,7 +664,7 @@ export class OpsClientsComponent implements OnInit {
       },
       error: (err) => {
         this.detailLoading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الملف'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.client.toast.fileFail')));
       },
     });
   }

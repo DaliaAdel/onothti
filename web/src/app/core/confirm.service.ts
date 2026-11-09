@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { LocaleService } from './locale.service';
 
 export type ConfirmOptions = {
   title: string;
@@ -9,6 +10,7 @@ export type ConfirmOptions = {
 
 @Injectable({ providedIn: 'root' })
 export class ConfirmService {
+  private readonly locale = inject(LocaleService);
   readonly open = signal(false);
   readonly title = signal('');
   readonly message = signal('');
@@ -20,8 +22,8 @@ export class ConfirmService {
     this.finish(false);
     this.title.set(options.title);
     this.message.set(options.message);
-    this.confirmLabel.set(options.confirmLabel ?? 'تأكيد');
-    this.cancelLabel.set(options.cancelLabel ?? 'إلغاء');
+    this.confirmLabel.set(options.confirmLabel ?? this.locale.t('ui.confirm'));
+    this.cancelLabel.set(options.cancelLabel ?? this.locale.t('ui.cancel'));
     this.open.set(true);
     return new Promise((resolve) => {
       this.resolver = resolve;

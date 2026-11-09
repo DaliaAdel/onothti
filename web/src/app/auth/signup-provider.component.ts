@@ -134,7 +134,7 @@ export class SignupProviderComponent implements OnInit {
       return;
     }
     if (this.bio.length > this.bioMax) {
-      this.toast.show(`نبذة الخبيرة بحد أقصى ${this.bioMax} حرف`);
+      this.toast.show(this.locale.tf('p.acc.bioMax', { n: this.bioMax }));
       return;
     }
     this.loading = true;

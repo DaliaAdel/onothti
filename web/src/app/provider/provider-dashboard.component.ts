@@ -12,30 +12,30 @@ import { ShellService } from '../core/shell.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>{{ name || 'الرئيسية' }}</h1>
-        <p>{{ live ? 'هذا ملخص أداء ملفك الاحترافي' : 'يمكنكِ تصفح حسابك الآن، وتُفتح أدوات النشر بعد تفعيل الباقة' }}</p>
+        <h1>{{ name || locale.t('p.homeFallback') }}</h1>
+        <p>{{ live ? locale.t('p.summaryLive') : locale.t('p.summaryIdle') }}</p>
       </div>
     </div>
     @if (!live) {
       <a class="subscription-note dashboard-subscription" routerLink="/p/package">
-        <b>حسابك غير مشترك حاليًا</b>
-        <span>اختاري باقة لتتمكني من إضافة الخدمات والألبومات والظهور للعميلات.</span>
+        <b>{{ locale.t('p.unsubscribed') }}</b>
+        <span>{{ locale.t('p.unsubscribedText') }}</span>
       </a>
     } @else if (packageName) {
       <div class="active-package">
         <div>
-          <span class="status success">مفعّلة</span>
+          <span class="status success">{{ locale.t('p.active') }}</span>
           <h3>{{ packageTitle }}</h3>
-          <p>متبقٍ {{ remainingDays }} يومًا على الاشتراك{{ endLabel }}.</p>
+          <p>{{ locale.tf('p.remaining', { n: remainingDays }) }}{{ endLabel }}.</p>
         </div>
         <div class="remaining-days dash-remaining">
-          <span>الأيام المتبقية</span>
+          <span>{{ locale.t('p.daysLeft') }}</span>
           <strong>{{ remainingDays }}</strong>
         </div>
-        <a class="btn secondary" routerLink="/p/package">إدارة الاشتراك</a>
+        <a class="btn secondary" routerLink="/p/package">{{ locale.t('p.manageSub') }}</a>
       </div>
     }
-    <div class="section-title"><h3>إحصاءات حسابك</h3></div>
+    <div class="section-title"><h3>{{ locale.t('p.stats') }}</h3></div>
     <div class="grid cols-3">
       @for (metric of accountMetrics; track metric.label) {
         <div class="card metric">
@@ -49,7 +49,7 @@ import { ShellService } from '../core/shell.service';
         </div>
       }
     </div>
-    <div class="section-title" style="margin-top:18px"><h3>فرص المنصة</h3></div>
+    <div class="section-title" style="margin-top:18px"><h3>{{ locale.t('p.opportunities') }}</h3></div>
     <div class="grid cols-2">
       @for (metric of platformMetrics; track metric.label) {
         <div class="card metric">
@@ -63,13 +63,13 @@ import { ShellService } from '../core/shell.service';
     @if (live) {
       <div class="grid wide-side">
         <div class="card">
-          <h3>المشاهدات آخر 7 أيام</h3>
+          <h3>{{ locale.t('p.views7') }}</h3>
           @if (chartBars.length) {
             <div class="chart-summary">
-              <span><b>{{ chartTotal }}</b> إجمالي المشاهدات</span>
+              <span><b>{{ chartTotal }}</b> {{ locale.t('p.viewsTotal') }}</span>
             </div>
             <div class="chart-layout">
-              <div class="chart-scale"><span>أعلى</span><span></span><span></span><span></span><span>0</span></div>
+              <div class="chart-scale"><span>{{ locale.t('p.high') }}</span><span></span><span></span><span></span><span>0</span></div>
               <div class="chart clear-chart">
                 @for (bar of chartBars; track bar.label) {
                   <div class="bar-item">
@@ -81,22 +81,22 @@ import { ShellService } from '../core/shell.service';
               </div>
             </div>
           } @else {
-            <p class="muted small">ستظهر المشاهدات بعد زيارة العميلات لملفك.</p>
+            <p class="muted small">{{ locale.t('p.viewsEmpty') }}</p>
           }
         </div>
         <div class="card">
-          <span class="status success">الحساب نشط</span>
-          <h3 style="margin-top:14px">ملفك ظاهر للعميلات</h3>
-          <p class="small muted">يمكنكِ إدارة الخدمات والألبومات ومتابعة الأداء من القائمة.</p>
-          <a class="btn primary" routerLink="/p/services">إدارة الخدمات</a>
+          <span class="status success">{{ locale.t('p.accountActive') }}</span>
+          <h3 style="margin-top:14px">{{ locale.t('p.profileVisible') }}</h3>
+          <p class="small muted">{{ locale.t('p.profileVisibleText') }}</p>
+          <a class="btn primary" routerLink="/p/services">{{ locale.t('p.manageServices') }}</a>
         </div>
       </div>
     } @else {
       <div class="card empty">
         <div class="symbol">◇</div>
-        <h3>ابدئي باختيار باقتك</h3>
-        <p class="small muted">يمكنكِ دخول الرئيسية وإدارة بياناتك، لكن إضافة الخدمات والأعمال تتطلب باقة مفعّلة.</p>
-        <a class="btn primary" routerLink="/p/package">عرض الباقات والاشتراك</a>
+        <h3>{{ locale.t('p.pickPackage') }}</h3>
+        <p class="small muted">{{ locale.t('p.pickPackageText') }}</p>
+        <a class="btn primary" routerLink="/p/package">{{ locale.t('p.viewPackages') }}</a>
       </div>
     }
   `,
@@ -110,7 +110,7 @@ export class ProviderDashboardComponent implements OnInit {
   views: ProviderViews | null = null;
 
   ngOnInit(): void {
-    this.shell.set('الرئيسية');
+    this.shell.set('p.home');
     this.api.providerDashboard().subscribe({
       next: (data) => {
         this.data = data;
@@ -142,7 +142,7 @@ export class ProviderDashboardComponent implements OnInit {
     if (!name) {
       return '';
     }
-    return name.includes('باقة') ? name : `الباقة ${name}`;
+    return name.includes('باقة') || name.toLowerCase().includes('package') ? name : `${this.locale.t('p.packagePrefix')}${name}`;
   }
 
   get endLabel(): string {
@@ -152,9 +152,9 @@ export class ProviderDashboardComponent implements OnInit {
     }
     const date = new Date(end);
     if (Number.isNaN(date.getTime())) {
-      return ` حتى ${end.slice(0, 10)}`;
+      return `${this.locale.t('p.until')}${end.slice(0, 10)}`;
     }
-    return ` حتى ${new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)}`;
+    return `${this.locale.t('p.until')}${this.locale.formatDateTime(date, false)}`;
   }
 
   get remainingDays(): number {
@@ -173,17 +173,17 @@ export class ProviderDashboardComponent implements OnInit {
     const stats = this.data?.stats;
     if (!this.live) {
       return [
-        { label: 'مشاهدات الملف', value: '0', trend: 'بعد تفعيل الباقة' },
-        { label: 'مرات التواصل', value: '0', trend: 'بعد تفعيل الباقة' },
-        { label: 'التقييم', value: '—', trend: 'لا توجد تقييمات' },
+        { label: this.locale.t('p.metric.fileViews'), value: '0', trend: this.locale.t('p.metric.afterPackage') },
+        { label: this.locale.t('p.metric.contacts'), value: '0', trend: this.locale.t('p.metric.afterPackage') },
+        { label: this.locale.t('p.metric.ratingLabel'), value: '—', trend: this.locale.t('p.metric.noRatings') },
       ];
     }
     const rating = stats?.ratingAvg;
     return [
-      { label: 'مشاهدات الملف', value: this.formatCount(stats?.views30d ?? 0), trend: '' },
-      { label: 'مرات التواصل', value: '0', trend: '' },
+      { label: this.locale.t('p.metric.fileViews'), value: this.formatCount(stats?.views30d ?? 0), trend: '' },
+      { label: this.locale.t('p.metric.contacts'), value: '0', trend: '' },
       {
-        label: 'التقييم',
+        label: this.locale.t('p.metric.ratingLabel'),
         value: rating != null ? String(rating) : '—',
         trend: '',
         stars: rating != null ? '★★★★★' : '',
@@ -192,7 +192,7 @@ export class ProviderDashboardComponent implements OnInit {
   }
 
   get platformMetrics() {
-    return [{ label: 'عميلات المنصة', value: '—', trend: 'إجمالي الحسابات المسجلة' }];
+    return [{ label: this.locale.t('p.metric.clients'), value: '—', trend: this.locale.t('p.metric.clientsTrend') }];
   }
 
   private formatCount(value: number): string {

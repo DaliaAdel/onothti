@@ -11,16 +11,16 @@ import { ShellService } from '../core/shell.service';
   template: `
     <div class="page-head">
       <div>
-        <h1>حالة الدفع والاشتراك</h1>
-        <p>تفاصيل اعتماد التحويل وسجل الاشتراكات</p>
+        <h1>{{ locale.t('p.st.title') }}</h1>
+        <p>{{ locale.t('p.st.sub') }}</p>
       </div>
     </div>
     @if (!proofs.length) {
       <div class="card empty">
         <div class="upload-icon">◇</div>
-        <h3>لا يوجد إثبات مرسل بعد</h3>
-        <p class="muted small">أرسلي إثبات التحويل لمتابعة حالة المراجعة هنا.</p>
-        <a class="btn primary" routerLink="/p/payment">إرسال إثبات التحويل</a>
+        <h3>{{ locale.t('p.st.emptyTitle') }}</h3>
+        <p class="muted small">{{ locale.t('p.st.emptyText') }}</p>
+        <a class="btn primary" routerLink="/p/payment">{{ locale.t('p.st.send') }}</a>
       </div>
     } @else if (selected) {
       <div class="payment-approved-grid">
@@ -33,43 +33,43 @@ import { ShellService } from '../core/shell.service';
           </div>
         </div>
         <div class="card remaining-days" [class.inactive-subscription]="!isLive">
-          <span class="small muted">{{ isLive ? 'المدة المتبقية' : 'حالة المدة' }}</span>
+          <span class="small muted">{{ isLive ? locale.t('p.st.left') : locale.t('p.st.duration') }}</span>
           <strong>{{ remainingDays }}</strong>
-          <b>يومًا</b>
+          <b>{{ locale.t('p.st.days') }}</b>
           <div class="usage-track"><i [style.width.%]="remainingPercent"></i></div>
-          <small class="muted">{{ isLive ? 'ينتهي الاشتراك في' : endVerb }} {{ formatDate(selected.subscription.endAt) }}</small>
+          <small class="muted">{{ isLive ? locale.t('p.st.ends') : endVerb }} {{ formatDate(selected.subscription.endAt) }}</small>
         </div>
       </div>
       <div class="card payment-details">
-        <h3>تفاصيل العملية</h3>
-        <div class="summary-line"><span>رقم الطلب</span><b dir="ltr">{{ requestNo(selected) }}</b></div>
-        <div class="summary-line"><span>الباقة</span><b>{{ packageLabel(selected.subscription.package) }}</b></div>
-        <div class="summary-line"><span>قيمة التحويل</span><b>{{ selected.amount }} ر.س</b></div>
-        <div class="summary-line"><span>حالة الاشتراك</span><b [class.approved-text]="isLive" [class.inactive-text]="!isLive">{{ isLive ? 'نشط' : 'غير نشط' }}</b></div>
-        <div class="summary-line"><span>حالة التحويل</span><b [class.approved-text]="approved" [class.inactive-text]="rejected" [class.warning-text]="pending">{{ transferLabel }}</b></div>
-        <div class="summary-line"><span>تاريخ التفعيل</span><b>{{ formatDate(selected.subscription.startAt) }}</b></div>
-        <div class="summary-line"><span>تاريخ الانتهاء</span><b>{{ formatDate(selected.subscription.endAt) }}</b></div>
+        <h3>{{ locale.t('p.st.details') }}</h3>
+        <div class="summary-line"><span>{{ locale.t('p.st.orderNo') }}</span><b dir="ltr">{{ requestNo(selected) }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.package') }}</span><b>{{ packageLabel(selected.subscription.package) }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.amount') }}</span><b>{{ selected.amount }} {{ locale.t('ui.sar') }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.subStatus') }}</span><b [class.approved-text]="isLive" [class.inactive-text]="!isLive">{{ isLive ? locale.t('p.st.live') : locale.t('p.st.notLive') }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.transferStatus') }}</span><b [class.approved-text]="approved" [class.inactive-text]="rejected" [class.warning-text]="pending">{{ transferLabel }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.start') }}</span><b>{{ formatDate(selected.subscription.startAt) }}</b></div>
+        <div class="summary-line"><span>{{ locale.t('p.st.end') }}</span><b>{{ formatDate(selected.subscription.endAt) }}</b></div>
         <div class="payment-flow">
-          <span class="done">✓ تم إرسال الإثبات</span>
+          <span class="done">{{ locale.t('p.st.proofSent') }}</span>
           <i></i>
-          <span [class.done]="reviewed">{{ reviewed ? '✓ تمت المراجعة' : 'بانتظار المراجعة' }}</span>
+          <span [class.done]="reviewed">{{ reviewed ? locale.t('p.st.reviewed') : locale.t('p.st.waitReview') }}</span>
           <i></i>
-          <span [class.done]="isLive">{{ isLive ? '✓ تم تفعيل الحساب' : 'لم يُفعَّل الحساب' }}</span>
+          <span [class.done]="isLive">{{ isLive ? locale.t('p.st.activated') : locale.t('p.st.notActivated') }}</span>
         </div>
       </div>
       <div class="section-title subscriptions-title">
         <div>
-          <h3>الاشتراكات السابقة</h3>
-          <p class="small muted">اضغطي على أي اشتراك لعرض حالة الدفع الخاصة به في نفس الشاشة</p>
+          <h3>{{ locale.t('p.st.prev') }}</h3>
+          <p class="small muted">{{ locale.t('p.st.prevHint') }}</p>
         </div>
-        <span class="subscriptions-count">{{ proofs.length }} اشتراكات</span>
+        <span class="subscriptions-count">{{ locale.tf('p.st.count', { n: proofs.length }) }}</span>
       </div>
       <div class="card previous-subscriptions payment-history-list">
         <div class="previous-subscriptions-head">
-          <span>الباقة</span>
-          <span>فترة الاشتراك</span>
-          <span>المبلغ</span>
-          <span>الحالة</span>
+          <span>{{ locale.t('p.st.package') }}</span>
+          <span>{{ locale.t('p.st.period') }}</span>
+          <span>{{ locale.t('p.pay.amount') }}</span>
+          <span>{{ locale.t('p.st.subStatus') }}</span>
         </div>
         @for (item of proofs; track item.id) {
           <button
@@ -83,8 +83,8 @@ import { ShellService } from '../core/shell.service';
               <b>{{ packageLabel(item.subscription.package) }}</b>
             </div>
             <span>{{ period(item) }}</span>
-            <b>{{ item.amount }} ر.س</b>
-            <span class="status" [class.success]="isItemLive(item)" [class.ended]="!isItemLive(item)">{{ isItemLive(item) ? 'نشط' : 'غير نشط' }}</span>
+            <b>{{ item.amount }} {{ locale.t('ui.sar') }}</b>
+            <span class="status" [class.success]="isItemLive(item)" [class.ended]="!isItemLive(item)">{{ isItemLive(item) ? locale.t('p.st.live') : locale.t('p.st.notLive') }}</span>
           </button>
         }
       </div>
@@ -99,7 +99,7 @@ export class ProviderPaymentStatusComponent implements OnInit {
   selected: PaymentProof | null = null;
 
   ngOnInit(): void {
-    this.shell.set('حالة الدفع والاشتراك');
+    this.shell.set('p.payStatus');
     this.api.providerSubscription().subscribe({
       next: (data) => {
         this.proofs = data.proofs ?? [];
@@ -140,15 +140,15 @@ export class ProviderPaymentStatusComponent implements OnInit {
 
   get headerBadge(): string {
     if (this.isLive) {
-      return 'اشتراك نشط';
+      return this.locale.t('p.st.liveSub');
     }
     if (this.pending) {
-      return 'قيد المراجعة';
+      return this.locale.t('p.st.pending');
     }
     if (this.rejected) {
-      return 'غير مقبول';
+      return this.locale.t('p.st.rejected');
     }
-    return 'اشتراك غير نشط';
+    return this.locale.t('p.st.inactiveSub');
   }
 
   get headerIcon(): string {
@@ -163,38 +163,38 @@ export class ProviderPaymentStatusComponent implements OnInit {
 
   get heading(): string {
     if (this.isLive) {
-      return 'تمت مراجعة إثبات الدفع وتفعيل الحساب';
+      return this.locale.t('p.st.msgLive');
     }
     if (this.pending) {
-      return 'الإثبات قيد المراجعة';
+      return this.locale.t('p.st.msgPending');
     }
     if (this.rejected) {
-      return 'لم يتم اعتماد الإثبات';
+      return this.locale.t('p.st.msgRejected');
     }
-    return 'انتهت مدة هذا الاشتراك';
+    return this.locale.t('p.st.msgEnded');
   }
 
   get hint(): string {
     if (this.isLive) {
-      return 'تم اعتماد التحويل المالي والاشتراك مفعّل حاليًا ويمكنكِ استخدام جميع مزايا الباقة.';
+      return this.locale.t('p.st.helpLive');
     }
     if (this.pending) {
-      return 'استلمنا إثبات التحويل الخاص بك. عادةً تستغرق المراجعة حتى 24 ساعة.';
+      return this.locale.t('p.st.helpPending');
     }
     if (this.rejected) {
-      return 'راجعي بيانات التحويل وأرسلي إثباتًا جديدًا إذا لزم الأمر.';
+      return this.locale.t('p.st.helpRejected');
     }
-    return 'تمت مراجعة التحويل وتفعيل الباقة سابقًا، ثم أصبحت غير نشطة بعد انتهاء مدتها.';
+    return this.locale.t('p.st.helpEnded');
   }
 
   get transferLabel(): string {
     if (this.approved) {
-      return 'تمت المراجعة والقبول';
+      return this.locale.t('p.st.xferOk');
     }
     if (this.rejected) {
-      return 'مرفوض';
+      return this.locale.t('p.st.xferNo');
     }
-    return 'قيد المراجعة';
+    return this.locale.t('p.st.xferWait');
   }
 
   get remainingDays(): number {
@@ -216,7 +216,7 @@ export class ProviderPaymentStatusComponent implements OnInit {
   }
 
   get endVerb(): string {
-    return this.remainingDays > 0 ? 'ينتهي الاشتراك في' : 'انتهى الاشتراك في';
+    return this.remainingDays > 0 ? this.locale.t('p.st.ends') : this.locale.t('p.st.ended');
   }
 
   requestNo(item: PaymentProof): string {
@@ -229,14 +229,16 @@ export class ProviderPaymentStatusComponent implements OnInit {
 
   packageLabel(pkg: PaymentProof['subscription']['package']): string {
     const name = this.locale.localizedName(pkg);
-    return name.includes('باقة') ? name : `الباقة ${name}`;
+    const hasPrefix =
+      this.locale.lang() === 'ar' ? name.includes('باقة') : name.toLowerCase().includes('package');
+    return hasPrefix ? name : this.locale.tf('p.st.pkgPrefix', { name });
   }
 
   formatDate(value?: string): string {
     if (!value) {
       return '—';
     }
-    return new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+    return new Intl.DateTimeFormat(this.locale.dateTag(), { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
   }
 
   private startDate(item: PaymentProof): Date {

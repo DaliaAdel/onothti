@@ -14,12 +14,12 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (ngSubmit)="submit()">
-        <a class="auth-back" [routerLink]="backLink">← رجوع</a>
-        <span class="auth-kicker">{{ isNew ? 'إنشاء حساب جديد' : 'لدي حساب' }}</span>
-        <h2>رقم الهاتف</h2>
-        <p class="muted">{{ isNew ? 'أدخل رقم الهاتف وسنرسل لك رمز تحقق OTP.' : 'أدخل رقم الجوال للمتابعة. حساب التشغيل يطلب كلمة المرور بعد التحقق.' }}</p>
+        <a class="auth-back" [routerLink]="backLink">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ isNew ? locale.t('auth.signup.eyebrow') : locale.t('auth.choice.hasAccount') }}</span>
+        <h2>{{ locale.t('auth.login.title') }}</h2>
+        <p class="muted">{{ isNew ? locale.t('auth.login.sub') : locale.t('auth.phone.subLogin') }}</p>
         <div class="field">
-          <label>رقم الجوال</label>
+          <label>{{ locale.t('auth.mobile') }}</label>
           <input
             id="loginPhone"
             dir="ltr"
@@ -36,7 +36,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ isNew ? 'إرسال رمز التحقق' : 'متابعة' }}</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ isNew ? locale.t('auth.login.sendOtp') : locale.t('auth.continue') }}</button>
       </form>
     </app-auth-layout>
   `,

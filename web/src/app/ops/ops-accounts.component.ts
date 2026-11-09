@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { ApiService } from '../core/api.service';
 import { apiMessage } from '../core/phone';
 import type { OpsManagedAccount, OpsPendingProvider } from '../core/models';
+import { LocaleService } from '../core/locale.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
 import { OpsAccountFileComponent } from './ops-account-file.component';
@@ -14,26 +15,26 @@ import { newestFirst, opsDate, statusTone } from './ops-ui';
     @if (!selected) {
       <div class="section-head">
         <div>
-          <h2>اعتماد حسابات الخبيرات</h2>
-          <p>اضغطي على صف لعرض ملف الخبيرة ثم اعتمدي أو أوقفي الحساب.</p>
+          <h2>{{ locale.t('ops.acc.heading') }}</h2>
+          <p>{{ locale.t('ops.acc.intro') }}</p>
         </div>
       </div>
 
       @if (loading) {
-        <p class="loading">جاري التحميل...</p>
+        <p class="loading">{{ locale.t('ui.loading') }}</p>
       } @else if (!pending.length) {
-        <p class="page-empty">لا توجد حسابات بانتظار المراجعة.</p>
+        <p class="page-empty">{{ locale.t('ops.acc.empty') }}</p>
       } @else {
         <div class="ops-table-wrap">
           <table class="ops-table">
             <thead>
               <tr>
-                <th>الاسم</th>
-                <th>الرمز</th>
-                <th>الجوال</th>
-                <th>المدينة</th>
-                <th>الحالة</th>
-                <th>التاريخ</th>
+                <th>{{ locale.t('ops.ui.name') }}</th>
+                <th>{{ locale.t('ops.ui.code') }}</th>
+                <th>{{ locale.t('ops.ui.mobile') }}</th>
+                <th>{{ locale.t('ops.ui.city') }}</th>
+                <th>{{ locale.t('ops.ui.status') }}</th>
+                <th>{{ locale.t('ops.ui.date') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -42,7 +43,7 @@ import { newestFirst, opsDate, statusTone } from './ops-ui';
                   <td><b>{{ item.displayName }}</b></td>
                   <td>{{ item.accountCode }}</td>
                   <td dir="ltr">{{ item.mobile }}</td>
-                  <td>{{ item.city?.nameAr || '—' }}</td>
+                  <td>{{ locale.localizedName(item.city) || '—' }}</td>
                   <td><span class="status {{ statusTone(item.status) }}">{{ statusAr(item.status) }}</span></td>
                   <td>{{ opsDate(item.createdAt) }}</td>
                 </tr>
@@ -54,18 +55,18 @@ import { newestFirst, opsDate, statusTone } from './ops-ui';
     } @else {
       <div class="section-head">
         <div>
-          <button class="text-link back" type="button" (click)="closeFile()">→ رجوع للاعتماد</button>
+          <button class="text-link back" type="button" (click)="closeFile()">{{ locale.t('ops.acc.back') }}</button>
           <h2>{{ selected.displayName }}</h2>
-          <p>ملف الخبيرة للعرض فقط</p>
+          <p>{{ locale.t('ops.acc.viewOnly') }}</p>
         </div>
       </div>
       @if (detailLoading) {
-        <p class="loading">جاري تحميل الملف...</p>
+        <p class="loading">{{ locale.t('ops.appr.fileLoading') }}</p>
       }
       <app-ops-account-file [account]="selected" />
       <div class="ops-drawer-actions">
-        <button class="btn primary" type="button" (click)="review(true)">اعتماد الملف</button>
-        <button class="btn ghost" type="button" (click)="review(false)">إيقاف</button>
+        <button class="btn primary" type="button" (click)="review(true)">{{ locale.t('ops.acc.approve') }}</button>
+        <button class="btn ghost" type="button" (click)="review(false)">{{ locale.t('ops.acc.stop') }}</button>
       </div>
     }
   `,
@@ -73,6 +74,7 @@ import { newestFirst, opsDate, statusTone } from './ops-ui';
 export class OpsAccountsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellService);
+  readonly locale = inject(LocaleService);
   private readonly toast = inject(ToastService);
 
   readonly opsDate = opsDate;
@@ -84,7 +86,7 @@ export class OpsAccountsComponent implements OnInit {
   detailLoading = false;
 
   ngOnInit(): void {
-    this.shell.set('اعتماد الحسابات', 'مراجعة ملفات الخبيرات بانتظار الاعتماد');
+    this.shell.set('ops.accounts.title', 'ops.accounts.sub');
     this.loadPending();
   }
 
@@ -93,19 +95,19 @@ export class OpsAccountsComponent implements OnInit {
     this.api.opsAccount(item.id).subscribe({
       next: (row) => {
         this.selected = row;
-        this.shell.set(row.displayName, 'ملف الخبيرة');
+        this.shell.set(row.displayName, this.locale.t('ops.providerFile'));
         this.detailLoading = false;
       },
       error: (err) => {
         this.detailLoading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الملف'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.acc.toast.fileFail')));
       },
     });
   }
 
   closeFile(): void {
     this.selected = null;
-    this.shell.set('اعتماد الحسابات', 'مراجعة ملفات الخبيرات بانتظار الاعتماد');
+    this.shell.set('ops.accounts.title', 'ops.accounts.sub');
   }
 
   review(approve: boolean): void {
@@ -114,26 +116,19 @@ export class OpsAccountsComponent implements OnInit {
     }
     this.api.opsReviewProvider(this.selected.id, approve).subscribe({
       next: () => {
-        this.toast.show(approve ? 'تم اعتماد الحساب' : 'تم إيقاف الحساب');
+        this.toast.show(approve ? this.locale.t('ops.appr.toast.accountOk') : this.locale.t('ops.appr.toast.accountStop'));
         this.selected = null;
-        this.shell.set('اعتماد الحسابات', 'مراجعة ملفات الخبيرات بانتظار الاعتماد');
+        this.shell.set('ops.accounts.title', 'ops.accounts.sub');
         this.loadPending();
       },
-      error: (err) => this.toast.show(apiMessage(err, 'تعذر تنفيذ القرار')),
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.appr.toast.accountFail'))),
     });
   }
 
   statusAr(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'نشط',
-      INACTIVE: 'غير نشط',
-      PENDING_APPROVAL: 'بانتظار الاعتماد',
-      RESTRICTED: 'مقيّد',
-      SUSPENDED: 'موقوف',
-      CANCELLED: 'ملغى',
-      DELETED: 'محذوف',
-    };
-    return labels[status] ?? status;
+    const key = `ops.status.${status}`;
+    const label = this.locale.t(key);
+    return label === key ? status : label;
   }
 
   private loadPending(): void {
@@ -148,7 +143,7 @@ export class OpsAccountsComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.toast.show(apiMessage(err, 'تعذر تحميل الحسابات'));
+        this.toast.show(apiMessage(err, this.locale.t('ops.acc.toast.loadFail')));
       },
     });
   }

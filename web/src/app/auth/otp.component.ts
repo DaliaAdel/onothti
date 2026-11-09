@@ -13,10 +13,10 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
   template: `
     <app-auth-layout>
       <form class="auth-box" (submit)="submit($event)">
-        <a class="auth-back" [routerLink]="backLink" [queryParams]="backQuery">← رجوع</a>
-        <span class="auth-kicker">التحقق من رقم الجوال</span>
-        <h2>أدخل رمز التحقق</h2>
-        <p class="muted">أرسلنا رمزًا من 6 أرقام إلى <b dir="ltr">{{ phoneLabel }}</b></p>
+        <a class="auth-back" [routerLink]="backLink" [queryParams]="backQuery">{{ locale.t('auth.back') }}</a>
+        <span class="auth-kicker">{{ locale.t('auth.otp.kicker') }}</span>
+        <h2>{{ locale.t('auth.otp.enter') }}</h2>
+        <p class="muted">{{ locale.t('auth.otp.sent6') }} <b dir="ltr">{{ phoneLabel }}</b></p>
         <div class="otp-fields" dir="ltr">
           @for (digit of digits; track $index) {
             <input
@@ -32,7 +32,7 @@ import { AuthLayoutComponent } from '../shared/auth-layout.component';
         @if (errorText) {
           <p class="auth-error">{{ errorText }}</p>
         }
-        <button class="btn primary auth-submit" type="submit" [disabled]="loading">تأكيد ومتابعة</button>
+        <button class="btn primary auth-submit" type="submit" [disabled]="loading">{{ locale.t('auth.otp.confirm') }}</button>
         <button class="btn ghost auth-submit" style="margin-top:9px" type="button" (click)="resend()" [disabled]="seconds > 0 || loading">
           @if (seconds > 0) {
             {{ locale.t('auth.otp.resendIn') }} {{ timerLabel }}
