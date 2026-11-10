@@ -8,11 +8,10 @@ import { LocaleService } from '../core/locale.service';
 import { SessionService } from '../core/session.service';
 import { ShellService } from '../core/shell.service';
 import { ToastService } from '../core/toast.service';
-import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-customer-account',
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule],
   template: `
     <div class="notice" style="margin-bottom:18px">{{ locale.t('c.account.notice') }}</div>
     <form class="card form-card" (ngSubmit)="save()">

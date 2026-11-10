@@ -8,7 +8,7 @@ import { LocaleService } from '../core/locale.service';
   styleUrl: './landing.css',
   host: { class: 'landing-page', style: 'display:block' },
   template: `
-    <div class="landing-page" [class.menu-open]="menuOpen">
+    <div class="landing-page" [attr.dir]="locale.lang() === 'en' ? 'ltr' : 'rtl'" [class.menu-open]="menuOpen">
       <header class="site-header" [class.scrolled]="scrolled" [class.menu-open]="menuOpen">
         <a class="site-brand" href="#top" [attr.aria-label]="locale.t('land.brand')" (click)="menuOpen = false">
           <img src="/assets/logo-auth.png" [attr.alt]="locale.t('brand.alt')" />

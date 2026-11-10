@@ -14,10 +14,10 @@
   --font-ar-ui:Alexandria,Tahoma,sans-serif;
   --font-en-display:Lora,Georgia,serif;
   --font-en-ui:'DM Sans',Arial,sans-serif;
-  --font-display:OnothitiDisplay,var(--font-ar-display),var(--font-en-display);
-  --font-ui:OnothitiUI,var(--font-ar-ui),var(--font-en-ui);
+  --font-display:OnothitiDisplay,var(--font-ar-display);
+  --font-ui:OnothitiUI,var(--font-ar-ui);
 }
-html[lang="en"]{
-  --font-display:OnothitiDisplay,var(--font-en-display),var(--font-ar-display);
-  --font-ui:OnothitiUI,var(--font-en-ui),var(--font-ar-ui);
+html:lang(en){
+  --font-display:var(--font-en-display);
+  --font-ui:var(--font-en-ui);
 }

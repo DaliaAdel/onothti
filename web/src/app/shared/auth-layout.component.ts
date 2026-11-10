@@ -4,7 +4,7 @@ import { LocaleService } from '../core/locale.service';
 @Component({
   selector: 'app-auth-layout',
   template: `
-    <div class="auth-layout">
+    <div class="auth-layout" [attr.dir]="locale.lang() === 'en' ? 'ltr' : 'rtl'">
       <div class="auth-screen-bg" aria-hidden="true"></div>
       <div class="auth-lang lang-switch" role="group" aria-label="Language">
         <button type="button" [class.active]="locale.lang() === 'ar'" (click)="locale.set('ar')">عربي</button>

@@ -24,7 +24,7 @@ export interface NavItem {
   selector: 'app-shell',
   imports: [AuthLayoutComponent, BrandComponent, IconComponent, RouterLink, RouterLinkActive],
   template: `
-    <div class="app" [class.ops-app]="home === '/ops'" [class.menu-open]="menuOpen">
+    <div class="app" [attr.dir]="locale.lang() === 'en' ? 'ltr' : 'rtl'" [class.ops-app]="home === '/ops'" [class.menu-open]="menuOpen">
       <button class="nav-backdrop" type="button" [attr.aria-label]="locale.t('shell.closeMenu')" (click)="closeMenu()"></button>
       <aside class="sidebar" id="app-sidebar">
         <div class="sidebar-top">

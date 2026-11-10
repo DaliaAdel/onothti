@@ -190,6 +190,10 @@ a {
   transform: translateX(-2px)
 }
 
+html[dir="ltr"] .nav a:hover {
+  transform: translateX(2px)
+}
+
 .nav a.active {
   background: linear-gradient(115deg, #f4e7e1, #fff8f4);
   color: var(--plum);
@@ -318,7 +322,7 @@ a {
   background: var(--danger);
   position: absolute;
   top: 9px;
-  right: 9px;
+  inset-inline-end: 9px;
   border: 2px solid #fff
 }
 
@@ -562,7 +566,7 @@ a {
 }
 
 .service-body .arrow {
-  float: left;
+  float: inline-end;
   color: var(--copper);
   margin-top: -24px
 }
@@ -1744,7 +1748,7 @@ app-password-input {
   cursor: pointer;
   border: 0;
   width: 100%;
-  text-align: right
+  text-align: start
 }
 
 .account-type-card.active {
@@ -1986,7 +1990,7 @@ app-favorite-btn {
 .service-card .service-fav {
   position: absolute;
   top: 12px;
-  left: 12px;
+  inset-inline-end: 12px;
   z-index: 2
 }
 
@@ -2134,7 +2138,7 @@ app-favorite-btn {
 .service-mini-icon {
   position: absolute;
   z-index: 1;
-  right: 10px;
+  inset-inline-start: 10px;
   bottom: 10px;
   width: 42px;
   height: 42px;
@@ -2502,7 +2506,7 @@ a.avatar.has-photo {
 
 .ops-table th,
 .ops-table td {
-  text-align: right;
+  text-align: start;
   padding: 13px 14px;
   border-bottom: 1px solid rgba(234, 222, 217, .8);
   font-size: 11px;
@@ -2589,7 +2593,7 @@ a.avatar.has-photo {
 
 .ops-modal-close {
   position: absolute;
-  left: 16px;
+  inset-inline-end: 16px;
   top: 14px;
   border: 0;
   background: var(--pearl);
@@ -2645,7 +2649,7 @@ input[type="date"],
 html[dir="rtl"] input[type="date"],
 input[type="date"][dir="rtl"] {
   direction: rtl;
-  text-align: right;
+  text-align: start;
   unicode-bidi: isolate;
 }
 
@@ -3209,8 +3213,14 @@ textarea[dir="ltr"],
   height: 65px;
   border-radius: 50%;
   background: var(--appr-pearl);
-  left: -22px;
+  inset-inline-end: -22px;
   bottom: -28px
+}
+
+.appr-metric span,
+.appr-metric b {
+  position: relative;
+  z-index: 1
 }
 
 .appr-metric span {
@@ -3343,7 +3353,7 @@ textarea[dir="ltr"],
   background: #fcf8f5;
   color: #71584e;
   font-size: 11px;
-  text-align: right;
+  text-align: start;
   padding: 13px 14px;
   border-bottom: 1px solid var(--appr-line);
   white-space: nowrap
@@ -3406,7 +3416,7 @@ textarea[dir="ltr"],
   margin-top: 4px;
   font-size: 9px;
   direction: ltr;
-  text-align: right
+  text-align: start
 }
 
 .appr-role {
@@ -3887,7 +3897,7 @@ textarea[dir="ltr"],
   display: flex;
   align-items: center;
   gap: 12px;
-  text-align: right;
+  text-align: start;
   transform: translate(-50%, 120px);
   opacity: 0;
   pointer-events: none
@@ -3959,6 +3969,8 @@ textarea[dir="ltr"],
   color:var(--dark,#5f3120)
 }
 html[dir="ltr"] .landing-page .browser-body{direction:ltr}
+html[dir="ltr"] .landing-page .modal-close{left:auto;right:16px}
 html[dir="ltr"] .landing-page footer a,
-html[dir="ltr"] .landing-page footer button{text-align:left}
-html[dir="ltr"] .landing-page .featured-action{text-align:left}
+html[dir="ltr"] .landing-page footer button,
+html[dir="ltr"] .landing-page .featured-action,
+html[dir="ltr"] .landing-page .contact-item{text-align:start}
