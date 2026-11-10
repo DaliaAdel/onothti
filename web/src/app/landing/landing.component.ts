@@ -1,5 +1,7 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ApiService } from '../core/api.service';
+import { FALLBACK_SERVICES, serviceAssetKey, serviceIcon, servicePhoto, type CatalogService } from '../core/models';
 import { LocaleService } from '../core/locale.service';
 
 @Component({
@@ -122,13 +124,13 @@ import { LocaleService } from '../core/locale.service';
             <p>{{ locale.t('land.services.sub') }}</p>
           </div>
           <div class="service-grid">
-            @for (service of services; track service.code) {
+            @for (service of catalog; track service.id) {
               <article class="photo-service-card">
-                <img class="service-photo" [src]="'/assets/service-photos/' + service.photo" [alt]="service.name" loading="lazy" decoding="async" />
+                <img class="service-photo" [src]="photoOf(service)" [alt]="nameOf(service)" loading="lazy" decoding="async" />
                 <div>
-                  <img [src]="'/assets/icons/' + service.icon" alt="" loading="lazy" decoding="async" />
-                  <h3>{{ service.name }}</h3>
-                  <p>{{ service.text }}</p>
+                  <img [src]="iconOf(service)" alt="" loading="lazy" decoding="async" />
+                  <h3>{{ nameOf(service) }}</h3>
+                  <p>{{ textOf(service) }}</p>
                 </div>
               </article>
             }
@@ -353,42 +355,70 @@ import { LocaleService } from '../core/locale.service';
     </div>
   `,
 })
-export class LandingComponent {
+export class LandingComponent implements OnInit {
   readonly locale = inject(LocaleService);
+  private readonly api = inject(ApiService);
   menuOpen = false;
   scrolled = false;
   toast = '';
+  catalog: CatalogService[] = FALLBACK_SERVICES;
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private readonly serviceMeta = [
-    { code: 'hair', photo: 'hair.webp', icon: 'hair.png' },
-    { code: 'makeup', photo: 'makeup.webp', icon: 'makeup.png' },
-    { code: 'microblading', photo: 'microblading.webp', icon: 'microblading.png' },
-    { code: 'nails', photo: 'nails.webp', icon: 'nails.png' },
-    { code: 'henna', photo: 'henna.webp', icon: 'henna.png' },
-    { code: 'skincare', photo: 'skincare.webp', icon: 'skincare.png' },
-    { code: 'bodycare', photo: 'bodycare.webp', icon: 'bodycare.png' },
-    { code: 'dj', photo: 'dj.webp', icon: 'dj.png' },
-    { code: 'events', photo: 'events.webp', icon: 'events.png' },
-    { code: 'dresses', photo: 'dresses.webp', icon: 'dresses.png' },
-    { code: 'photography', photo: 'photography.webp', icon: 'photography.png' },
-    { code: 'model', photo: 'model.webp', icon: 'model.png' },
-    { code: 'drinks', photo: 'drinks.webp', icon: 'drinks.png' },
-    { code: 'piercing', photo: 'piercing.webp', icon: 'piercing.png' },
-  ];
-
-  get marquee(): string[] {
-    return this.serviceMeta.map((service) =>
-      service.code === 'dj' ? this.locale.t('land.svc.dj.marquee') : this.locale.t(`land.svc.${service.code}`),
-    );
+  ngOnInit(): void {
+    this.api.services().subscribe({
+      next: (services) => {
+        this.catalog = services;
+      },
+      error: () => {
+        this.catalog = FALLBACK_SERVICES;
+      },
+    });
   }
 
-  get services() {
-    return this.serviceMeta.map((service) => ({
-      ...service,
-      name: this.locale.t(`land.svc.${service.code}`),
-      text: this.locale.t(`land.svc.${service.code}.text`),
-    }));
+  get marquee(): string[] {
+    return this.catalog.map((service) => this.marqueeName(service));
+  }
+
+  nameOf(service: CatalogService): string {
+    return this.locale.localizedName(service);
+  }
+
+  textOf(service: CatalogService): string {
+    const asset = serviceAssetKey(service);
+    const key = `land.svc.${asset}.text`;
+    const copy = this.locale.t(key);
+    if (copy !== key) {
+      return copy;
+    }
+    const subs = (service.subServices ?? [])
+      .map((item) => this.locale.localizedName(item))
+      .filter((name) => !!name)
+      .slice(0, 3);
+    if (subs.length) {
+      return subs.join(' · ');
+    }
+    return this.locale.t('c.serviceFallback');
+  }
+
+  photoOf(service: CatalogService): string {
+    return servicePhoto(service);
+  }
+
+  iconOf(service: CatalogService): string {
+    return serviceIcon(service);
+  }
+
+  marqueeName(service: CatalogService): string {
+    const asset = serviceAssetKey(service);
+    if (asset === 'dj') {
+      return this.locale.t('land.svc.dj.marquee');
+    }
+    const key = `land.svc.${asset}`;
+    const copy = this.locale.t(key);
+    if (copy !== key) {
+      return copy;
+    }
+    return this.locale.localizedName(service);
   }
 
   @HostListener('window:scroll')

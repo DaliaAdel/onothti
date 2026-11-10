@@ -133,7 +133,7 @@ export function serviceIcon(service?: { code?: string | null; nameEn?: string | 
   return `/assets/icons/${key}.png`;
 }
 
-function serviceAssetKey(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+export function serviceAssetKey(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
   const code = (typeof service === 'string' ? service : service?.code ?? '').trim();
   if (SERVICE_ASSET_BY_CODE[code]) {
     return SERVICE_ASSET_BY_CODE[code];
