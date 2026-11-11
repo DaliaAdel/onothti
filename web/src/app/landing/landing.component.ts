@@ -13,7 +13,7 @@ import { LocaleService } from '../core/locale.service';
     <div class="landing-page" [attr.dir]="locale.lang() === 'en' ? 'ltr' : 'rtl'" [class.menu-open]="menuOpen">
       <header class="site-header" [class.scrolled]="scrolled" [class.menu-open]="menuOpen">
         <a class="site-brand" href="#top" [attr.aria-label]="locale.t('land.brand')" (click)="menuOpen = false">
-          <img src="/assets/logo-auth.png" [attr.alt]="locale.t('brand.alt')" />
+          <img [src]="locale.logoSrc()" [attr.alt]="locale.t('brand.alt')" />
           <span>{{ locale.t('land.brand') }}</span>
         </a>
         <nav id="landing-nav" [attr.aria-label]="locale.t('land.navAria')" (click)="menuOpen = false">
@@ -291,7 +291,7 @@ import { LocaleService } from '../core/locale.service';
 
         <section class="final-cta">
           <div>
-            <img src="/assets/logo-auth.png" alt="" />
+            <img [src]="locale.logoSrc()" alt="" />
             <h2>{{ locale.t('land.cta.title') }}</h2>
             <p>{{ locale.t('land.cta.text') }}</p>
             <div>
@@ -304,7 +304,7 @@ import { LocaleService } from '../core/locale.service';
 
       <footer>
         <div class="footer-brand">
-          <img src="/assets/logo-auth.png" alt="" />
+          <img [src]="locale.logoSrc()" alt="" />
           <div>
             <b>{{ locale.t('land.brand') }}</b>
             <span>{{ locale.t('land.foot.tag') }}</span>

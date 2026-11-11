@@ -1,5 +1,6 @@
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountStatus, AccountType, NotificationType } from "./enums";
+import { notifyPair } from "./notification-copy";
 import {
   effectivePermissionCodes,
   FINANCE_ROLE_CODES,
@@ -32,15 +33,16 @@ export async function notifyOncePerDay(
   if (existing) {
     return existing;
   }
+  const copy = notifyPair(input.titleAr, input.bodyAr, input.titleEn, input.bodyEn);
   return prisma.notification.create({
     data: {
       userId: input.userId,
       type: input.type,
       ref: input.ref,
       titleAr: input.titleAr,
-      titleEn: input.titleEn,
+      titleEn: copy.titleEn,
       bodyAr: input.bodyAr,
-      bodyEn: input.bodyEn,
+      bodyEn: copy.bodyEn,
       status: "SENT",
     },
   });
@@ -110,6 +112,7 @@ export async function notifyStaffWithPermission(
   if (!userIds.length) {
     return;
   }
+  const copy = notifyPair(titleAr, bodyAr);
   await prisma.notification.createMany({
     data: userIds.map((userId) => ({
       userId,
@@ -117,9 +120,9 @@ export async function notifyStaffWithPermission(
       type: "SYSTEM",
       ref,
       titleAr,
-      titleEn: titleAr,
+      titleEn: copy.titleEn,
       bodyAr,
-      bodyEn: bodyAr,
+      bodyEn: copy.bodyEn,
       status: "SENT",
     })),
   });
@@ -181,6 +184,7 @@ export async function notifyOpsAndFinance(
   if (!userIds.length) {
     return;
   }
+  const copy = notifyPair(input.titleAr, input.bodyAr);
   await prisma.notification.createMany({
     data: userIds.map((userId) => ({
       userId,
@@ -188,9 +192,9 @@ export async function notifyOpsAndFinance(
       type: "SYSTEM",
       ref: input.ref,
       titleAr: input.titleAr,
-      titleEn: input.titleAr,
+      titleEn: copy.titleEn,
       bodyAr: input.bodyAr,
-      bodyEn: input.bodyAr,
+      bodyEn: copy.bodyEn,
       status: "SENT",
     })),
   });

@@ -14,6 +14,7 @@ import {
   SUPER_ROLE_CODE,
 } from "../common/staff-permissions";
 import { notifyOpsAndFinance, notifyStaffWithPermission as notifyStaffByPermission } from "../common/notify";
+import { notifyPair } from "../common/notification-copy";
 import { ensureTicketTypes } from "../common/ticket-types";
 import { assertDisplayName, assertUniqueEmail } from "../common/account-rules";
 import {
@@ -1367,6 +1368,7 @@ export class OpsService {
     }
     const titleAr = dto.titleAr.trim();
     const bodyAr = dto.bodyAr.trim();
+    const copy = notifyPair(titleAr, bodyAr);
     await this.prisma.notification.create({
       data: {
         userId: user.id,
@@ -1374,9 +1376,9 @@ export class OpsService {
         type: "SYSTEM",
         ref: `account:${user.id}`,
         titleAr,
-        titleEn: titleAr,
+        titleEn: copy.titleEn,
         bodyAr,
-        bodyEn: bodyAr,
+        bodyEn: copy.bodyEn,
         status: "SENT",
       },
     });
@@ -1408,15 +1410,16 @@ export class OpsService {
       select: { id: true },
     });
     if (users.length) {
+      const copy = notifyPair(dto.titleAr.trim(), dto.bodyAr.trim(), dto.titleEn, dto.bodyEn);
       await this.prisma.notification.createMany({
         data: users.map((user) => ({
           userId: user.id,
           audience: dto.audience,
           type: "SYSTEM",
           titleAr: dto.titleAr.trim(),
-          titleEn: (dto.titleEn ?? dto.titleAr).trim(),
+          titleEn: copy.titleEn,
           bodyAr: dto.bodyAr.trim(),
-          bodyEn: (dto.bodyEn ?? dto.bodyAr).trim(),
+          bodyEn: copy.bodyEn,
           status: "SENT",
         })),
       });
@@ -3416,15 +3419,16 @@ export class OpsService {
   }
 
   private notifyOwner(userId: string, titleAr: string, bodyAr: string, ref?: string) {
+    const copy = notifyPair(titleAr, bodyAr);
     return this.prisma.notification.create({
       data: {
         userId,
         type: "SYSTEM",
         ref: ref ?? null,
         titleAr,
-        titleEn: titleAr,
+        titleEn: copy.titleEn,
         bodyAr,
-        bodyEn: bodyAr,
+        bodyEn: copy.bodyEn,
         status: "SENT",
       },
     });

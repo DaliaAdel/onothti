@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { extraAr, extraEn } from './i18n-extra';
+import { hasArabic, notifyCopyEn } from './notification-copy';
 
 export type AppLang = 'ar' | 'en';
 
@@ -424,6 +425,13 @@ export class LocaleService {
     return table[key] ?? messages.ar[key] ?? key;
   }
 
+  logoSrc(kind: 'auth' | 'mark' = 'auth'): string {
+    if (this.lang() === 'en') {
+      return '/assets/logo-en.png';
+    }
+    return kind === 'mark' ? '/assets/logo.png' : '/assets/logo-auth.png';
+  }
+
   tf(key: string, vars: Record<string, string | number>): string {
     return Object.entries(vars).reduce(
       (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
@@ -467,6 +475,25 @@ export class LocaleService {
       return item.nameEn || item.nameAr || fallback;
     }
     return item.nameAr || item.nameEn || fallback;
+  }
+
+  notificationTitle(item?: { titleAr?: string | null; titleEn?: string | null } | null): string {
+    return this.notificationText(item?.titleAr, item?.titleEn, this.t('notify.fallback'));
+  }
+
+  notificationBody(item?: { bodyAr?: string | null; bodyEn?: string | null } | null): string {
+    return this.notificationText(item?.bodyAr, item?.bodyEn);
+  }
+
+  private notificationText(ar?: string | null, en?: string | null, fallback = ''): string {
+    if (this.lang() === 'ar') {
+      return (ar || en || fallback).trim();
+    }
+    const english = (en || '').trim();
+    if (english && !hasArabic(english)) {
+      return english;
+    }
+    return notifyCopyEn(ar || english) || fallback;
   }
 
   private read(): AppLang {

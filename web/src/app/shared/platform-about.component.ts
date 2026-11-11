@@ -16,7 +16,7 @@ import { ShellService } from '../core/shell.service';
       </div>
     </div>
     <article class="card about-hero">
-      <img src="/assets/logo.png" [attr.alt]="locale.t('brand.alt')" />
+      <img [src]="locale.logoSrc('mark')" [attr.alt]="locale.t('brand.alt')" />
       <h2>{{ locale.t('about.brand') }}</h2>
       <p class="muted">{{ intro }}</p>
       <span class="status success">{{ locale.t('about.version') }}</span>

@@ -22,12 +22,12 @@ import { IconComponent } from './icon.component';
             </span>
             <span class="notify-copy">
               <span class="notify-top">
-                <b>{{ locale.localizedName({ nameAr: item.titleAr, nameEn: item.titleEn }, locale.t('notify.fallback')) }}</b>
+                <b>{{ locale.notificationTitle(item) }}</b>
                 @if (!item.readAt) {
                   <em>{{ locale.t('notify.new') }}</em>
                 }
               </span>
-              <p>{{ locale.localizedName({ nameAr: item.bodyAr, nameEn: item.bodyEn }) }}</p>
+              <p>{{ locale.notificationBody(item) }}</p>
               <small>{{ when(item.createdAt) }}</small>
             </span>
             <span class="notify-go" aria-hidden="true"><app-icon name="chev" /></span>
