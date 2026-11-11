@@ -128,7 +128,10 @@ export function servicePhoto(service?: { imageUrl?: string | null; code?: string
   return '/assets/photos/hero-makeup.jpg';
 }
 
-export function serviceIcon(service?: { code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+export function serviceIcon(service?: { iconUrl?: string | null; code?: string | null; nameEn?: string | null; nameAr?: string | null } | string | null): string {
+  if (service && typeof service !== 'string' && service.iconUrl) {
+    return service.iconUrl;
+  }
   const key = serviceAssetKey(service) || 'makeup';
   return `/assets/icons/${key}.png`;
 }
@@ -160,6 +163,7 @@ export interface CatalogService {
   nameEn: string;
   sortOrder?: number;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   subServices?: { id: string; nameAr: string; nameEn: string }[];
 }
 
@@ -688,6 +692,7 @@ export interface OpsCatalogService {
   sortOrder: number;
   isVisible: boolean;
   imageUrl?: string | null;
+  iconUrl?: string | null;
   subServices: OpsSubService[];
 }
 

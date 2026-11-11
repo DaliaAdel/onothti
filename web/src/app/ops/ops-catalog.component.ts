@@ -54,6 +54,15 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
               <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onDraftImage($event)" />
             </div>
           </div>
+          <div class="field full">
+            <label>{{ locale.t('ops.cat.icon') }}</label>
+            <div class="ops-service-image">
+              @if (draftIconPreview) {
+                <img class="ops-service-preview is-icon" [src]="draftIconPreview" alt="" />
+              }
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onDraftIcon($event)" />
+            </div>
+          </div>
         </div>
         <button class="btn primary" style="margin-top:16px;width:100%" type="button" (click)="createService()">{{ locale.t('ops.cat.addSubmit') }}</button>
       </app-ops-modal>
@@ -68,6 +77,7 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
             <thead>
               <tr>
                 <th>{{ locale.t('ops.cat.col.image') }}</th>
+                <th>{{ locale.t('ops.cat.col.icon') }}</th>
                 <th>{{ locale.t('ops.ui.name') }}</th>
                 <th>{{ locale.t('ops.ui.nameEn') }}</th>
                 <th>{{ locale.t('ops.cat.col.subs') }}</th>
@@ -84,6 +94,13 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
                   <td>
                     @if (service.imageUrl) {
                       <img class="ops-thumb" [src]="service.imageUrl" alt="" />
+                    } @else {
+                      <span class="muted small">{{ locale.t('ops.ui.noImage') }}</span>
+                    }
+                  </td>
+                  <td>
+                    @if (service.iconUrl) {
+                      <img class="ops-thumb is-icon" [src]="service.iconUrl" alt="" />
                     } @else {
                       <span class="muted small">{{ locale.t('ops.ui.noImage') }}</span>
                     }
@@ -143,6 +160,20 @@ const emptySubDraft = () => ({ nameAr: '', nameEn: '', sortOrder: '' as number |
               <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedImage($event)" />
               @if (selected.imageUrl) {
                 <button class="btn ghost" type="button" (click)="clearSelectedImage()">{{ locale.t('ops.cat.removeImage') }}</button>
+              }
+            }
+          </div>
+        </div>
+        <div class="field full">
+          <label>{{ locale.t('ops.cat.icon') }}</label>
+          <div class="ops-service-image">
+            @if (selected.iconUrl) {
+              <img class="ops-service-preview is-icon" [src]="selected.iconUrl" alt="" />
+            }
+            @if (canManage) {
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onSelectedIcon($event)" />
+              @if (selected.iconUrl) {
+                <button class="btn ghost" type="button" (click)="clearSelectedIcon()">{{ locale.t('ops.cat.removeIcon') }}</button>
               }
             }
           </div>
@@ -270,6 +301,8 @@ export class OpsCatalogComponent implements OnInit {
   subDraft = emptySubDraft();
   draftFile: File | null = null;
   draftPreview: string | null = null;
+  draftIconFile: File | null = null;
+  draftIconPreview: string | null = null;
 
   ngOnInit(): void {
     this.shell.set('ops.catalog.title', 'ops.catalog.sub');
@@ -293,13 +326,13 @@ export class OpsCatalogComponent implements OnInit {
       return;
     }
     this.serviceDraft = emptyServiceDraft();
-    this.resetDraftImage();
+    this.resetDraftFiles();
     this.adding = true;
   }
 
   closeAdd(): void {
     this.adding = false;
-    this.resetDraftImage();
+    this.resetDraftFiles();
   }
 
   createService(): void {
@@ -310,7 +343,8 @@ export class OpsCatalogComponent implements OnInit {
       this.toast.show(this.locale.t('ops.ui.needNames'));
       return;
     }
-    const file = this.draftFile;
+    const image = this.draftFile;
+    const icon = this.draftIconFile;
     this.api
       .opsCreateService({
         nameAr: this.serviceDraft.nameAr.trim(),
@@ -319,19 +353,7 @@ export class OpsCatalogComponent implements OnInit {
         isVisible: true,
       })
       .subscribe({
-        next: (row) => {
-          if (!file) {
-            this.finishCreate(this.locale.t('ops.cat.toast.added'));
-            return;
-          }
-          this.api.opsUploadServiceImage(row.id, file).subscribe({
-            next: () => this.finishCreate(this.locale.t('ops.cat.toast.addedImage')),
-            error: (err) => {
-              this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addedImageFail')));
-              this.finishCreate();
-            },
-          });
-        },
+        next: (row) => this.uploadDraftAssets(row.id, image, icon),
         error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addFail'))),
       });
   }
@@ -341,9 +363,19 @@ export class OpsCatalogComponent implements OnInit {
     if (!file) {
       return;
     }
-    this.resetDraftImage();
+    this.clearDraftPreview('image');
     this.draftFile = file;
     this.draftPreview = URL.createObjectURL(file);
+  }
+
+  onDraftIcon(event: Event): void {
+    const file = this.fileFrom(event);
+    if (!file) {
+      return;
+    }
+    this.clearDraftPreview('icon');
+    this.draftIconFile = file;
+    this.draftIconPreview = URL.createObjectURL(file);
   }
 
   onSelectedImage(event: Event): void {
@@ -360,6 +392,20 @@ export class OpsCatalogComponent implements OnInit {
     });
   }
 
+  onSelectedIcon(event: Event): void {
+    const file = this.fileFrom(event);
+    if (!file || !this.selected) {
+      return;
+    }
+    this.api.opsUploadServiceIcon(this.selected.id, file).subscribe({
+      next: (row) => {
+        this.applyService(row);
+        this.toast.show(this.locale.t('ops.cat.toast.iconUploaded'));
+      },
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.iconUploadFail'))),
+    });
+  }
+
   clearSelectedImage(): void {
     if (this.denyManage() || !this.selected) {
       return;
@@ -370,6 +416,19 @@ export class OpsCatalogComponent implements OnInit {
         this.toast.show(this.locale.t('ops.cat.toast.imageRemoved'));
       },
       error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.imageRemoveFail'))),
+    });
+  }
+
+  clearSelectedIcon(): void {
+    if (this.denyManage() || !this.selected) {
+      return;
+    }
+    this.api.opsClearServiceIcon(this.selected.id).subscribe({
+      next: (row) => {
+        this.applyService(row);
+        this.toast.show(this.locale.t('ops.cat.toast.iconRemoved'));
+      },
+      error: (err) => this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.iconRemoveFail'))),
     });
   }
 
@@ -532,12 +591,48 @@ export class OpsCatalogComponent implements OnInit {
     });
   }
 
+  private uploadDraftAssets(id: string, image: File | null, icon: File | null): void {
+    if (!image && !icon) {
+      this.finishCreate(this.locale.t('ops.cat.toast.added'));
+      return;
+    }
+    const afterImage = (imageOk: boolean) => {
+      if (!icon) {
+        this.finishCreate(imageOk ? this.locale.t('ops.cat.toast.addedImage') : undefined);
+        return;
+      }
+      this.api.opsUploadServiceIcon(id, icon).subscribe({
+        next: () =>
+          this.finishCreate(
+            image
+              ? this.locale.t(imageOk ? 'ops.cat.toast.addedFiles' : 'ops.cat.toast.addedFilesFail')
+              : this.locale.t('ops.cat.toast.addedIcon'),
+          ),
+        error: (err) => {
+          this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addedFilesFail')));
+          this.finishCreate();
+        },
+      });
+    };
+    if (!image) {
+      afterImage(true);
+      return;
+    }
+    this.api.opsUploadServiceImage(id, image).subscribe({
+      next: () => afterImage(true),
+      error: (err) => {
+        this.toast.show(apiMessage(err, this.locale.t('ops.cat.toast.addedImageFail')));
+        afterImage(false);
+      },
+    });
+  }
+
   private finishCreate(message?: string): void {
     if (message) {
       this.toast.show(message);
     }
     this.serviceDraft = emptyServiceDraft();
-    this.resetDraftImage();
+    this.resetDraftFiles();
     this.adding = false;
     this.load();
   }
@@ -560,7 +655,20 @@ export class OpsCatalogComponent implements OnInit {
     return file;
   }
 
-  private resetDraftImage(): void {
+  private resetDraftFiles(): void {
+    this.clearDraftPreview('image');
+    this.clearDraftPreview('icon');
+  }
+
+  private clearDraftPreview(kind: 'image' | 'icon'): void {
+    if (kind === 'icon') {
+      if (this.draftIconPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(this.draftIconPreview);
+      }
+      this.draftIconFile = null;
+      this.draftIconPreview = null;
+      return;
+    }
     if (this.draftPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(this.draftPreview);
     }

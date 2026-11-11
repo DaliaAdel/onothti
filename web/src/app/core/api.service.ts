@@ -740,6 +740,16 @@ export class ApiService {
     return this.http.delete<OpsCatalogService>(`${this.base}/ops/catalog/${id}/image`);
   }
 
+  opsUploadServiceIcon(id: string, file: File) {
+    const data = new FormData();
+    data.append('file', file);
+    return this.http.post<OpsCatalogService>(`${this.base}/ops/catalog/${id}/icon`, data);
+  }
+
+  opsClearServiceIcon(id: string) {
+    return this.http.delete<OpsCatalogService>(`${this.base}/ops/catalog/${id}/icon`);
+  }
+
   opsCreateSubService(serviceId: string, body: { code?: string; nameAr: string; nameEn: string; sortOrder?: number }) {
     return this.http.post<OpsSubService>(`${this.base}/ops/catalog/${serviceId}/sub-services`, body);
   }

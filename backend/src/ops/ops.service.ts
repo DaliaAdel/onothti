@@ -702,8 +702,33 @@ export class OpsService {
     file: { filename: string; mimetype: string; size: number } | undefined,
     actorId: string,
   ) {
+    return this.uploadServiceAsset(id, file, actorId, "image");
+  }
+
+  async uploadServiceIcon(
+    id: string,
+    file: { filename: string; mimetype: string; size: number } | undefined,
+    actorId: string,
+  ) {
+    return this.uploadServiceAsset(id, file, actorId, "icon");
+  }
+
+  async clearServiceImage(id: string) {
+    return this.clearServiceAsset(id, "image");
+  }
+
+  async clearServiceIcon(id: string) {
+    return this.clearServiceAsset(id, "icon");
+  }
+
+  private async uploadServiceAsset(
+    id: string,
+    file: { filename: string; mimetype: string; size: number } | undefined,
+    actorId: string,
+    kind: "image" | "icon",
+  ) {
     if (!file) {
-      throw new BadRequestException("اختاري صورة للخدمة");
+      throw new BadRequestException(kind === "icon" ? "اختاري أيقونة للخدمة" : "اختاري صورة للخدمة");
     }
     const row = await this.prisma.service.findUnique({ where: { id } });
     if (!row) {
@@ -721,20 +746,20 @@ export class OpsService {
     });
     const updated = await this.prisma.service.update({
       where: { id },
-      data: { imageFileId: media.id },
+      data: kind === "icon" ? { iconFileId: media.id } : { imageFileId: media.id },
       include: { subServices: { orderBy: { sortOrder: "asc" } } },
     });
     return withServiceImageUrl(this.prisma, updated);
   }
 
-  async clearServiceImage(id: string) {
+  private async clearServiceAsset(id: string, kind: "image" | "icon") {
     const row = await this.prisma.service.findUnique({ where: { id } });
     if (!row) {
       throw new NotFoundException("الخدمة غير موجودة");
     }
     const updated = await this.prisma.service.update({
       where: { id },
-      data: { imageFileId: null },
+      data: kind === "icon" ? { iconFileId: null } : { imageFileId: null },
       include: { subServices: { orderBy: { sortOrder: "asc" } } },
     });
     return withServiceImageUrl(this.prisma, updated);

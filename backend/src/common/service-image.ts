@@ -17,24 +17,25 @@ export async function serviceImageUrlMap(prisma: PrismaService, ids: Array<strin
   return map;
 }
 
-export async function withServiceImageUrl<T extends { imageFileId?: string | null }>(
+export async function withServiceImageUrl<T extends { imageFileId?: string | null; iconFileId?: string | null }>(
   prisma: PrismaService,
   row: T,
-): Promise<T & { imageUrl: string | null }> {
+): Promise<T & { imageUrl: string | null; iconUrl: string | null }> {
   const [mapped] = await withServiceImageUrls(prisma, [row]);
   return mapped;
 }
 
-export async function withServiceImageUrls<T extends { imageFileId?: string | null }>(
+export async function withServiceImageUrls<T extends { imageFileId?: string | null; iconFileId?: string | null }>(
   prisma: PrismaService,
   rows: T[],
-): Promise<Array<T & { imageUrl: string | null }>> {
+): Promise<Array<T & { imageUrl: string | null; iconUrl: string | null }>> {
   const map = await serviceImageUrlMap(
     prisma,
-    rows.map((row) => row.imageFileId),
+    rows.flatMap((row) => [row.imageFileId, row.iconFileId]),
   );
   return rows.map((row) => ({
     ...row,
     imageUrl: row.imageFileId ? map.get(row.imageFileId) ?? null : null,
+    iconUrl: row.iconFileId ? map.get(row.iconFileId) ?? null : null,
   }));
 }

@@ -394,6 +394,31 @@ export class OpsController {
     return this.ops.clearServiceImage(id);
   }
 
+  @Post("catalog/:id/icon")
+  @RequirePermission(StaffPermission.CAT_01)
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(FileInterceptor("file", catalogUpload))
+  uploadServiceIcon(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file?: { filename: string; mimetype: string; size: number },
+  ) {
+    return this.ops.uploadServiceIcon(id, file, user.sub);
+  }
+
+  @Delete("catalog/:id/icon")
+  @RequirePermission(StaffPermission.CAT_01)
+  clearServiceIcon(@Param("id") id: string) {
+    return this.ops.clearServiceIcon(id);
+  }
+
   @Post("catalog/:id/sub-services")
   @RequirePermission(StaffPermission.CAT_01)
   createSubService(@Param("id") id: string, @Body() dto: UpsertSubServiceDto) {
