@@ -511,8 +511,9 @@ export class AuthService {
 
     const isProd = (this.config.get<string>("NODE_ENV") ?? process.env.NODE_ENV) === "production";
     const devCode = this.config.get<string>("OTP_DEV_CODE");
+    const liveSms = this.sms.isLive();
     const code =
-      !isProd && devCode ? devCode : String(randomInt(100000, 1000000));
+      !isProd && !liveSms && devCode ? devCode : String(randomInt(100000, 1000000));
     const otp = await this.prisma.otpRequest.create({
       data: {
         mobile,
@@ -522,7 +523,13 @@ export class AuthService {
       },
     });
 
-    await this.sms.send(mobile, `رمز أنوثتي: ${code}`);
+    const body = (
+      this.config.get<string>("TAQNYAT_OTP_BODY") ??
+      "رمز التحقق: {code}\nJMTC\nشركة جدة الحديثة للتجارة المحدودة"
+    )
+      .replaceAll("\\n", "\n")
+      .replaceAll("{code}", code);
+    await this.sms.send(mobile, body);
     return { id: otp.id, ttlSeconds };
   }
 

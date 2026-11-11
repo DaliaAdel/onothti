@@ -451,6 +451,7 @@ export class LocaleService {
       'انتهت صلاحية الرمز': 'auth.otp.expired',
       'لا يوجد رمز تحقق': 'auth.otp.missing',
       'تم إيقاف المحاولة لمدة 30 دقيقة': 'auth.otp.locked',
+      'تعذر إرسال الرمز': 'auth.otp.sendFailed',
       'يجب تأكيد الجوال وتعيين كلمة مرور أولاً': 'auth.staff.setFirst',
       'كلمة المرور معيّنة بالفعل، سجّلي الدخول بها': 'auth.staff.alreadySet',
       'المدينة غير متاحة': 'auth.complete.cityRequired',
