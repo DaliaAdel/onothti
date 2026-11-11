@@ -20,4 +20,6 @@
 html:lang(en){
   --font-display:var(--font-en-display);
   --font-ui:var(--font-en-ui);
+  --en-fs-add:2px;
+  font-size:calc(1rem + var(--en-fs-add));
 }

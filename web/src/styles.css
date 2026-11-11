@@ -3980,3 +3980,69 @@ html[dir="ltr"] .landing-page footer a,
 html[dir="ltr"] .landing-page footer button,
 html[dir="ltr"] .landing-page .featured-action,
 html[dir="ltr"] .landing-page .contact-item{text-align:start}
+
+html:lang(en) body,
+html:lang(en) .app,
+html:lang(en) .landing-page,
+html:lang(en) .auth-layout{
+  font-size:1em
+}
+html:lang(en) .brand strong{font-size:calc(26px + var(--en-fs-add, 0px))}
+html:lang(en) .brand small{font-size:calc(13px + var(--en-fs-add, 0px))}
+html:lang(en) .nav a{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .nav-folder-toggle{font-size:calc(13px + var(--en-fs-add, 0px))}
+html:lang(en) .ops-app .nav a,
+html:lang(en) .ops-app .nav-folder-toggle,
+html:lang(en) .nav-sub a{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .ops-app .nav-sub a{font-size:calc(11px + var(--en-fs-add, 0px))}
+html:lang(en) .nav-label,
+html:lang(en) .account-mini span{font-size:calc(9px + var(--en-fs-add, 0px))}
+html:lang(en) .account-mini strong,
+html:lang(en) .text-link,
+html:lang(en) .btn,
+html:lang(en) .chip,
+html:lang(en) .field label,
+html:lang(en) .eyebrow,
+html:lang(en) .small{font-size:calc(11px + var(--en-fs-add, 0px))}
+html:lang(en) .page-title h1{font-size:calc(25px + var(--en-fs-add, 0px))}
+html:lang(en) .page-head h1{font-size:calc(31px + var(--en-fs-add, 0px))}
+html:lang(en) .page-title p,
+html:lang(en) .page-head p{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .crumb b{font-size:calc(16px + var(--en-fs-add, 0px))}
+html:lang(en) .crumb small{font-size:calc(10px + var(--en-fs-add, 0px))}
+html:lang(en) .section-head h2{font-size:calc(21px + var(--en-fs-add, 0px))}
+html:lang(en) .section-head p,
+html:lang(en) .card h3,
+html:lang(en) .notify-top b{font-size:calc(14px + var(--en-fs-add, 0px))}
+html:lang(en) .hero h2{font-size:calc(32px + var(--en-fs-add, 0px))}
+html:lang(en) .hero p,
+html:lang(en) .field input,
+html:lang(en) .field textarea,
+html:lang(en) .field select,
+html:lang(en) .notify-copy p,
+html:lang(en) .notify-empty p{font-size:calc(13px + var(--en-fs-add, 0px))}
+html:lang(en) .ops-table th,
+html:lang(en) .ops-table td,
+html:lang(en) .table th,
+html:lang(en) .table td{font-size:calc(11px + var(--en-fs-add, 0px))}
+html:lang(en) .role-card b{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .role-card span{font-size:calc(10px + var(--en-fs-add, 0px))}
+html:lang(en) .auth-box h1{font-size:calc(38px + var(--en-fs-add, 0px))}
+html:lang(en) .auth-box .sub,
+html:lang(en) .auth-brand-copy p,
+html:lang(en) .auth-brand-copy small{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .site-header nav a,
+html:lang(en) .landing-page .btn{font-size:calc(11px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .btn.large{font-size:calc(12px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .hero-copy h1{font-size:calc(68px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .hero-copy p,
+html:lang(en) .landing-page .hero-copy>p{font-size:calc(14px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .section-heading h2{font-size:calc(39px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .section-heading p,
+html:lang(en) .landing-page .faq-list summary{font-size:calc(11px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page .service-grid h3,
+html:lang(en) .landing-page .steps-grid h3{font-size:calc(13px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page footer a,
+html:lang(en) .landing-page footer button,
+html:lang(en) .landing-page .faq-list p{font-size:calc(9px + var(--en-fs-add, 0px))}
+html:lang(en) .landing-page footer b{font-size:calc(11px + var(--en-fs-add, 0px))}
